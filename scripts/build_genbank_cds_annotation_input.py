@@ -25,6 +25,7 @@ COLUMNS = [
     "functional_category",
     "evidence",
     "tool",
+    "notes",
 ]
 REPORT_COLUMNS = ["severity", "item", "message"]
 
@@ -139,6 +140,7 @@ def parse_genbank_record(genome_id: str, path: Path, region_start: int | None, r
                     "functional_category": category_for(product),
                     "evidence": "NCBI GenBank CDS product; coordinates parsed from local gbff",
                     "tool": "build_genbank_cds_annotation_input.py",
+                    "notes": f"Local GenBank bridge annotation parsed from {path}; genome_id={genome_id}; region={region_start or 'full'}-{region_end or 'full'}; not standardized Pharokka/PHROGs annotation.",
                 }
             )
     return rows

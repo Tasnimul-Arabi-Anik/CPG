@@ -1,2 +1,2 @@
-genome_id_1	genome_id_2	identity_percent	coverage_percent	method
-Klebsiella phage PhiKpNIH-2	NTUH-K2044_PhiSpy_pp1_NC_012731.1_2098066_2113724	0.000	0.000	blastn_local_pairwise_min_hsp_100
+genome_id_1	genome_id_2	identity_percent	coverage_percent	method	evidence_source	notes
+Klebsiella phage PhiKpNIH-2	NTUH-K2044_PhiSpy_pp1_NC_012731.1_2098066_2113724	0.000	0.000	blastn_local_pairwise_min_hsp_100	build_blastn_pairwise_similarity.py	Local BLASTN bridge evidence generated from sequence-QC-passing FASTA records; method column records min_hsp_length; coverage is reciprocal minimum non-overlapping aligned fraction; not a VIRIDIC/Mash substitute.

@@ -29,6 +29,7 @@ COLUMNS = [
     "functional_category",
     "evidence",
     "tool",
+    "notes",
 ]
 REPORT_COLUMNS = ["severity", "item", "message"]
 MISSING = {"", "NA", "N/A", "na", "n/a", "None", "none", "-"}
@@ -213,6 +214,7 @@ def parse_genbank(genome_id: str, accession: str, text: str) -> list[dict[str, s
                 "functional_category": category_for(product),
                 "evidence": f"NCBI GenBank CDS product fetched by accession {accession}; no raw FASTA written",
                 "tool": "build_ncbi_genbank_cds_annotation_input.py",
+                "notes": f"NCBI GenBank bridge annotation fetched with EFetch by accession {accession}; genome_id={genome_id}; no raw FASTA written; not standardized Pharokka/PHROGs annotation.",
             }
         )
     return parsed

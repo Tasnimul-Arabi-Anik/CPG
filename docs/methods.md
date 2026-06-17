@@ -402,7 +402,7 @@ python scripts/01_dereplicate_phages.py \
 
 Optional pairwise input schema is documented in `docs/dereplication_schema.md`. Thresholds are read from `config/thresholds.yaml`.
 
-For the initial local FASTA-backed dataset, `data/metadata/external_evidence/blastn_pairwise_similarity.tsv` was generated with BLASTN from records passing Stage 1 sequence QC. This provides a conservative nucleotide-similarity baseline for the current cultured-phage/prophage pair; it is not a replacement for VIRIDIC, Mash, or an equivalent reviewed all-vs-all similarity run in the comprehensive public-scale analysis. Regeneration command:
+For the initial local FASTA-backed dataset, `data/metadata/external_evidence/blastn_pairwise_similarity.tsv` was generated with BLASTN from records passing Stage 1 sequence QC. This provides a conservative nucleotide-similarity baseline for the current cultured-phage/prophage pair; it is not a replacement for VIRIDIC, Mash, or an equivalent reviewed all-vs-all similarity run in the comprehensive public-scale analysis. The bridge TSV includes `evidence_source` and `notes` provenance fields for acceptance auditing. Regeneration command:
 
 ```bash
 python scripts/build_blastn_pairwise_similarity.py \
@@ -430,7 +430,7 @@ python scripts/02_build_annotation_tables.py \
 
 Optional annotation input schema is documented in `docs/annotation_schema.md`. Current gene clustering uses PHROG ID, informative product name, protein sequence hash, or singleton fallback. This is a schema-stable merge layer, not a final orthology method.
 
-For the initial real-data path, `data/metadata/external_evidence/genbank_cds_annotations.tsv` is a GenBank-derived bridge annotation table. It combines CDS features parsed from local GenBank files for the initial cultured phage/prophage records with accession-fetched NCBI GenBank CDS features for the NCBI seed phage source. This is curated product-annotation evidence, not standardized de novo phage annotation and not a substitute for Pharokka/PHROGs, domain, or structural annotation.
+For the initial real-data path, `data/metadata/external_evidence/genbank_cds_annotations.tsv` is a GenBank-derived bridge annotation table. It combines CDS features parsed from local GenBank files for the initial cultured phage/prophage records with accession-fetched NCBI GenBank CDS features for the NCBI seed phage source. This is curated product-annotation evidence, not standardized de novo phage annotation and not a substitute for Pharokka/PHROGs, domain, or structural annotation. The bridge TSV includes `tool`, `evidence`, and `notes` provenance fields for acceptance auditing.
 
 Initial local GenBank regeneration command, after downloading the relevant GenBank files to `/tmp/cpg_annotation_gbff/`:
 

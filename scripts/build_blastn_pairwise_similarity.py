@@ -19,6 +19,8 @@ OUTPUT_COLUMNS = [
     "identity_percent",
     "coverage_percent",
     "method",
+    "evidence_source",
+    "notes",
 ]
 REPORT_COLUMNS = ["severity", "item", "message"]
 
@@ -176,6 +178,12 @@ def main() -> int:
                     "identity_percent": f"{identity:.3f}",
                     "coverage_percent": f"{coverage:.3f}",
                     "method": f"blastn_local_pairwise_min_hsp_{args.min_hsp_length}",
+                    "evidence_source": "build_blastn_pairwise_similarity.py",
+                    "notes": (
+                        f"Local BLASTN bridge evidence generated from sequence-QC-passing FASTA records; "
+                        f"task={args.task}; min_hsp_length={args.min_hsp_length}; "
+                        "coverage is reciprocal minimum non-overlapping aligned fraction; not a VIRIDIC/Mash substitute."
+                    ),
                 }
             )
             report.append(
