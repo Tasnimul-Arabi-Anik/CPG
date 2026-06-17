@@ -192,6 +192,8 @@ outputs:
     readiness_action_report: results/validation/readiness_action_report.tsv
     hypothesis_traceability: results/validation/hypothesis_traceability.tsv
     hypothesis_traceability_report: results/validation/hypothesis_traceability_report.tsv
+    claim_support_audit: results/validation/claim_support_audit.tsv
+    claim_support_report: results/validation/claim_support_report.tsv
     goal_completion_audit: results/validation/goal_completion_audit.tsv
     goal_completion_report: results/validation/goal_completion_report.tsv
     run_report: results/validation/workflow_run_report.tsv

@@ -599,3 +599,7 @@ Priority source preflight schemas are documented in `docs/priority_source_prefli
 Priority source collection packet schemas are documented in `docs/priority_source_collection_packet_schema.md`.
 
 Source overlap audit schemas are documented in `docs/source_overlap_schema.md`.
+
+## Claim Support Audit
+
+The claim-support audit joins the manuscript claim ledger to workflow validation, H1-H6 model summaries, hypothesis traceability, and external evidence provenance. This audit defines the strongest wording currently allowed for each claim and prevents mock fixture or scaffold-only outputs from being used as real biological conclusions.

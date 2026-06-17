@@ -47,6 +47,7 @@ Start with these files:
 - `docs/claim_ledger.md`: allowed, unsupported, and forbidden claim wording.
 - `docs/limitations.md`: computational prediction and validation boundaries.
 - `results/validation/goal_completion_audit.tsv`: current objective audit after a workflow run.
+- `results/validation/claim_support_audit.tsv`: machine-readable claim support audit.
 - `results/validation/readiness_action_plan.tsv`: ranked actions needed before manuscript-level claims.
 - `results/qc/external_evidence_plan.tsv`: evidence readiness, provenance origin, and real-claim usability status.
 
@@ -80,6 +81,8 @@ After curating a row, run the focused command shown in the WO001 packet, then re
 - `results/validation/goal_completion_audit.tsv`
 
 ## Claim Boundaries
+
+Inspect `results/validation/claim_support_audit.tsv` after each workflow run before strengthening manuscript wording.
 
 Acceptable current claim:
 

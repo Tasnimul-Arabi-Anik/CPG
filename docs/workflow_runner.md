@@ -77,6 +77,9 @@ python scripts/run_workflow.py --config config/workflow.yaml --stages stage_1_ma
 - `stage_9_validation`
 - `stage_9_source_export_validation_self_test`
 - `stage_10_study_readiness`
+- `stage_11_hypothesis_traceability`
+- `stage_11_claim_support_audit`
+- `stage_11_goal_completion_audit`
 
 ## Real-Study Sample Builder
 
@@ -156,3 +159,7 @@ The runner writes `results/qc/source_post_acceptance_plan.tsv` through `stage_0_
 ## Source Export Validation Self-Test
 
 The runner writes `results/validation/source_export_validation_self_test.tsv` through `stage_9_source_export_validation_self_test`. This stage creates temporary reviewed-export examples and verifies that malformed year, GC, lifestyle, and identity fields are blocked before source import.
+
+## Claim Support Audit
+
+`stage_11_claim_support_audit` writes `results/validation/claim_support_audit.tsv` and `results/validation/claim_support_report.tsv`. These files join the claim ledger to validation, H1-H6 traceability, model summaries, and external evidence provenance so scaffold or mock-only outputs cannot be promoted to real biological claims.

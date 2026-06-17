@@ -72,6 +72,7 @@ STAGE_ORDER = [
     "stage_10_study_readiness",
     "stage_10_readiness_actions",
     "stage_11_hypothesis_traceability",
+    "stage_11_claim_support_audit",
     "stage_11_goal_completion_audit",
 ]
 
@@ -403,6 +404,8 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     readiness_action_report = out("validation", "readiness_action_report", "results/validation/readiness_action_report.tsv")
     hypothesis_traceability = out("validation", "hypothesis_traceability", "results/validation/hypothesis_traceability.tsv")
     hypothesis_traceability_report = out("validation", "hypothesis_traceability_report", "results/validation/hypothesis_traceability_report.tsv")
+    claim_support_audit = out("validation", "claim_support_audit", "results/validation/claim_support_audit.tsv")
+    claim_support_report = out("validation", "claim_support_report", "results/validation/claim_support_report.tsv")
     goal_completion_audit = out("validation", "goal_completion_audit", "results/validation/goal_completion_audit.tsv")
     goal_completion_report = out("validation", "goal_completion_report", "results/validation/goal_completion_report.tsv")
 
@@ -1536,6 +1539,29 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
             ],
             logs_dir / "12_build_hypothesis_traceability.log",
             [hypothesis_traceability, hypothesis_traceability_report],
+        ),
+        Stage(
+            "stage_11_claim_support_audit",
+            [
+                python,
+                script("13_audit_claim_support.py"),
+                "--claim-ledger",
+                (root / "docs" / "claim_ledger.md").as_posix(),
+                "--workflow-validation",
+                validation_report.as_posix(),
+                "--hypothesis-summary",
+                hypothesis_summary.as_posix(),
+                "--hypothesis-traceability",
+                hypothesis_traceability.as_posix(),
+                "--external-evidence-plan",
+                external_evidence_plan.as_posix(),
+                "--audit-output",
+                claim_support_audit.as_posix(),
+                "--report-output",
+                claim_support_report.as_posix(),
+            ],
+            logs_dir / "13_audit_claim_support.log",
+            [claim_support_audit, claim_support_report],
         ),
         Stage(
             "stage_11_goal_completion_audit",

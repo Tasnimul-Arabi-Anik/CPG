@@ -190,6 +190,7 @@ REQUIRED_DOCS = [
     "docs/readiness_action_plan_schema.md",
     "docs/goal_completion_audit_schema.md",
     "docs/hypothesis_traceability_schema.md",
+    "docs/claim_support_audit_schema.md",
     "docs/manuscript_outline.md",
 ]
 
@@ -245,6 +246,7 @@ REQUIRED_SCRIPTS = [
     "scripts/10_plan_readiness_actions.py",
     "scripts/11_audit_goal_completion.py",
     "scripts/12_build_hypothesis_traceability.py",
+    "scripts/13_audit_claim_support.py",
 ]
 
 REQUIRED_CONFIGS = [
