@@ -1,6 +1,6 @@
 # Sequence Fetch Manifest Schema
 
-`scripts/create_sequence_fetch_manifest.py` converts `results/qc/sequence_acquisition_plan.tsv` into a reviewable sequence-fetch manifest and a non-executing shell command script. It does not download genomes and does not modify `data/raw/`.
+`scripts/create_sequence_fetch_manifest.py` converts `results/qc/sequence_acquisition_plan.tsv` into a reviewable sequence-fetch manifest and a non-executing shell command script. `scripts/create_sequence_fetch_review_packet.py` then summarizes ready commands into a Markdown review packet. These scripts do not download genomes and do not modify `data/raw/`.
 
 ## Command
 
@@ -13,7 +13,7 @@ python scripts/create_sequence_fetch_manifest.py \
   --root .
 ```
 
-The direct workflow runner executes this as `stage_1_sequence_fetch_manifest` after sequence acquisition planning.
+The direct workflow runner executes this as `stage_1_sequence_fetch_manifest` after sequence acquisition planning. It then executes `stage_1_sequence_fetch_review_packet` when enabled.
 
 ## Manifest Output
 
@@ -49,3 +49,12 @@ This script contains only ready accession-backed fetch commands. It is never exe
 ## Production Use
 
 Review the manifest, run selected commands outside the workflow when appropriate, place FASTA files at the expected paths, and rerun sequence QC. Rows requiring manual curation should be fixed in source manifests by adding an accession or `raw_sequence_path`.
+
+## Review Packet
+
+Default paths:
+
+- `results/qc/sequence_fetch_review_packet.md`
+- `results/qc/sequence_fetch_review_packet_report.tsv`
+
+The review packet summarizes command classes, acquisition statuses, ready accession-backed fetch commands, and post-acquisition checks. It is a handoff artifact only; it does not execute commands and does not create FASTA files.

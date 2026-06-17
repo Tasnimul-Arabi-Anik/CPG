@@ -49,6 +49,10 @@ sequence_fetch_manifest:
   manifest: results/qc/sequence_fetch_manifest.tsv
   commands: results/qc/sequence_fetch_commands.sh
   report: results/qc/sequence_fetch_report.tsv
+sequence_fetch_review_packet:
+  enabled: true
+  packet: results/qc/sequence_fetch_review_packet.md
+  report: results/qc/sequence_fetch_review_packet_report.tsv
 external_evidence:
   enabled: true
 external_evidence_templates:
@@ -83,6 +87,8 @@ outputs:
     sequence_fetch_manifest: results/qc/sequence_fetch_manifest.tsv
     sequence_fetch_commands: results/qc/sequence_fetch_commands.sh
     sequence_fetch_report: results/qc/sequence_fetch_report.tsv
+    sequence_fetch_review_packet: results/qc/sequence_fetch_review_packet.md
+    sequence_fetch_review_packet_report: results/qc/sequence_fetch_review_packet_report.tsv
     sequence_acquisition_report: results/qc/sequence_acquisition_report.tsv
     sequence_qc: results/qc/genome_sequence_qc.tsv
     sequence_qc_report: results/qc/genome_sequence_qc_report.tsv

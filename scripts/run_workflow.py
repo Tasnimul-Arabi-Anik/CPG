@@ -57,6 +57,7 @@ STAGE_ORDER = [
     "stage_1_manifest",
     "stage_1_sequence_acquisition",
     "stage_1_sequence_fetch_manifest",
+    "stage_1_sequence_fetch_review_packet",
     "stage_1_sequence_qc",
     "stage_1_external_evidence_plan",
     "stage_1_external_evidence_templates",
@@ -238,6 +239,9 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     sequence_fetch_manifest = configured_path(config, root, ("sequence_fetch_manifest", "manifest"), "results/qc/sequence_fetch_manifest.tsv")
     sequence_fetch_commands = configured_path(config, root, ("sequence_fetch_manifest", "commands"), "results/qc/sequence_fetch_commands.sh")
     sequence_fetch_report = configured_path(config, root, ("sequence_fetch_manifest", "report"), "results/qc/sequence_fetch_report.tsv")
+    sequence_fetch_review_packet_enabled = nested_get(config, ("sequence_fetch_review_packet", "enabled"), "false").strip().lower() in {"true", "1", "yes", "on"}
+    sequence_fetch_review_packet = configured_path(config, root, ("sequence_fetch_review_packet", "packet"), "results/qc/sequence_fetch_review_packet.md")
+    sequence_fetch_review_report = configured_path(config, root, ("sequence_fetch_review_packet", "report"), "results/qc/sequence_fetch_review_packet_report.tsv")
     external_evidence_enabled = nested_get(config, ("external_evidence", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
     external_evidence_templates_enabled = nested_get(config, ("external_evidence_templates", "enabled"), "false").strip().lower() in {"true", "1", "yes", "on"}
     external_evidence_templates_dir = configured_path(config, root, ("external_evidence_templates", "templates_dir"), "results/qc/external_evidence_templates")
@@ -1175,6 +1179,25 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
                 ],
                 logs_dir / "00_create_sequence_fetch_manifest.log",
                 [sequence_fetch_manifest, sequence_fetch_commands, sequence_fetch_report],
+            )
+        )
+
+    if sequence_fetch_review_packet_enabled:
+        stages.append(
+            Stage(
+                "stage_1_sequence_fetch_review_packet",
+                [
+                    python,
+                    script("create_sequence_fetch_review_packet.py"),
+                    "--manifest",
+                    sequence_fetch_manifest.as_posix(),
+                    "--packet-output",
+                    sequence_fetch_review_packet.as_posix(),
+                    "--report-output",
+                    sequence_fetch_review_report.as_posix(),
+                ],
+                logs_dir / "00_create_sequence_fetch_review_packet.log",
+                [sequence_fetch_review_packet, sequence_fetch_review_report],
             )
         )
 

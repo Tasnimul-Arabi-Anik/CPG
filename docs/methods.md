@@ -334,7 +334,7 @@ Output schemas are documented in `docs/genome_sequence_qc_schema.md`.
 
 ## Stage 1c: Sequence Fetch Manifest
 
-After sequence acquisition planning, `scripts/create_sequence_fetch_manifest.py` creates `results/qc/sequence_fetch_manifest.tsv` and a review-only `results/qc/sequence_fetch_commands.sh`. The script is never executed by the workflow. It exists to make accession-backed retrieval commands auditable before any network download or local FASTA placement.
+After sequence acquisition planning, `scripts/create_sequence_fetch_manifest.py` creates `results/qc/sequence_fetch_manifest.tsv` and a review-only `results/qc/sequence_fetch_commands.sh`. `scripts/create_sequence_fetch_review_packet.py` also writes `results/qc/sequence_fetch_review_packet.md`, which summarizes ready accession-backed commands, target paths, and post-acquisition checks for manual review. These scripts are never executed as download steps by the workflow. They exist to make accession-backed retrieval auditable before any network download or local FASTA placement.
 
 Implemented command:
 
