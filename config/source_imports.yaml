@@ -74,7 +74,7 @@ imports:
     notes: Optional discovery-layer import; keep separate from the primary dereplicated cultured/prophage atlas unless explicitly merged.
 
   - import_id: klebsiella_host_genomes
-    enabled: false
+    enabled: true
     input_path: data/metadata/source_exports/klebsiella_host_genomes.tsv
     output_path: data/metadata/source_manifests/klebsiella_host_genomes.tsv
     delimiter: auto

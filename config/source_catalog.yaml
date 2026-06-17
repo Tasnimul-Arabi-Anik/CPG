@@ -77,7 +77,7 @@ sources:
 
   - source_id: klebsiella_host_genomes
     path: data/metadata/source_manifests/klebsiella_host_genomes.tsv
-    enabled: false
+    enabled: true
     required: false
     source_label: host_genome_catalog
     record_type_default: host
