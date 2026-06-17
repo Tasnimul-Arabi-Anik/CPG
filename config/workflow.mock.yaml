@@ -203,6 +203,8 @@ outputs:
     source_export_validation_self_test_report: results/mock/validation/source_export_validation_self_test_report.tsv
     external_evidence_acceptance_self_test: results/mock/validation/external_evidence_acceptance_self_test.tsv
     external_evidence_acceptance_self_test_report: results/mock/validation/external_evidence_acceptance_self_test_report.tsv
+    rbp_external_evidence_normalization_self_test: results/mock/validation/rbp_external_evidence_normalization_self_test.tsv
+    rbp_external_evidence_normalization_self_test_report: results/mock/validation/rbp_external_evidence_normalization_self_test_report.tsv
     study_readiness: results/mock/validation/study_readiness.tsv
     study_readiness_report: results/mock/validation/study_readiness_report.tsv
     readiness_action_plan: results/mock/validation/readiness_action_plan.tsv

@@ -733,6 +733,18 @@ python scripts/normalize_rbp_external_evidence.py \
 
 Output schemas are documented in `docs/rbp_external_evidence_normalization_schema.md`.
 
+The normalization logic is regression-tested with fixture-only scenarios by `scripts/self_test_rbp_external_evidence_normalization.py`. The self-test covers generic domain TSVs, HMMER `domtblout` parsing, generic structural TSVs, and header-only behavior when no reviewed inputs are supplied.
+
+Implemented self-test command:
+
+```bash
+python scripts/self_test_rbp_external_evidence_normalization.py \
+  --output results/validation/rbp_external_evidence_normalization_self_test.tsv \
+  --report-output results/validation/rbp_external_evidence_normalization_self_test_report.tsv
+```
+
+Self-test schemas are documented in `docs/rbp_external_evidence_normalization_self_test_schema.md`.
+
 ## Phage Anti-Defense Screening Handoff
 
 After protein export, `scripts/create_phage_antidefense_screening_handoff.py` writes a screening manifest and command hints for curated phage anti-defense searches. The handoff links `annotation_gene_id` values to the all-protein FASTA and identifies annotation-text priority targets for review. These priority labels are not accepted anti-defense evidence; reviewed HMM/profile, sequence, or structure-informed hits must be normalized and configured as `inputs.phage_antidefense_input`.
