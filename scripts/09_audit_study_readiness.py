@@ -242,7 +242,15 @@ def evaluate_requirement(requirement: tuple[str, str, str, str], root: Path, res
         _, validation_rows = read_tsv(validation_path)
         ready = [row for row in rows if row.get("acquisition_status") in {"ready_for_sample_build", "manifest_populated_but_catalog_disabled", "local_export_ready_import_disabled", "local_export_ready_for_import"}]
         waiting = [row for row in rows if row.get("acquisition_status") == "waiting_for_local_export"]
-        invalid = [row for row in rows if row.get("acquisition_status") in {"local_export_empty", "local_export_missing_identity", "local_export_filters_exclude_all", "import_output_mismatch", "catalog_enabled_but_manifest_empty", "required_manifest_missing"}]
+        invalid_statuses = {"local_export_empty", "local_export_missing_identity", "local_export_filters_exclude_all", "import_output_mismatch", "catalog_enabled_but_manifest_empty", "required_manifest_missing"}
+        invalid = [row for row in rows if row.get("acquisition_status") in invalid_statuses]
+        blocking_invalid = [
+            row
+            for row in invalid
+            if row.get("catalog_enabled") == "true"
+            or row.get("catalog_required") == "true"
+            or row.get("import_enabled") == "true"
+        ]
         query_planned = [row for row in query_rows if row.get("query_status") == "planned_query_ready"]
         query_exports = [row for row in query_rows if row.get("query_status") == "local_export_present"]
         query_errors = [row for row in query_rows if row.get("query_status") == "config_error"]
@@ -251,9 +259,9 @@ def evaluate_requirement(requirement: tuple[str, str, str, str], root: Path, res
         export_ready = [row for row in validation_rows if row.get("validation_status") == "export_ready"]
         export_missing = [row for row in validation_rows if row.get("validation_status") == "export_missing"]
         export_validation_errors = [row for row in validation_rows if row.get("blocking_issue") == "true"]
-        if invalid or query_errors or template_errors or export_validation_errors:
+        if blocking_invalid or query_errors or template_errors or export_validation_errors:
             status = "fail"
-            action = "Fix invalid source exports/manifests or query/import path mismatches listed in qc plans."
+            action = "Fix invalid enabled/required source exports, manifests, or query/import path mismatches listed in qc plans."
         elif ready:
             status = "pass"
             action = "No action required."
@@ -268,7 +276,7 @@ def evaluate_requirement(requirement: tuple[str, str, str, str], root: Path, res
             action = "Place reviewed local source exports or populate source manifests, then rerun source import/build."
         summary = (
             f"sources={len(rows)}; ready_or_importable={len(ready)}; waiting_for_export={len(waiting)}; "
-            f"invalid={len(invalid)}; query_rows={len(query_rows)}; planned_queries={len(query_planned)}; "
+            f"invalid={len(invalid)}; blocking_invalid={len(blocking_invalid)}; query_rows={len(query_rows)}; planned_queries={len(query_planned)}; "
             f"query_exports={len(query_exports)}; query_errors={len(query_errors)}; "
             f"templates_ready={len(template_ready)}; template_errors={len(template_errors)}; "
             f"export_ready={len(export_ready)}; export_missing={len(export_missing)}; export_validation_errors={len(export_validation_errors)}"

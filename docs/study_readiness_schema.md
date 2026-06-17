@@ -30,7 +30,7 @@ The direct workflow runner executes this as `stage_10_study_readiness` after `st
 | `blocking_for_manuscript` | Whether this gap blocks manuscript-level claims. |
 | `next_action` | Concrete action needed to improve readiness. |
 
-Audited areas include dataset curation, source readiness, source query/template/export-validation/acquisition planning, source work-order acceptance, tool availability, sequence acquisition planning, sequence QC, external evidence planning, dereplication, annotation/pangenome, RBP/depolymerase candidates, host features, defense/counter-defense features, configured H1-H6 sample support, H1-H6 tests, figures, and documentation/claims.
+Audited areas include dataset curation, source readiness, source query/template/export-validation/acquisition planning, source work-order acceptance, tool availability, sequence acquisition planning, sequence QC, external evidence planning, dereplication, annotation/pangenome, RBP/depolymerase candidates, host features, defense/counter-defense features, configured H1-H6 sample support, H1-H6 tests, figures, and documentation/claims. Disabled optional source placeholders remain visible in source-acquisition summaries, but they block manuscript readiness only if they are enabled, required, or have an enabled import path that is inconsistent.
 
 ## Report
 
