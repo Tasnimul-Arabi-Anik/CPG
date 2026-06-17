@@ -4,6 +4,7 @@
 genome_qc:
   min_genome_length_bp: 10000
   max_genome_length_bp: 1000000
+  max_host_genome_length_bp: 15000000
   min_gc_percent: 20
   max_gc_percent: 80
   max_n_percent: 5

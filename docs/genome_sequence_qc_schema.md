@@ -62,7 +62,7 @@ The direct workflow runner executes this as `stage_1_sequence_qc` after `stage_1
 
 ## Interpretation
 
-Rows with no `raw_sequence_path` are retained with `sequence_qc_status=no_sequence_provided`; this is useful during metadata-only curation but is not sufficient for final genome-level claims. Rows with `passes_sequence_qc=false` should be reviewed before production dereplication, annotation, or manuscript analyses.
+Rows with no `raw_sequence_path` are retained with `sequence_qc_status=no_sequence_provided`; this is useful during metadata-only curation but is not sufficient for final genome-level claims. Rows with `passes_sequence_qc=false` should be reviewed before production dereplication, annotation, or manuscript analyses. Host genome rows use `genome_qc.max_host_genome_length_bp` when present, while phage-like rows use `genome_qc.max_genome_length_bp`.
 
 ## Downstream Use
 

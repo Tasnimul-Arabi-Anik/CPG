@@ -305,7 +305,7 @@ The script does not download genomes and does not modify `data/raw/`.
 
 ## Stage 1b: Local Genome Sequence QC
 
-The sequence QC script reads local FASTA files referenced by `raw_sequence_path` in the Stage 1 manifest. It computes sequence count, total length, observed GC percentage, N-content, ambiguous-base content, and metadata agreement against configured thresholds. Records without local sequence files are retained and reported so metadata-only curation remains possible, but final genome-level analyses should use rows with passing sequence QC.
+The sequence QC script reads local FASTA files referenced by `raw_sequence_path` in the Stage 1 manifest. It computes sequence count, total length, observed GC percentage, N-content, ambiguous-base content, and metadata agreement against configured thresholds. Phage-like records use `genome_qc.max_genome_length_bp`; host genome rows use `genome_qc.max_host_genome_length_bp` when present so complete bacterial assemblies are not incorrectly failed by phage-length limits. Records without local sequence files are retained and reported so metadata-only curation remains possible, but final genome-level analyses should use rows with passing sequence QC.
 
 Implemented command:
 

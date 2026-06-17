@@ -97,6 +97,7 @@ def thresholds(data: dict) -> dict[str, float]:
     return {
         "min_genome_length_bp": float(genome_qc.get("min_genome_length_bp", 0)),
         "max_genome_length_bp": float(genome_qc.get("max_genome_length_bp", 10**12)),
+        "max_host_genome_length_bp": float(genome_qc.get("max_host_genome_length_bp", genome_qc.get("max_genome_length_bp", 10**12))),
         "min_gc_percent": float(genome_qc.get("min_gc_percent", 0)),
         "max_gc_percent": float(genome_qc.get("max_gc_percent", 100)),
         "max_n_percent": float(genome_qc.get("max_n_percent", 5)),
@@ -255,8 +256,10 @@ def qc_one(row: dict[str, str], root: Path, limits: dict[str, float], report: li
         messages.append("no sequences found in FASTA")
     if total_length < limits["min_genome_length_bp"]:
         messages.append(f"length below minimum {int(limits['min_genome_length_bp'])}")
-    if total_length > limits["max_genome_length_bp"]:
-        messages.append(f"length above maximum {int(limits['max_genome_length_bp'])}")
+    max_length_key = "max_host_genome_length_bp" if record_type == "host" else "max_genome_length_bp"
+    max_length = limits[max_length_key]
+    if total_length > max_length:
+        messages.append(f"length above maximum {int(max_length)}")
     if gc_percent is not None and gc_percent < limits["min_gc_percent"]:
         messages.append(f"GC below minimum {fmt_float(limits['min_gc_percent'])}")
     if gc_percent is not None and gc_percent > limits["max_gc_percent"]:
