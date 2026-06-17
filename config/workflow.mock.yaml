@@ -148,6 +148,8 @@ outputs:
     external_evidence_unlock_report: results/mock/qc/external_evidence_unlock_report.tsv
     production_evidence_handoff: results/mock/qc/production_evidence_handoff.md
     production_evidence_handoff_report: results/mock/qc/production_evidence_handoff_report.tsv
+    pipeline_efficiency_audit: results/mock/validation/pipeline_efficiency_audit.tsv
+    pipeline_efficiency_report: results/mock/validation/pipeline_efficiency_report.tsv
   clusters:
     ani: results/mock/clusters/phage_ani.tsv
     clusters: results/mock/clusters/phage_clusters.tsv
@@ -322,3 +324,8 @@ production_evidence_handoff:
   enabled: true
   handoff: results/mock/qc/production_evidence_handoff.md
   report: results/mock/qc/production_evidence_handoff_report.tsv
+
+pipeline_efficiency:
+  enabled: true
+  audit: results/mock/validation/pipeline_efficiency_audit.tsv
+  report: results/mock/validation/pipeline_efficiency_report.tsv

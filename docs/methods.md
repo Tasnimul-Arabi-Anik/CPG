@@ -363,6 +363,26 @@ python scripts/create_production_evidence_handoff.py \
   --report-output results/qc/production_evidence_handoff_report.tsv
 ```
 
+## Stage 1e: Pipeline Efficiency Audit
+
+`scripts/audit_pipeline_efficiency.py` writes `results/validation/pipeline_efficiency_audit.tsv` and `results/validation/pipeline_efficiency_report.tsv`. This reviewer-facing audit checks that the workflow uses staged reviewed source layers rather than indiscriminate scraping, keeps metagenomic discovery contigs separate from the primary atlas, enforces Klebsiella/phage import filters, preserves a raw-data review boundary, keeps dereplication thresholds in config, runs source-overlap auditing, separates bridge evidence from production external evidence, externalizes compute-heavy production tools, and stages sequence acquisition before genome-level claims.
+
+The audit supports workflow-design and resource-readiness claims only. It does not support biological conclusions unless downstream source, sequence, external-evidence, modeling, readiness, and claim-support audits pass.
+
+Implemented command:
+
+```bash
+python scripts/audit_pipeline_efficiency.py \
+  --workflow-config config/workflow.yaml \
+  --source-catalog config/source_catalog.yaml \
+  --source-imports config/source_imports.yaml \
+  --thresholds config/thresholds.yaml \
+  --external-evidence-plan results/qc/external_evidence_plan.tsv \
+  --sequence-acquisition-plan results/qc/sequence_acquisition_plan.tsv \
+  --output results/validation/pipeline_efficiency_audit.tsv \
+  --report-output results/validation/pipeline_efficiency_report.tsv
+```
+
 ## Stage 2: Dereplication and Similarity Interface
 
 The dereplication script consumes the Stage 1 manifest, Stage 1 sequence QC output, and optional pairwise similarity rows. Eligible records are `phage`, `prophage`, and `metagenomic_viral_contig` rows with passing manifest validation. Metadata-only rows remain eligible, while local FASTA-backed records with failing sequence QC are excluded when `genome_qc.exclude_failed_local_sequence_qc_from_clustering` is true. If no pairwise similarity table is supplied, each eligible genome is emitted as a singleton cluster and the report explicitly records the singleton fallback.

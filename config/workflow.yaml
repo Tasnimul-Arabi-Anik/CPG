@@ -148,6 +148,8 @@ outputs:
     external_evidence_unlock_report: results/qc/external_evidence_unlock_report.tsv
     production_evidence_handoff: results/qc/production_evidence_handoff.md
     production_evidence_handoff_report: results/qc/production_evidence_handoff_report.tsv
+    pipeline_efficiency_audit: results/validation/pipeline_efficiency_audit.tsv
+    pipeline_efficiency_report: results/validation/pipeline_efficiency_report.tsv
   clusters:
     ani: results/clusters/phage_ani.tsv
     clusters: results/clusters/phage_clusters.tsv
@@ -321,3 +323,8 @@ production_evidence_handoff:
   enabled: true
   handoff: results/qc/production_evidence_handoff.md
   report: results/qc/production_evidence_handoff_report.tsv
+
+pipeline_efficiency:
+  enabled: true
+  audit: results/validation/pipeline_efficiency_audit.tsv
+  report: results/validation/pipeline_efficiency_report.tsv

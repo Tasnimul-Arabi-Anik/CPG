@@ -63,6 +63,7 @@ STAGE_ORDER = [
     "stage_1_external_evidence_templates",
     "stage_1_external_evidence_unlocks",
     "stage_1_production_evidence_handoff",
+    "stage_1_pipeline_efficiency_audit",
     "stage_2_dereplication",
     "stage_3_annotations",
     "stage_4_rbp_depolymerase",
@@ -255,6 +256,10 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     production_evidence_handoff_enabled = nested_get(config, ("production_evidence_handoff", "enabled"), "false").strip().lower() in {"true", "1", "yes", "on"}
     production_evidence_handoff = configured_path(config, root, ("production_evidence_handoff", "handoff"), "results/qc/production_evidence_handoff.md")
     production_evidence_handoff_report = configured_path(config, root, ("production_evidence_handoff", "report"), "results/qc/production_evidence_handoff_report.tsv")
+    pipeline_efficiency_enabled = nested_get(config, ("pipeline_efficiency", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
+    pipeline_efficiency_workflow_config = configured_path(config, root, ("outputs", "validation", "workflow_config"), "config/workflow.yaml")
+    pipeline_efficiency_audit = configured_path(config, root, ("pipeline_efficiency", "audit"), "results/validation/pipeline_efficiency_audit.tsv")
+    pipeline_efficiency_report = configured_path(config, root, ("pipeline_efficiency", "report"), "results/validation/pipeline_efficiency_report.tsv")
     source_audit_enabled = nested_get(config, ("source_audit", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
     source_audit_catalog = configured_path(config, root, ("source_audit", "catalog"), sample_builder_catalog.as_posix())
     source_audit_readiness = configured_path(config, root, ("source_audit", "readiness"), "results/qc/source_catalog_readiness.tsv")
@@ -1318,6 +1323,35 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
                 ],
                 logs_dir / "00_create_production_evidence_handoff.log",
                 [production_evidence_handoff, production_evidence_handoff_report],
+            )
+        )
+
+    if pipeline_efficiency_enabled:
+        stages.append(
+            Stage(
+                "stage_1_pipeline_efficiency_audit",
+                [
+                    python,
+                    script("audit_pipeline_efficiency.py"),
+                    "--workflow-config",
+                    pipeline_efficiency_workflow_config.as_posix(),
+                    "--source-catalog",
+                    sample_builder_catalog.as_posix(),
+                    "--source-imports",
+                    source_imports_config.as_posix(),
+                    "--thresholds",
+                    thresholds.as_posix(),
+                    "--external-evidence-plan",
+                    external_evidence_plan.as_posix(),
+                    "--sequence-acquisition-plan",
+                    sequence_acquisition_plan.as_posix(),
+                    "--output",
+                    pipeline_efficiency_audit.as_posix(),
+                    "--report-output",
+                    pipeline_efficiency_report.as_posix(),
+                ],
+                logs_dir / "00_audit_pipeline_efficiency.log",
+                [pipeline_efficiency_audit, pipeline_efficiency_report],
             )
         )
 
