@@ -101,6 +101,20 @@ def render_packet(root: Path, row: dict[str, str], template: dict[str, str]) -> 
     suggested_command = row.get("suggested_command", "")
     configured_path = row.get("configured_input_path", "")
     optional_key = row.get("optional_input_key", "")
+    antidefense_handoff_lines: list[str] = []
+    if evidence_id == "phage_antidefense_candidates":
+        antidefense_handoff_lines = [
+            "## Workflow Phage Protein Inputs",
+            "",
+            "The workflow exports a phage anti-defense screening handoff linked to stable `annotation_gene_id` values:",
+            "",
+            "- Screening manifest: `results/qc/phage_antidefense_screening_handoff.tsv`",
+            "- HMM/sequence-search command hints: `results/qc/phage_antidefense_screening_commands.sh`",
+            "- All phage/prophage proteins: `results/qc/external_evidence_proteins/phage_proteins.faa`",
+            "",
+            "These files are screening instructions only; they are not accepted anti-defense calls and should not be configured as `inputs.phage_antidefense_input`.",
+            "",
+        ]
     host_defense_handoff_lines: list[str] = []
     if evidence_id == "host_defense_systems":
         host_defense_handoff_lines = [
@@ -163,6 +177,7 @@ def render_packet(root: Path, row: dict[str, str], template: dict[str, str]) -> 
         "",
         *protein_handoff_lines,
         *host_defense_handoff_lines,
+        *antidefense_handoff_lines,
         "## Acceptance Checklist",
         "",
         "- The TSV is derived from reviewed sequence-backed records, not mock fixtures.",

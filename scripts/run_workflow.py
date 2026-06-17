@@ -69,6 +69,7 @@ STAGE_ORDER = [
     "stage_2_dereplication",
     "stage_3_annotations",
     "stage_3_external_evidence_proteins",
+    "stage_3_phage_antidefense_handoff",
     "stage_4_rbp_depolymerase",
     "stage_5_host_features",
     "stage_5_host_defense_handoff",
@@ -263,6 +264,10 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     external_evidence_candidate_proteins = configured_path(config, root, ("external_evidence_proteins", "candidate_proteins"), "results/qc/external_evidence_proteins/rbp_depolymerase_candidate_proteins.faa")
     external_evidence_protein_manifest = configured_path(config, root, ("external_evidence_proteins", "manifest"), "results/qc/external_evidence_proteins/protein_export_manifest.tsv")
     external_evidence_protein_report = configured_path(config, root, ("external_evidence_proteins", "report"), "results/qc/external_evidence_proteins/protein_export_report.tsv")
+    phage_antidefense_handoff_enabled = nested_get(config, ("phage_antidefense_handoff", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
+    phage_antidefense_handoff_manifest = configured_path(config, root, ("phage_antidefense_handoff", "manifest"), "results/qc/phage_antidefense_screening_handoff.tsv")
+    phage_antidefense_handoff_commands = configured_path(config, root, ("phage_antidefense_handoff", "commands"), "results/qc/phage_antidefense_screening_commands.sh")
+    phage_antidefense_handoff_report = configured_path(config, root, ("phage_antidefense_handoff", "report"), "results/qc/phage_antidefense_screening_handoff_report.tsv")
     external_evidence_acceptance_enabled = nested_get(config, ("external_evidence_acceptance", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
     external_evidence_acceptance = configured_path(config, root, ("external_evidence_acceptance", "acceptance"), "results/qc/external_evidence_acceptance.tsv")
     external_evidence_acceptance_report = configured_path(config, root, ("external_evidence_acceptance", "report"), "results/qc/external_evidence_acceptance_report.tsv")
@@ -1496,6 +1501,33 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
                     external_evidence_protein_manifest,
                     external_evidence_protein_report,
                 ],
+            )
+        )
+
+    if phage_antidefense_handoff_enabled:
+        stages.append(
+            Stage(
+                "stage_3_phage_antidefense_handoff",
+                [
+                    python,
+                    script("create_phage_antidefense_screening_handoff.py"),
+                    "--annotations",
+                    annotations.as_posix(),
+                    "--protein-manifest",
+                    external_evidence_protein_manifest.as_posix(),
+                    "--all-proteins",
+                    external_evidence_all_proteins.as_posix(),
+                    "--manifest-output",
+                    phage_antidefense_handoff_manifest.as_posix(),
+                    "--commands-output",
+                    phage_antidefense_handoff_commands.as_posix(),
+                    "--report-output",
+                    phage_antidefense_handoff_report.as_posix(),
+                    "--root",
+                    root.as_posix(),
+                ],
+                logs_dir / "03_create_phage_antidefense_screening_handoff.log",
+                [phage_antidefense_handoff_manifest, phage_antidefense_handoff_commands, phage_antidefense_handoff_report],
             )
         )
 

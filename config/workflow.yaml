@@ -326,6 +326,11 @@ external_evidence_proteins:
   candidate_proteins: results/qc/external_evidence_proteins/rbp_depolymerase_candidate_proteins.faa
   manifest: results/qc/external_evidence_proteins/protein_export_manifest.tsv
   report: results/qc/external_evidence_proteins/protein_export_report.tsv
+phage_antidefense_handoff:
+  enabled: true
+  manifest: results/qc/phage_antidefense_screening_handoff.tsv
+  commands: results/qc/phage_antidefense_screening_commands.sh
+  report: results/qc/phage_antidefense_screening_handoff_report.tsv
 external_evidence_run_packets:
   enabled: true
   directory: results/qc/external_evidence_run_packets

@@ -714,6 +714,25 @@ python scripts/export_external_evidence_proteins.py \
 
 Output schemas are documented in `docs/external_evidence_protein_handoff_schema.md`.
 
+## Phage Anti-Defense Screening Handoff
+
+After protein export, `scripts/create_phage_antidefense_screening_handoff.py` writes a screening manifest and command hints for curated phage anti-defense searches. The handoff links `annotation_gene_id` values to the all-protein FASTA and identifies annotation-text priority targets for review. These priority labels are not accepted anti-defense evidence; reviewed HMM/profile, sequence, or structure-informed hits must be normalized and configured as `inputs.phage_antidefense_input`.
+
+Implemented command:
+
+```bash
+python scripts/create_phage_antidefense_screening_handoff.py \
+  --annotations results/annotations/phage_annotations.tsv \
+  --protein-manifest results/qc/external_evidence_proteins/protein_export_manifest.tsv \
+  --all-proteins results/qc/external_evidence_proteins/phage_proteins.faa \
+  --manifest-output results/qc/phage_antidefense_screening_handoff.tsv \
+  --commands-output results/qc/phage_antidefense_screening_commands.sh \
+  --report-output results/qc/phage_antidefense_screening_handoff_report.tsv \
+  --root .
+```
+
+Output schemas are documented in `docs/phage_antidefense_screening_handoff_schema.md`.
+
 ## External Evidence Acceptance
 
 `check_external_evidence_acceptance.py` reads `results/qc/external_evidence_plan.tsv` after optional evidence TSVs are configured and writes `results/qc/external_evidence_acceptance.tsv`. This table reports whether each evidence layer is accepted for workflow use, missing, schema-invalid, waiting for sequence data, or accepted with provenance lint. It also counts rows with populated `evidence_source`, `tool`, `evidence`, or `notes` fields so production evidence can be reviewed before claims are strengthened.
