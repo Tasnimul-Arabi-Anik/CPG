@@ -64,7 +64,7 @@ Reviewers should focus on:
 
 ## Current Biological Blocker
 
-The first real-data blocker is source work order WO001:
+Use the GitHub issue template `.github/ISSUE_TEMPLATE/source-curation.yml` for reviewed source-curation handoffs. The first real-data blocker is source work order WO001:
 
 - packet: `results/qc/source_work_order_packets/WO001_inphared_klebsiella_phages.md`
 - reviewed export to populate: `data/metadata/source_exports/inphared_klebsiella_phages.tsv`

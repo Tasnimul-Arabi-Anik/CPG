@@ -1,0 +1,101 @@
+name: Reviewed source curation
+description: Add or review a curated source-export row for the Klebsiella phage CPG workflow.
+title: "Source curation: <source_id>"
+labels:
+  - source-curation
+  - data-intake
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for reviewed source-export rows only. Do not paste unreviewed search results or infer biological metadata without evidence. This issue does not authorize biological claims by itself.
+
+  - type: input
+    id: work_order_id
+    attributes:
+      label: Work order ID
+      description: "Example: WO001"
+      placeholder: WO001
+    validations:
+      required: true
+
+  - type: input
+    id: source_id
+    attributes:
+      label: Source ID
+      description: Source key from the workflow.
+      placeholder: inphared_klebsiella_phages
+    validations:
+      required: true
+
+  - type: input
+    id: reviewed_export_path
+    attributes:
+      label: Reviewed export path
+      description: TSV path consumed by source validation/import.
+      placeholder: data/metadata/source_exports/inphared_klebsiella_phages.tsv
+    validations:
+      required: true
+
+  - type: textarea
+    id: row_values
+    attributes:
+      label: Reviewed row values
+      description: Paste the proposed TSV row or list each field/value. Unknown values should be NA.
+      value: |
+        accession:
+        genome_id:
+        host_species:
+        host_strain:
+        country:
+        year:
+        genome_length:
+        gc_percent:
+        raw_sequence_path:
+        notes:
+    validations:
+      required: true
+
+  - type: textarea
+    id: provenance
+    attributes:
+      label: Provenance
+      description: "Cite database snapshot, accession page, DOI/PMID, source export file, or curator notes."
+      placeholder: "INPHARED snapshot/date, accession source, DOI/PMID, and uncertainty notes."
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: curation_checks
+    attributes:
+      label: Curation checks
+      options:
+        - label: The reviewed export header is unchanged.
+          required: true
+        - label: Required identity fields are populated or explicitly NA where allowed by the work order.
+          required: true
+        - label: raw_sequence_path points only to a reviewed local FASTA/GenBank path, or is NA until sequence acquisition is reviewed.
+          required: true
+        - label: Unknown biological metadata are left as NA, not inferred.
+          required: true
+        - label: notes/provenance describe the source and uncertainty.
+          required: true
+        - label: This issue does not claim RBP specificity, host range, anti-defense activity, or therapeutic utility.
+          required: true
+
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation commands and results
+      description: Run the focused command when possible and paste the relevant acceptance/readiness rows.
+      value: |
+        ```bash
+        python scripts/run_workflow.py --config config/workflow.yaml --stages stage_0_source_export_validation stage_0_source_curation_work_order stage_0_source_work_order_packets stage_0_source_work_order_acceptance stage_0_source_post_acceptance stage_10_study_readiness stage_10_readiness_actions
+        ```
+
+        Relevant outputs:
+        - results/qc/source_work_order_acceptance.tsv:
+        - results/qc/source_post_acceptance_plan.tsv:
+        - results/validation/study_readiness.tsv:
+    validations:
+      required: false

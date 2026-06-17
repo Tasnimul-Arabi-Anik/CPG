@@ -14,7 +14,7 @@ Start with `config/source_queries.yaml` and `results/qc/source_query_plan.tsv` t
 
 ## Reviewer Handoff
 
-For another AI or collaborator reviewing the repository, start with `docs/reviewer_handoff.md`. It explains the expected real/mock workflow states, current biological blockers, validation commands, and claim boundaries. The machine-readable claim boundary is written to `results/validation/claim_support_audit.tsv` by the workflow.
+For another AI or collaborator reviewing the repository, start with `docs/reviewer_handoff.md`. Reviewed source rows can be proposed with `.github/ISSUE_TEMPLATE/source-curation.yml`. It explains the expected real/mock workflow states, current biological blockers, validation commands, and claim boundaries. The machine-readable claim boundary is written to `results/validation/claim_support_audit.tsv` by the workflow.
 
 ## Workflow Stages
 
