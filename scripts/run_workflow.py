@@ -61,6 +61,7 @@ STAGE_ORDER = [
     "stage_1_sequence_qc",
     "stage_1_external_evidence_plan",
     "stage_1_external_evidence_templates",
+    "stage_1_external_evidence_run_packets",
     "stage_1_external_evidence_unlocks",
     "stage_1_production_evidence_handoff",
     "stage_1_pipeline_efficiency_audit",
@@ -249,6 +250,10 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     external_evidence_templates_dir = configured_path(config, root, ("external_evidence_templates", "templates_dir"), "results/qc/external_evidence_templates")
     external_evidence_template_manifest = configured_path(config, root, ("external_evidence_templates", "manifest"), "results/qc/external_evidence_template_manifest.tsv")
     external_evidence_template_report = configured_path(config, root, ("external_evidence_templates", "report"), "results/qc/external_evidence_template_report.tsv")
+    external_evidence_run_packets_enabled = nested_get(config, ("external_evidence_run_packets", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
+    external_evidence_run_packets_dir = configured_path(config, root, ("external_evidence_run_packets", "directory"), "results/qc/external_evidence_run_packets")
+    external_evidence_run_packets_manifest = configured_path(config, root, ("external_evidence_run_packets", "manifest"), "results/qc/external_evidence_run_packet_manifest.tsv")
+    external_evidence_run_packets_report = configured_path(config, root, ("external_evidence_run_packets", "report"), "results/qc/external_evidence_run_packet_report.tsv")
     external_evidence_unlocks_enabled = nested_get(config, ("external_evidence_unlocks", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
     external_evidence_unlock_plan = configured_path(config, root, ("external_evidence_unlocks", "plan"), "results/qc/external_evidence_unlock_plan.tsv")
     external_evidence_unlock_matrix = configured_path(config, root, ("external_evidence_unlocks", "matrix"), "results/qc/external_evidence_unlock_matrix.tsv")
@@ -1279,6 +1284,31 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
                 ],
                 logs_dir / "00_create_external_evidence_templates.log",
                 [external_evidence_template_manifest, external_evidence_template_report],
+            )
+        )
+
+    if external_evidence_run_packets_enabled:
+        stages.append(
+            Stage(
+                "stage_1_external_evidence_run_packets",
+                [
+                    python,
+                    script("create_external_evidence_run_packets.py"),
+                    "--evidence-plan",
+                    external_evidence_plan.as_posix(),
+                    "--template-manifest",
+                    external_evidence_template_manifest.as_posix(),
+                    "--output-dir",
+                    external_evidence_run_packets_dir.as_posix(),
+                    "--manifest-output",
+                    external_evidence_run_packets_manifest.as_posix(),
+                    "--report-output",
+                    external_evidence_run_packets_report.as_posix(),
+                    "--root",
+                    root.as_posix(),
+                ],
+                logs_dir / "00_create_external_evidence_run_packets.log",
+                [external_evidence_run_packets_manifest, external_evidence_run_packets_report, external_evidence_run_packets_dir / "README.md"],
             )
         )
 
