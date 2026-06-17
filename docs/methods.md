@@ -714,6 +714,25 @@ python scripts/export_external_evidence_proteins.py \
 
 Output schemas are documented in `docs/external_evidence_protein_handoff_schema.md`.
 
+## RBP External Evidence Normalization
+
+After external domain/profile or structure-informed annotation is run, `scripts/normalize_rbp_external_evidence.py` converts reviewed HMMER, Foldseek, Phold, or generic TSV outputs into the exact optional evidence schemas consumed by Stage 4. The normalizer does not run external tools and does not make novelty claims; it only standardizes reviewed evidence for `inputs.domain_evidence` and `inputs.structural_evidence`.
+
+Implemented command pattern:
+
+```bash
+python scripts/normalize_rbp_external_evidence.py \
+  --domain-input results/external/rbp_domains/hmmer.domtblout \
+  --domain-format hmmer_domtblout \
+  --structural-input results/external/rbp_structures/foldseek.tsv \
+  --structural-format foldseek_tsv \
+  --domain-output data/metadata/external_evidence/rbp_domain_evidence.tsv \
+  --structural-output data/metadata/external_evidence/rbp_structural_evidence.tsv \
+  --report-output results/qc/normalize_rbp_external_evidence_report.tsv
+```
+
+Output schemas are documented in `docs/rbp_external_evidence_normalization_schema.md`.
+
 ## Phage Anti-Defense Screening Handoff
 
 After protein export, `scripts/create_phage_antidefense_screening_handoff.py` writes a screening manifest and command hints for curated phage anti-defense searches. The handoff links `annotation_gene_id` values to the all-protein FASTA and identifies annotation-text priority targets for review. These priority labels are not accepted anti-defense evidence; reviewed HMM/profile, sequence, or structure-informed hits must be normalized and configured as `inputs.phage_antidefense_input`.

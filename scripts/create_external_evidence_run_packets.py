@@ -141,6 +141,11 @@ def render_packet(root: Path, row: dict[str, str], template: dict[str, str]) -> 
             "",
             "Priority labels are run-target hints only; they are not domain or structural evidence and should not be used as novelty support without external tool results.",
             "",
+            "Reviewed HMMER/Foldseek/Phold-style outputs can be normalized with `scripts/normalize_rbp_external_evidence.py` into:",
+            "",
+            "- Domain evidence target: `data/metadata/external_evidence/rbp_domain_evidence.tsv`",
+            "- Structural evidence target: `data/metadata/external_evidence/rbp_structural_evidence.tsv`",
+            "",
         ]
     lines = [
         f"# External Evidence Packet: {evidence_id}",
