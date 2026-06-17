@@ -185,6 +185,7 @@ REQUIRED_DOCS = [
     "docs/modeling_schema.md",
     "docs/figure_generation_schema.md",
     "docs/workflow_runner.md",
+    "docs/reviewer_handoff.md",
     "docs/study_readiness_schema.md",
     "docs/readiness_action_plan_schema.md",
     "docs/goal_completion_audit_schema.md",

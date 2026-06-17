@@ -12,6 +12,10 @@ Klebsiella phage host range is shaped by two genomic filters:
 
 Start with `config/source_queries.yaml` and `results/qc/source_query_plan.tsv` to identify the reviewed public-source exports needed for INPHARED, NCBI Virus/GenBank/RefSeq, literature-linked phages, prophages, optional metagenomic contigs, and host genomes. Save reviewed exports under `data/metadata/source_exports/`, import them into source manifests under `data/metadata/source_manifests/`, and enable selected entries in `config/source_catalog.yaml`. The default real workflow builds `results/source_builder/samples.tsv` from those manifests and uses that generated table for downstream analysis, leaving `config/samples.tsv` as a static template/fallback.
 
+## Reviewer Handoff
+
+For another AI or collaborator reviewing the repository, start with `docs/reviewer_handoff.md`. It explains the expected real/mock workflow states, current biological blockers, validation commands, and claim boundaries.
+
 ## Workflow Stages
 
 1. Dataset curation
