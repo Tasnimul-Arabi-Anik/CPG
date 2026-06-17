@@ -1,0 +1,14 @@
+severity	item	message
+info	base_input	Loaded 1000 existing annotation rows from data/metadata/external_evidence/genbank_cds_annotations.tsv.
+info	manifest	Loaded 10 accession-backed manifest rows.
+info	Klebsiella phage Magus	Fetched PZ465528.1 and parsed 59 CDS rows.
+info	Klebsiella phage Carindo	Fetched PZ465524.1 and parsed 53 CDS rows.
+info	Klebsiella phage Junood_PK5	Fetched PX694292.1 and parsed 87 CDS rows.
+info	Klebsiella phage Junood_PK4	Fetched PX694290.1 and parsed 69 CDS rows.
+info	Klebsiella phage Junood_PK2	Fetched PX694289.1 and parsed 255 CDS rows.
+info	Klebsiella phage Junood_PK3	Fetched PX694288.1 and parsed 154 CDS rows.
+info	Klebsiella phage vB_Kpn_M13	Fetched PZ467946.1 and parsed 56 CDS rows.
+info	Klebsiella phage vB_Kpn_M6	Fetched PZ467945.1 and parsed 54 CDS rows.
+info	Klebsiella phage vB_Kpn_M5	Fetched PZ467944.1 and parsed 54 CDS rows.
+info	Klebsiella phage vB_Kpn_6NU	Fetched PZ467943.1 and parsed 54 CDS rows.
+info	deduplicate_rows	Removed 895 duplicate annotation row(s).

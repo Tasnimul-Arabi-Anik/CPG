@@ -396,7 +396,9 @@ python scripts/02_build_annotation_tables.py \
 
 Optional annotation input schema is documented in `docs/annotation_schema.md`. Current gene clustering uses PHROG ID, informative product name, protein sequence hash, or singleton fallback. This is a schema-stable merge layer, not a final orthology method.
 
-For the initial real-data path, `data/metadata/external_evidence/genbank_cds_annotations.tsv` was generated from local GenBank CDS features for the cultured phage and PhiSpy prophage interval. This is a curated product-annotation input, not a substitute for Pharokka/PHROGs, domain, or structural annotation. Regeneration command, after downloading the relevant GenBank files to `/tmp/cpg_annotation_gbff/`:
+For the initial real-data path, `data/metadata/external_evidence/genbank_cds_annotations.tsv` is a GenBank-derived bridge annotation table. It combines CDS features parsed from local GenBank files for the initial cultured phage/prophage records with accession-fetched NCBI GenBank CDS features for the NCBI seed phage source. This is curated product-annotation evidence, not standardized de novo phage annotation and not a substitute for Pharokka/PHROGs, domain, or structural annotation.
+
+Initial local GenBank regeneration command, after downloading the relevant GenBank files to `/tmp/cpg_annotation_gbff/`:
 
 ```bash
 python scripts/build_genbank_cds_annotation_input.py \
@@ -404,6 +406,16 @@ python scripts/build_genbank_cds_annotation_input.py \
   --record 'NTUH-K2044_PhiSpy_pp1_NC_012731.1_2098066_2113724=/tmp/cpg_annotation_gbff/NC_012731.1.gbff:2098066-2113724' \
   --output data/metadata/external_evidence/genbank_cds_annotations.tsv \
   --report-output data/metadata/external_evidence/genbank_cds_annotations_report.tsv
+```
+
+NCBI accession-backed GenBank CDS evidence can then be appended without writing FASTA or modifying `data/raw/`. Reviewer-sensitive gaps between this bridge annotation layer and the production standardized pipeline are listed in `docs/reviewer_pipeline_gap_audit.md`.
+
+```bash
+python scripts/build_ncbi_genbank_cds_annotation_input.py \
+  --manifest data/metadata/source_manifests/ncbi_virus_klebsiella_phages.tsv \
+  --base-input data/metadata/external_evidence/genbank_cds_annotations.tsv \
+  --output data/metadata/external_evidence/genbank_cds_annotations.tsv \
+  --report-output data/metadata/external_evidence/ncbi_genbank_cds_annotations_report.tsv
 ```
 
 ## Stage 4: RBP/Depolymerase Candidate Prioritization
