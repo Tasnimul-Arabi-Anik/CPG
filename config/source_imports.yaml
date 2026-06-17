@@ -4,7 +4,7 @@
 
 imports:
   - import_id: inphared_klebsiella_phages
-    enabled: false
+    enabled: true
     input_path: data/metadata/source_exports/inphared_klebsiella_phages.tsv
     output_path: data/metadata/source_manifests/inphared_klebsiella_phages.tsv
     delimiter: auto

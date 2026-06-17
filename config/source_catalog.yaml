@@ -32,7 +32,7 @@ identity_columns_any:
 sources:
   - source_id: inphared_klebsiella_phages
     path: data/metadata/source_manifests/inphared_klebsiella_phages.tsv
-    enabled: false
+    enabled: true
     required: false
     source_label: INPHARED
     record_type_default: phage
