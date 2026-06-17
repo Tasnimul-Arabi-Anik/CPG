@@ -184,6 +184,8 @@ outputs:
     hypotheses: results/validation/hypothesis_coverage.tsv
     inventory: results/validation/output_inventory.tsv
     report: results/validation/workflow_validation_report.tsv
+    source_export_validation_self_test: results/validation/source_export_validation_self_test.tsv
+    source_export_validation_self_test_report: results/validation/source_export_validation_self_test_report.tsv
     study_readiness: results/validation/study_readiness.tsv
     study_readiness_report: results/validation/study_readiness_report.tsv
     readiness_action_plan: results/validation/readiness_action_plan.tsv

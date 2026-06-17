@@ -75,6 +75,7 @@ python scripts/run_workflow.py --config config/workflow.yaml --stages stage_1_ma
 - `stage_7_models`
 - `stage_8_figures`
 - `stage_9_validation`
+- `stage_9_source_export_validation_self_test`
 - `stage_10_study_readiness`
 
 ## Real-Study Sample Builder
@@ -151,3 +152,7 @@ The runner writes `results/qc/source_work_order_packets/` through `stage_0_sourc
 The runner writes `results/qc/source_work_order_acceptance.tsv` through `stage_0_source_work_order_acceptance`. This table checks whether reviewed exports satisfy the current source curation work orders.
 
 The runner writes `results/qc/source_post_acceptance_plan.tsv` through `stage_0_source_post_acceptance`. This table records the next command after source work-order acceptance, such as import enablement or sample-support reruns.
+
+## Source Export Validation Self-Test
+
+The runner writes `results/validation/source_export_validation_self_test.tsv` through `stage_9_source_export_validation_self_test`. This stage creates temporary reviewed-export examples and verifies that malformed year, GC, lifestyle, and identity fields are blocked before source import.

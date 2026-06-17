@@ -98,6 +98,14 @@ Validate reviewed exports before import:
 python scripts/validate_source_exports.py   --query-plan results/qc/source_query_plan.tsv   --template-manifest results/qc/source_export_template_manifest.tsv   --validation-output results/qc/source_export_validation.tsv   --report-output results/qc/source_export_validation_report.tsv   --root .
 ```
 
+Run the validator regression self-test:
+
+```bash
+python scripts/self_test_source_export_validation.py \
+  --output results/validation/source_export_validation_self_test.tsv \
+  --report-output results/validation/source_export_validation_self_test_report.tsv
+```
+
 Import local public-source metadata exports into normalized source manifests:
 
 ```bash

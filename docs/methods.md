@@ -65,7 +65,7 @@ Implemented command:
 python scripts/validate_source_exports.py   --query-plan results/qc/source_query_plan.tsv   --template-manifest results/qc/source_export_template_manifest.tsv   --validation-output results/qc/source_export_validation.tsv   --report-output results/qc/source_export_validation_report.tsv   --root .
 ```
 
-Output schemas are documented in `docs/source_export_validation_schema.md`. Populated reviewed exports are also checked for numeric `year`, `genome_length`, and `gc_percent` values, controlled `phage_lifestyle` values, and missing notes/provenance warnings.
+Output schemas are documented in `docs/source_export_validation_schema.md`. `scripts/self_test_source_export_validation.py` runs validator regression scenarios for valid rows, malformed year/GC/lifestyle fields, missing identity values, and provenance warnings; its schema is documented in `docs/source_export_validation_self_test_schema.md`. Populated reviewed exports are also checked for numeric `year`, `genome_length`, and `gc_percent` values, controlled `phage_lifestyle` values, and missing notes/provenance warnings.
 
 ## Source Manifest Import
 

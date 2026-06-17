@@ -67,6 +67,7 @@ STAGE_ORDER = [
     "stage_6_defense_counterdefense",
     "stage_7_models",
     "stage_8_figures",
+    "stage_9_source_export_validation_self_test",
     "stage_9_validation",
     "stage_10_study_readiness",
     "stage_10_readiness_actions",
@@ -394,6 +395,8 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     validation_hypotheses = out("validation", "hypotheses", "results/validation/hypothesis_coverage.tsv")
     validation_inventory = out("validation", "inventory", "results/validation/output_inventory.tsv")
     validation_report = out("validation", "report", "results/validation/workflow_validation_report.tsv")
+    source_export_validation_self_test = out("validation", "source_export_validation_self_test", "results/validation/source_export_validation_self_test.tsv")
+    source_export_validation_self_test_report = out("validation", "source_export_validation_self_test_report", "results/validation/source_export_validation_self_test_report.tsv")
     study_readiness = out("validation", "study_readiness", "results/validation/study_readiness.tsv")
     study_readiness_report = out("validation", "study_readiness_report", "results/validation/study_readiness_report.tsv")
     readiness_action_plan = out("validation", "readiness_action_plan", "results/validation/readiness_action_plan.tsv")
@@ -1422,6 +1425,19 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
             ],
             logs_dir / "07_generate_figure_sources.log",
             figure_outputs,
+        ),
+        Stage(
+            "stage_9_source_export_validation_self_test",
+            [
+                python,
+                script("self_test_source_export_validation.py"),
+                "--output",
+                source_export_validation_self_test.as_posix(),
+                "--report-output",
+                source_export_validation_self_test_report.as_posix(),
+            ],
+            logs_dir / "09_self_test_source_export_validation.log",
+            [source_export_validation_self_test, source_export_validation_self_test_report],
         ),
         Stage(
             "stage_9_validation",
