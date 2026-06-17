@@ -62,6 +62,7 @@ STAGE_ORDER = [
     "stage_1_external_evidence_plan",
     "stage_1_external_evidence_templates",
     "stage_1_external_evidence_unlocks",
+    "stage_1_production_evidence_handoff",
     "stage_2_dereplication",
     "stage_3_annotations",
     "stage_4_rbp_depolymerase",
@@ -251,6 +252,9 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     external_evidence_unlock_plan = configured_path(config, root, ("external_evidence_unlocks", "plan"), "results/qc/external_evidence_unlock_plan.tsv")
     external_evidence_unlock_matrix = configured_path(config, root, ("external_evidence_unlocks", "matrix"), "results/qc/external_evidence_unlock_matrix.tsv")
     external_evidence_unlock_report = configured_path(config, root, ("external_evidence_unlocks", "report"), "results/qc/external_evidence_unlock_report.tsv")
+    production_evidence_handoff_enabled = nested_get(config, ("production_evidence_handoff", "enabled"), "false").strip().lower() in {"true", "1", "yes", "on"}
+    production_evidence_handoff = configured_path(config, root, ("production_evidence_handoff", "handoff"), "results/qc/production_evidence_handoff.md")
+    production_evidence_handoff_report = configured_path(config, root, ("production_evidence_handoff", "report"), "results/qc/production_evidence_handoff_report.tsv")
     source_audit_enabled = nested_get(config, ("source_audit", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
     source_audit_catalog = configured_path(config, root, ("source_audit", "catalog"), sample_builder_catalog.as_posix())
     source_audit_readiness = configured_path(config, root, ("source_audit", "readiness"), "results/qc/source_catalog_readiness.tsv")
@@ -1293,6 +1297,27 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
                 ],
                 logs_dir / "00_plan_external_evidence_unlocks.log",
                 [external_evidence_unlock_plan, external_evidence_unlock_matrix, external_evidence_unlock_report],
+            )
+        )
+
+    if production_evidence_handoff_enabled:
+        stages.append(
+            Stage(
+                "stage_1_production_evidence_handoff",
+                [
+                    python,
+                    script("create_production_evidence_handoff.py"),
+                    "--external-evidence-plan",
+                    external_evidence_plan.as_posix(),
+                    "--unlock-plan",
+                    external_evidence_unlock_plan.as_posix(),
+                    "--output",
+                    production_evidence_handoff.as_posix(),
+                    "--report-output",
+                    production_evidence_handoff_report.as_posix(),
+                ],
+                logs_dir / "00_create_production_evidence_handoff.log",
+                [production_evidence_handoff, production_evidence_handoff_report],
             )
         )
 

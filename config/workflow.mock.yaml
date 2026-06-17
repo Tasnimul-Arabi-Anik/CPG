@@ -146,6 +146,8 @@ outputs:
     external_evidence_unlock_plan: results/mock/qc/external_evidence_unlock_plan.tsv
     external_evidence_unlock_matrix: results/mock/qc/external_evidence_unlock_matrix.tsv
     external_evidence_unlock_report: results/mock/qc/external_evidence_unlock_report.tsv
+    production_evidence_handoff: results/mock/qc/production_evidence_handoff.md
+    production_evidence_handoff_report: results/mock/qc/production_evidence_handoff_report.tsv
   clusters:
     ani: results/mock/clusters/phage_ani.tsv
     clusters: results/mock/clusters/phage_clusters.tsv
@@ -316,3 +318,7 @@ external_evidence_unlocks:
   plan: results/mock/qc/external_evidence_unlock_plan.tsv
   matrix: results/mock/qc/external_evidence_unlock_matrix.tsv
   report: results/mock/qc/external_evidence_unlock_report.tsv
+production_evidence_handoff:
+  enabled: true
+  handoff: results/mock/qc/production_evidence_handoff.md
+  report: results/mock/qc/production_evidence_handoff_report.tsv

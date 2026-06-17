@@ -349,6 +349,20 @@ python scripts/create_sequence_fetch_manifest.py \
 
 Output schemas are documented in `docs/sequence_fetch_manifest_schema.md`.
 
+## Stage 1d: Production Evidence Handoff
+
+After external-evidence planning, `scripts/create_production_evidence_handoff.py` writes `results/qc/production_evidence_handoff.md`. This generated handoff distinguishes current bridge evidence from production-grade external evidence expected for manuscript claims, including Pharokka/PHROGs annotation, VIRIDIC/Mash-style similarity, RBP domain/structural evidence, Kleborate/Kaptive host features, and DefenseFinder/PADLOC host-defense calls.
+
+Implemented command:
+
+```bash
+python scripts/create_production_evidence_handoff.py \
+  --external-evidence-plan results/qc/external_evidence_plan.tsv \
+  --unlock-plan results/qc/external_evidence_unlock_plan.tsv \
+  --output results/qc/production_evidence_handoff.md \
+  --report-output results/qc/production_evidence_handoff_report.tsv
+```
+
 ## Stage 2: Dereplication and Similarity Interface
 
 The dereplication script consumes the Stage 1 manifest, Stage 1 sequence QC output, and optional pairwise similarity rows. Eligible records are `phage`, `prophage`, and `metagenomic_viral_contig` rows with passing manifest validation. Metadata-only rows remain eligible, while local FASTA-backed records with failing sequence QC are excluded when `genome_qc.exclude_failed_local_sequence_qc_from_clustering` is true. If no pairwise similarity table is supplied, each eligible genome is emitted as a singleton cluster and the report explicitly records the singleton fallback.

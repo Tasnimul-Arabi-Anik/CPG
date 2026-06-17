@@ -1,6 +1,6 @@
 # Reviewer Pipeline Gap Audit
 
-This document separates the current reproducible bridge workflow from the production-grade pipeline needed for a final Genome Biology-level manuscript.
+This document separates the current reproducible bridge workflow from the production-grade pipeline needed for a final Genome Biology-level manuscript. The workflow also generates `results/qc/production_evidence_handoff.md` from current evidence audits so these gaps remain synchronized with the repository state.
 
 ## Current Position
 
