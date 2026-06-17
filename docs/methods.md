@@ -220,6 +220,8 @@ Output schemas are documented in `docs/source_work_order_packet_schema.md`.
 
 ## Source Work-Order Acceptance
 
+`create_source_curation_issue_bodies.py` renders current work orders as GitHub-ready issue bodies under `results/qc/github_issue_bodies/`, allowing source-curation tasks to be delegated without losing the validation commands or claim boundaries.
+
 `check_source_work_order_acceptance.py` verifies whether each current work order is satisfied by reviewed export rows. It checks export existence, required columns, required field values, minimum row counts, raw sequence path lint, and provenance-note lint, then writes `results/qc/source_work_order_acceptance.tsv`. `scripts/self_test_source_work_order_acceptance.py` regression-tests those acceptance and lint cases with temporary fixtures only.
 
 Implemented command:

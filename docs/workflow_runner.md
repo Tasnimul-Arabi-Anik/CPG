@@ -58,6 +58,7 @@ python scripts/run_workflow.py --config config/workflow.yaml --stages stage_1_ma
 - `stage_0_source_readiness_dashboard` when `source_readiness_dashboard.enabled: true`
 - `stage_0_source_curation_work_order` when `source_curation_work_order.enabled: true`
 - `stage_0_source_work_order_packets` when `source_work_order_packets.enabled: true`
+- `stage_0_source_curation_issue_bodies` when `source_curation_issue_bodies.enabled: true`
 - `stage_0_source_work_order_acceptance` when `source_work_order_acceptance.enabled: true`
 - `stage_0_source_post_acceptance` when `source_post_acceptance.enabled: true`
 - `stage_0_sample_support_curation_packet` when `sample_support_curation_packet.enabled: true`
@@ -151,6 +152,8 @@ The runner writes `results/qc/source_readiness_dashboard.tsv` through `stage_0_s
 The runner writes `results/qc/source_curation_work_order.tsv` through `stage_0_source_curation_work_order`. This table converts the source readiness dashboard into concrete reviewed-row curation tasks with required fields, minimum rows, and validation commands.
 
 The runner writes `results/qc/source_work_order_packets/` through `stage_0_source_work_order_packets`. This directory contains one Markdown curation packet per source work order plus an index and manifest.
+
+The runner writes `results/qc/source_curation_issue_manifest.tsv` and Markdown issue bodies under `results/qc/github_issue_bodies/` through `stage_0_source_curation_issue_bodies`. These files are GitHub-ready handoffs generated from current work orders.
 
 The runner writes `results/qc/source_work_order_acceptance.tsv` through `stage_0_source_work_order_acceptance`. This table checks whether reviewed exports satisfy the current source curation work orders.
 

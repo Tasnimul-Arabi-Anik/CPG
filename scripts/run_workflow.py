@@ -50,6 +50,7 @@ STAGE_ORDER = [
     "stage_0_source_readiness_dashboard",
     "stage_0_source_curation_work_order",
     "stage_0_source_work_order_packets",
+    "stage_0_source_curation_issue_bodies",
     "stage_0_source_work_order_acceptance",
     "stage_0_source_post_acceptance",
     "stage_0_sample_support_curation_packet",
@@ -314,6 +315,10 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     source_work_order_packets_manifest = configured_path(config, root, ("source_work_order_packets", "manifest"), "results/qc/source_work_order_packet_manifest.tsv")
     source_work_order_packets_report = configured_path(config, root, ("source_work_order_packets", "report"), "results/qc/source_work_order_packet_report.tsv")
     source_work_order_packets_index = source_work_order_packets_dir / "README.md"
+    source_curation_issue_bodies_enabled = nested_get(config, ("source_curation_issue_bodies", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
+    source_curation_issue_dir = configured_path(config, root, ("source_curation_issue_bodies", "directory"), "results/qc/github_issue_bodies")
+    source_curation_issue_manifest = configured_path(config, root, ("source_curation_issue_bodies", "manifest"), "results/qc/source_curation_issue_manifest.tsv")
+    source_curation_issue_report = configured_path(config, root, ("source_curation_issue_bodies", "report"), "results/qc/source_curation_issue_report.tsv")
     source_work_order_acceptance_enabled = nested_get(config, ("source_work_order_acceptance", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
     source_work_order_acceptance = configured_path(config, root, ("source_work_order_acceptance", "acceptance"), "results/qc/source_work_order_acceptance.tsv")
     source_work_order_acceptance_report = configured_path(config, root, ("source_work_order_acceptance", "report"), "results/qc/source_work_order_acceptance_report.tsv")
@@ -1008,6 +1013,27 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
                 ],
                 logs_dir / "00_create_source_work_order_packets.log",
                 [source_work_order_packets_index, source_work_order_packets_manifest, source_work_order_packets_report],
+            )
+        )
+
+    if source_curation_issue_bodies_enabled:
+        stages.append(
+            Stage(
+                "stage_0_source_curation_issue_bodies",
+                [
+                    python,
+                    script("create_source_curation_issue_bodies.py"),
+                    "--work-orders",
+                    source_curation_work_order.as_posix(),
+                    "--issue-dir",
+                    source_curation_issue_dir.as_posix(),
+                    "--manifest-output",
+                    source_curation_issue_manifest.as_posix(),
+                    "--report-output",
+                    source_curation_issue_report.as_posix(),
+                ],
+                logs_dir / "00_create_source_curation_issue_bodies.log",
+                [source_curation_issue_manifest, source_curation_issue_report],
             )
         )
 
