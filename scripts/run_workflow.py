@@ -62,6 +62,7 @@ STAGE_ORDER = [
     "stage_1_external_evidence_plan",
     "stage_1_external_evidence_templates",
     "stage_1_external_evidence_run_packets",
+    "stage_1_external_evidence_acceptance",
     "stage_1_external_evidence_unlocks",
     "stage_1_production_evidence_handoff",
     "stage_1_pipeline_efficiency_audit",
@@ -254,6 +255,9 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     external_evidence_run_packets_dir = configured_path(config, root, ("external_evidence_run_packets", "directory"), "results/qc/external_evidence_run_packets")
     external_evidence_run_packets_manifest = configured_path(config, root, ("external_evidence_run_packets", "manifest"), "results/qc/external_evidence_run_packet_manifest.tsv")
     external_evidence_run_packets_report = configured_path(config, root, ("external_evidence_run_packets", "report"), "results/qc/external_evidence_run_packet_report.tsv")
+    external_evidence_acceptance_enabled = nested_get(config, ("external_evidence_acceptance", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
+    external_evidence_acceptance = configured_path(config, root, ("external_evidence_acceptance", "acceptance"), "results/qc/external_evidence_acceptance.tsv")
+    external_evidence_acceptance_report = configured_path(config, root, ("external_evidence_acceptance", "report"), "results/qc/external_evidence_acceptance_report.tsv")
     external_evidence_unlocks_enabled = nested_get(config, ("external_evidence_unlocks", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
     external_evidence_unlock_plan = configured_path(config, root, ("external_evidence_unlocks", "plan"), "results/qc/external_evidence_unlock_plan.tsv")
     external_evidence_unlock_matrix = configured_path(config, root, ("external_evidence_unlocks", "matrix"), "results/qc/external_evidence_unlock_matrix.tsv")
@@ -1309,6 +1313,27 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
                 ],
                 logs_dir / "00_create_external_evidence_run_packets.log",
                 [external_evidence_run_packets_manifest, external_evidence_run_packets_report, external_evidence_run_packets_dir / "README.md"],
+            )
+        )
+
+    if external_evidence_acceptance_enabled:
+        stages.append(
+            Stage(
+                "stage_1_external_evidence_acceptance",
+                [
+                    python,
+                    script("check_external_evidence_acceptance.py"),
+                    "--evidence-plan",
+                    external_evidence_plan.as_posix(),
+                    "--acceptance-output",
+                    external_evidence_acceptance.as_posix(),
+                    "--report-output",
+                    external_evidence_acceptance_report.as_posix(),
+                    "--root",
+                    root.as_posix(),
+                ],
+                logs_dir / "00_check_external_evidence_acceptance.log",
+                [external_evidence_acceptance, external_evidence_acceptance_report],
             )
         )
 

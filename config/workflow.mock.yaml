@@ -97,6 +97,8 @@ outputs:
     external_evidence_template_report: results/mock/qc/external_evidence_template_report.tsv
     external_evidence_run_packet_manifest: results/mock/qc/external_evidence_run_packet_manifest.tsv
     external_evidence_run_packet_report: results/mock/qc/external_evidence_run_packet_report.tsv
+    external_evidence_acceptance: results/mock/qc/external_evidence_acceptance.tsv
+    external_evidence_acceptance_report: results/mock/qc/external_evidence_acceptance_report.tsv
     external_evidence_report: results/mock/qc/external_evidence_report.tsv
     source_curation_tasks: results/mock/qc/source_curation_tasks.tsv
     source_curation_tasks_report: results/mock/qc/source_curation_tasks_report.tsv
@@ -322,6 +324,10 @@ external_evidence_run_packets:
   directory: results/mock/qc/external_evidence_run_packets
   manifest: results/mock/qc/external_evidence_run_packet_manifest.tsv
   report: results/mock/qc/external_evidence_run_packet_report.tsv
+external_evidence_acceptance:
+  enabled: true
+  acceptance: results/mock/qc/external_evidence_acceptance.tsv
+  report: results/mock/qc/external_evidence_acceptance_report.tsv
 external_evidence_unlocks:
   enabled: true
   plan: results/mock/qc/external_evidence_unlock_plan.tsv

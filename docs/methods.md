@@ -679,6 +679,22 @@ python scripts/create_external_evidence_run_packets.py \
 
 Output schemas are documented in `docs/external_evidence_run_packet_schema.md`.
 
+## External Evidence Acceptance
+
+`check_external_evidence_acceptance.py` reads `results/qc/external_evidence_plan.tsv` after optional evidence TSVs are configured and writes `results/qc/external_evidence_acceptance.tsv`. This table reports whether each evidence layer is accepted for workflow use, missing, schema-invalid, waiting for sequence data, or accepted with provenance lint. It also counts rows with populated `evidence_source`, `tool`, `evidence`, or `notes` fields so production evidence can be reviewed before claims are strengthened.
+
+Implemented command:
+
+```bash
+python scripts/check_external_evidence_acceptance.py \
+  --evidence-plan results/qc/external_evidence_plan.tsv \
+  --acceptance-output results/qc/external_evidence_acceptance.tsv \
+  --report-output results/qc/external_evidence_acceptance_report.tsv \
+  --root .
+```
+
+Output schemas are documented in `docs/external_evidence_acceptance_schema.md`.
+
 ## Source-Driven Sample Generation
 
 The real workflow now treats curated source manifests as the production data entry point. `scripts/build_samples_from_sources.py` normalizes enabled entries from `config/source_catalog.yaml` into `results/source_builder/samples.tsv`, and downstream stages consume that generated table. This keeps source provenance explicit and avoids overwriting raw data or the static `config/samples.tsv` template.

@@ -97,6 +97,8 @@ outputs:
     external_evidence_template_report: results/qc/external_evidence_template_report.tsv
     external_evidence_run_packet_manifest: results/qc/external_evidence_run_packet_manifest.tsv
     external_evidence_run_packet_report: results/qc/external_evidence_run_packet_report.tsv
+    external_evidence_acceptance: results/qc/external_evidence_acceptance.tsv
+    external_evidence_acceptance_report: results/qc/external_evidence_acceptance_report.tsv
     external_evidence_report: results/qc/external_evidence_report.tsv
     source_curation_tasks: results/qc/source_curation_tasks.tsv
     source_curation_tasks_report: results/qc/source_curation_tasks_report.tsv
@@ -321,6 +323,10 @@ external_evidence_run_packets:
   directory: results/qc/external_evidence_run_packets
   manifest: results/qc/external_evidence_run_packet_manifest.tsv
   report: results/qc/external_evidence_run_packet_report.tsv
+external_evidence_acceptance:
+  enabled: true
+  acceptance: results/qc/external_evidence_acceptance.tsv
+  report: results/qc/external_evidence_acceptance_report.tsv
 external_evidence_unlocks:
   enabled: true
   plan: results/qc/external_evidence_unlock_plan.tsv
