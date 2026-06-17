@@ -91,6 +91,7 @@ REQUIRED_OUTPUTS = [
     ("stage_0_source_work_order_packet_manifest", "results/qc/source_work_order_packet_manifest.tsv", ["work_order_id", "source_id", "packet_path", "expected_export_path"]),
     ("stage_0_source_work_order_packet_report", "results/qc/source_work_order_packet_report.tsv", ["severity", "item", "message"]),
     ("stage_0_source_curation_issue_manifest", "results/qc/source_curation_issue_manifest.tsv", ["work_order_id", "source_id", "issue_title", "issue_body_path", "labels"]),
+    ("stage_0_source_curation_issue_commands", "results/qc/source_curation_issue_commands.tsv", ["work_order_id", "source_id", "issue_title", "issue_body_path", "labels", "gh_command"]),
     ("stage_0_source_curation_issue_report", "results/qc/source_curation_issue_report.tsv", ["severity", "item", "message"]),
     ("stage_0_source_work_order_acceptance", "results/qc/source_work_order_acceptance.tsv", ["work_order_id", "source_id", "acceptance_status", "blocking_issue"]),
     ("stage_0_source_work_order_acceptance_report", "results/qc/source_work_order_acceptance_report.tsv", ["severity", "item", "message"]),

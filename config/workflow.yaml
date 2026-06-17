@@ -269,6 +269,8 @@ source_curation_issue_bodies:
   enabled: true
   directory: results/qc/github_issue_bodies
   manifest: results/qc/source_curation_issue_manifest.tsv
+  commands: results/qc/source_curation_issue_commands.tsv
+  shell: results/qc/source_curation_issue_commands.sh
   report: results/qc/source_curation_issue_report.tsv
 source_work_order_acceptance:
   enabled: true

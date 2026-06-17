@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import re
+import shlex
 from pathlib import Path
 from typing import Iterable
 
@@ -21,6 +22,7 @@ MANIFEST_COLUMNS = [
     "minimum_rows_to_add",
     "required_fields",
 ]
+COMMAND_COLUMNS = ["work_order_id", "source_id", "issue_title", "issue_body_path", "labels", "gh_command"]
 REPORT_COLUMNS = ["severity", "item", "message"]
 MISSING = {"", "NA", "N/A", "na", "n/a", "None", "none", "-"}
 
@@ -31,6 +33,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--issue-dir", required=True, help="Directory for generated Markdown issue bodies.")
     parser.add_argument("--manifest-output", required=True, help="Output issue manifest TSV.")
     parser.add_argument("--report-output", required=True, help="Output report TSV.")
+    parser.add_argument("--commands-output", default="", help="Optional output TSV with gh issue create commands.")
+    parser.add_argument("--shell-output", default="", help="Optional output shell script with gh issue create commands.")
     parser.add_argument("--max-issues", type=int, default=0, help="Optional maximum number of ranked work orders to render. 0 renders all.")
     return parser.parse_args()
 
@@ -184,6 +188,21 @@ Raw sequence and provenance lint fields should be reviewed before downstream int
 """
 
 
+
+def gh_issue_command(title: str, body_path: str, labels: str) -> str:
+    command = ["gh", "issue", "create", "--title", title, "--body-file", body_path]
+    for label in split_values(labels):
+        command.extend(["--label", label])
+    return " ".join(shlex.quote(part) for part in command)
+
+
+def write_shell(path: Path, commands: list[str]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lines = ["#!/usr/bin/env bash", "set -euo pipefail", ""]
+    lines.extend(commands)
+    lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")
+
 def main() -> None:
     args = parse_args()
     _, rows = read_tsv(Path(args.work_orders))
@@ -192,29 +211,47 @@ def main() -> None:
     issue_dir = Path(args.issue_dir)
     issue_dir.mkdir(parents=True, exist_ok=True)
     manifest_rows: list[dict[str, str]] = []
+    command_rows: list[dict[str, str]] = []
+    shell_commands: list[str] = []
     for row in rows:
         work_order_id = row.get("work_order_id", "WO")
         source_id = row.get("source_id", "source")
         title = f"{work_order_id}: curate reviewed rows for {source_id}"
         body_path = issue_dir / f"{slug(work_order_id)}_{slug(source_id)}.md"
         body_path.write_text(issue_body(row), encoding="utf-8")
+        body_display_path = display_path(body_path)
+        labels = "source-curation;data-intake"
+        command = gh_issue_command(title, body_display_path, labels)
         manifest_rows.append({
             "work_order_id": work_order_id,
             "source_id": source_id,
             "issue_title": title,
-            "issue_body_path": display_path(body_path),
-            "labels": "source-curation;data-intake",
+            "issue_body_path": body_display_path,
+            "labels": labels,
             "expected_export_path": row.get("expected_export_path", ""),
             "required_for_hypotheses": row.get("required_for_hypotheses", ""),
             "minimum_rows_to_add": row.get("minimum_rows_to_add", ""),
             "required_fields": row.get("required_fields", ""),
         })
+        command_rows.append({
+            "work_order_id": work_order_id,
+            "source_id": source_id,
+            "issue_title": title,
+            "issue_body_path": body_display_path,
+            "labels": labels,
+            "gh_command": command,
+        })
+        shell_commands.append(command)
     report_rows = [
         {"severity": "info", "item": "source_curation_issue_bodies", "message": f"work_orders={len(rows)}; issue_bodies={len(manifest_rows)}"}
     ]
     if not rows:
         report_rows.append({"severity": "warning", "item": "source_curation_issue_bodies", "message": "No work orders were available to render."})
     write_tsv(Path(args.manifest_output), MANIFEST_COLUMNS, manifest_rows)
+    if args.commands_output:
+        write_tsv(Path(args.commands_output), COMMAND_COLUMNS, command_rows)
+    if args.shell_output:
+        write_shell(Path(args.shell_output), shell_commands)
     write_tsv(Path(args.report_output), REPORT_COLUMNS, report_rows)
     print(f"Rendered {len(manifest_rows)} source curation issue bodie(s).")
 

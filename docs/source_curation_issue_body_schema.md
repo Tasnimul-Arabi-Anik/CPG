@@ -9,6 +9,8 @@ python scripts/create_source_curation_issue_bodies.py \
   --work-orders results/qc/source_curation_work_order.tsv \
   --issue-dir results/qc/github_issue_bodies \
   --manifest-output results/qc/source_curation_issue_manifest.tsv \
+  --commands-output results/qc/source_curation_issue_commands.tsv \
+  --shell-output results/qc/source_curation_issue_commands.sh \
   --report-output results/qc/source_curation_issue_report.tsv
 ```
 

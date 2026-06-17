@@ -270,6 +270,8 @@ source_curation_issue_bodies:
   enabled: true
   directory: results/mock/qc/github_issue_bodies
   manifest: results/mock/qc/source_curation_issue_manifest.tsv
+  commands: results/mock/qc/source_curation_issue_commands.tsv
+  shell: results/mock/qc/source_curation_issue_commands.sh
   report: results/mock/qc/source_curation_issue_report.tsv
 source_work_order_acceptance:
   enabled: true

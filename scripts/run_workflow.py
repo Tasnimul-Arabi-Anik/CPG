@@ -318,6 +318,8 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     source_curation_issue_bodies_enabled = nested_get(config, ("source_curation_issue_bodies", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
     source_curation_issue_dir = configured_path(config, root, ("source_curation_issue_bodies", "directory"), "results/qc/github_issue_bodies")
     source_curation_issue_manifest = configured_path(config, root, ("source_curation_issue_bodies", "manifest"), "results/qc/source_curation_issue_manifest.tsv")
+    source_curation_issue_commands = configured_path(config, root, ("source_curation_issue_bodies", "commands"), "results/qc/source_curation_issue_commands.tsv")
+    source_curation_issue_shell = configured_path(config, root, ("source_curation_issue_bodies", "shell"), "results/qc/source_curation_issue_commands.sh")
     source_curation_issue_report = configured_path(config, root, ("source_curation_issue_bodies", "report"), "results/qc/source_curation_issue_report.tsv")
     source_work_order_acceptance_enabled = nested_get(config, ("source_work_order_acceptance", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
     source_work_order_acceptance = configured_path(config, root, ("source_work_order_acceptance", "acceptance"), "results/qc/source_work_order_acceptance.tsv")
@@ -1029,11 +1031,15 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
                     source_curation_issue_dir.as_posix(),
                     "--manifest-output",
                     source_curation_issue_manifest.as_posix(),
+                    "--commands-output",
+                    source_curation_issue_commands.as_posix(),
+                    "--shell-output",
+                    source_curation_issue_shell.as_posix(),
                     "--report-output",
                     source_curation_issue_report.as_posix(),
                 ],
                 logs_dir / "00_create_source_curation_issue_bodies.log",
-                [source_curation_issue_manifest, source_curation_issue_report],
+                [source_curation_issue_manifest, source_curation_issue_commands, source_curation_issue_shell, source_curation_issue_report],
             )
         )
 
