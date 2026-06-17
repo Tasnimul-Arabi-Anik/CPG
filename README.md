@@ -51,6 +51,18 @@ Run the fixture-backed workflow through Snakemake:
 snakemake --config workflow_config=config/workflow.mock.yaml --cores 1
 ```
 
+## Continuous Integration
+
+After this repository is pushed to GitHub, `.github/workflows/ci.yml` runs a lightweight scaffold check on pushes and pull requests:
+
+```bash
+python -m py_compile scripts/*.py
+python scripts/self_test_source_export_validation.py   --output results/validation/source_export_validation_self_test.tsv   --report-output results/validation/source_export_validation_self_test_report.tsv
+python scripts/run_workflow.py --config config/workflow.mock.yaml
+```
+
+This CI proves that the pipeline scaffold, validator regression tests, and mock H1-H6 workflow run from config. It does not prove that the real biological study is populated or manuscript-ready; real claims still require reviewed source exports and downstream evidence tables.
+
 Audit workflow-core and planned external tool availability:
 
 ```bash
