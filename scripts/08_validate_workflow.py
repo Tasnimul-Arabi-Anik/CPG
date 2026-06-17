@@ -262,6 +262,7 @@ REQUIRED_SCRIPTS = [
     "scripts/create_production_evidence_handoff.py",
     "scripts/audit_pipeline_efficiency.py",
     "scripts/01_dereplicate_phages.py",
+    "scripts/build_host_feature_bridge_evidence.py",
     "scripts/02_build_annotation_tables.py",
     "scripts/03_predict_rbps_depolymerases.py",
     "scripts/04_integrate_host_features.py",

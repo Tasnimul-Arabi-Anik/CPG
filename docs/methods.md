@@ -695,6 +695,18 @@ python scripts/check_external_evidence_acceptance.py \
 
 Output schemas are documented in `docs/external_evidence_acceptance_schema.md`.
 
+For the initial reviewed host row, `scripts/build_host_feature_bridge_evidence.py` normalizes K/O/ST/AMR/virulence values from `data/metadata/source_manifests/klebsiella_host_genomes.tsv` into Kleborate-style and Kaptive-style bridge TSVs. These TSVs preserve the source-manifest provenance notes and are configured as optional host-feature evidence inputs. They are not a substitute for rerunning Kleborate and Kaptive across the expanded production host set.
+
+Implemented bridge command:
+
+```bash
+python scripts/build_host_feature_bridge_evidence.py \
+  --host-manifest data/metadata/source_manifests/klebsiella_host_genomes.tsv \
+  --kleborate-output data/metadata/external_evidence/kleborate_host_features.tsv \
+  --kaptive-output data/metadata/external_evidence/kaptive_ko_typing.tsv \
+  --report-output data/metadata/external_evidence/host_feature_bridge_evidence_report.tsv
+```
+
 The acceptance logic is regression-tested with fixture-only scenarios by `scripts/self_test_external_evidence_acceptance.py`. The self-test verifies accepted evidence with complete provenance, accepted evidence with provenance lint, schema-invalid configured evidence, and missing production tool/input states.
 
 Implemented self-test command:

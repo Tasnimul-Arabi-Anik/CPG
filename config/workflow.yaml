@@ -68,8 +68,8 @@ inputs:
   annotation_input: data/metadata/external_evidence/genbank_cds_annotations.tsv
   domain_evidence: ''
   structural_evidence: ''
-  kleborate_input: ''
-  kaptive_input: ''
+  kleborate_input: data/metadata/external_evidence/kleborate_host_features.tsv
+  kaptive_input: data/metadata/external_evidence/kaptive_ko_typing.tsv
   host_defense_input: ''
   phage_antidefense_input: ''
 outputs:

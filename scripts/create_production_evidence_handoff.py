@@ -69,6 +69,10 @@ def current_role(row: dict[str, str]) -> str:
         return "Bridge evidence: GenBank CDS product annotations, not standardized de novo annotation."
     if evidence_id == "pairwise_similarity" and status == "provided_input_ready":
         return "Bridge evidence: local BLASTN baseline, not production all-vs-all phage similarity."
+    if evidence_id in {"kleborate_host_features", "kaptive_ko_typing"} and status == "provided_input_ready":
+        configured_path = row.get("configured_input_path", "")
+        if "host_feature_bridge" in configured_path or "kleborate_host_features.tsv" in configured_path or "kaptive_ko_typing.tsv" in configured_path:
+            return "Bridge evidence: reviewed host manifest metadata normalized from prior Kleborate/Kaptive notes; rerun production tools for expanded host sets."
     if status == "provided_input_ready":
         return f"Configured reviewed TSV ({origin}); review provenance before manuscript use."
     if status in {"missing_tool_or_input", "not_configured", "manual_evidence_required"}:
@@ -77,7 +81,12 @@ def current_role(row: dict[str, str]) -> str:
 
 
 def handoff_text(plan_rows: list[dict[str, str]], unlock_rows: list[dict[str, str]]) -> str:
-    blocking = [row for row in plan_rows if row.get("blocking_for_manuscript", "").lower() == "true"]
+    blocking = [
+        row
+        for row in plan_rows
+        if row.get("blocking_for_manuscript", "").lower() == "true"
+        and row.get("real_claim_use_status") != "usable_after_source_and_claim_audits"
+    ]
     lines = [
         "# Production Evidence Handoff",
         "",
@@ -157,7 +166,12 @@ def main() -> int:
         output = Path(args.output)
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(handoff_text(plan_rows, unlock_rows), encoding="utf-8")
-        blocking = sum(1 for row in plan_rows if row.get("blocking_for_manuscript", "").lower() == "true")
+        blocking = sum(
+            1
+            for row in plan_rows
+            if row.get("blocking_for_manuscript", "").lower() == "true"
+            and row.get("real_claim_use_status") != "usable_after_source_and_claim_audits"
+        )
         report.append({"severity": "info", "item": "production_evidence_handoff", "message": f"evidence_layers={len(plan_rows)}; hypotheses={len(unlock_rows)}; blocking_layers={blocking}"})
     else:
         Path(args.output).parent.mkdir(parents=True, exist_ok=True)
