@@ -46,7 +46,7 @@ imports:
     notes: Imported from a manually curated literature table.
 
   - import_id: klebsiella_prophages
-    enabled: false
+    enabled: true
     input_path: data/metadata/source_exports/klebsiella_prophages.tsv
     output_path: data/metadata/source_manifests/klebsiella_prophages.tsv
     delimiter: auto

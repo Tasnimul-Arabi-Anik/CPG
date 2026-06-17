@@ -59,7 +59,7 @@ sources:
 
   - source_id: klebsiella_prophages
     path: data/metadata/source_manifests/klebsiella_prophages.tsv
-    enabled: false
+    enabled: true
     required: false
     source_label: prophage_mining
     record_type_default: prophage
