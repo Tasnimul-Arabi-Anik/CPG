@@ -5,6 +5,7 @@ This project starts as a computational comparative genomics study. Predictions s
 Known limitations to track:
 
 - Public phage-host metadata may be incomplete or inconsistent.
+- Current local BLASTN pairwise similarity evidence is a conservative initial baseline; comprehensive species-like clustering still requires reviewed all-vs-all similarity across the expanded public phage/prophage dataset, preferably with VIRIDIC, Mash, or an equivalent documented method.
 - Capsule and O-locus calls may be missing for historical phage hosts.
 - Prophage RBP candidates may be inactive remnants.
 - Structure-informed annotation can identify remote similarity but does not prove receptor specificity.

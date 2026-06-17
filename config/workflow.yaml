@@ -60,7 +60,7 @@ inputs:
   samples: config/samples.tsv
   thresholds: config/thresholds.yaml
   tools: config/tools.yaml
-  pairwise_similarity: ''
+  pairwise_similarity: data/metadata/external_evidence/blastn_pairwise_similarity.tsv
   annotation_input: data/metadata/external_evidence/genbank_cds_annotations.tsv
   domain_evidence: ''
   structural_evidence: ''

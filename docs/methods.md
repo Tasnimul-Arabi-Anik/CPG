@@ -356,6 +356,16 @@ python scripts/01_dereplicate_phages.py \
 
 Optional pairwise input schema is documented in `docs/dereplication_schema.md`. Thresholds are read from `config/thresholds.yaml`.
 
+For the initial local FASTA-backed dataset, `data/metadata/external_evidence/blastn_pairwise_similarity.tsv` was generated with BLASTN from records passing Stage 1 sequence QC. This provides a conservative nucleotide-similarity baseline for the current cultured-phage/prophage pair; it is not a replacement for VIRIDIC, Mash, or an equivalent reviewed all-vs-all similarity run in the comprehensive public-scale analysis. Regeneration command:
+
+```bash
+python scripts/build_blastn_pairwise_similarity.py \
+  --manifest results/qc/phage_genome_manifest.tsv \
+  --sequence-qc results/qc/genome_sequence_qc.tsv \
+  --output data/metadata/external_evidence/blastn_pairwise_similarity.tsv \
+  --report-output data/metadata/external_evidence/blastn_pairwise_similarity_report.tsv
+```
+
 ## Stage 3: Annotation and Pangenome Interface
 
 The annotation script consumes the Stage 1 manifest, Stage 2 cluster table, and optional Pharokka/PHROGs-style gene annotation rows. It writes normalized gene annotations, deterministic provisional gene clusters, and a wide pangenome count matrix. Hypothetical proteins are retained.
