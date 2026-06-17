@@ -61,7 +61,7 @@ inputs:
   thresholds: config/thresholds.yaml
   tools: config/tools.yaml
   pairwise_similarity: ''
-  annotation_input: ''
+  annotation_input: data/metadata/external_evidence/genbank_cds_annotations.tsv
   domain_evidence: ''
   structural_evidence: ''
   kleborate_input: ''

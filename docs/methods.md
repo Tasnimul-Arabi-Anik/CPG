@@ -374,6 +374,16 @@ python scripts/02_build_annotation_tables.py \
 
 Optional annotation input schema is documented in `docs/annotation_schema.md`. Current gene clustering uses PHROG ID, informative product name, protein sequence hash, or singleton fallback. This is a schema-stable merge layer, not a final orthology method.
 
+For the initial real-data path, `data/metadata/external_evidence/genbank_cds_annotations.tsv` was generated from local GenBank CDS features for the cultured phage and PhiSpy prophage interval. This is a curated product-annotation input, not a substitute for Pharokka/PHROGs, domain, or structural annotation. Regeneration command, after downloading the relevant GenBank files to `/tmp/cpg_annotation_gbff/`:
+
+```bash
+python scripts/build_genbank_cds_annotation_input.py \
+  --record 'Klebsiella phage PhiKpNIH-2=/tmp/cpg_annotation_gbff/NC_049845.1.gbff' \
+  --record 'NTUH-K2044_PhiSpy_pp1_NC_012731.1_2098066_2113724=/tmp/cpg_annotation_gbff/NC_012731.1.gbff:2098066-2113724' \
+  --output data/metadata/external_evidence/genbank_cds_annotations.tsv \
+  --report-output data/metadata/external_evidence/genbank_cds_annotations_report.tsv
+```
+
 ## Stage 4: RBP/Depolymerase Candidate Prioritization
 
 The RBP/depolymerase script consumes normalized annotations and gene clusters, then combines annotation keywords, sequence-cluster evidence, optional domain evidence, optional structural evidence, protein length, and local synteny context. Candidate novelty tiers are conservative: annotation text alone is not treated as a novelty claim.
