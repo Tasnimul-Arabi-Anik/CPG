@@ -34,6 +34,12 @@ jobs:
           --output results/validation/source_export_validation_self_test.tsv
           --report-output results/validation/source_export_validation_self_test_report.tsv
 
+      - name: Run source work-order acceptance self-test
+        run: >-
+          python scripts/self_test_source_work_order_acceptance.py
+          --output results/validation/source_work_order_acceptance_self_test.tsv
+          --report-output results/validation/source_work_order_acceptance_self_test_report.tsv
+
       - name: Run mock workflow
         run: python scripts/run_workflow.py --config config/workflow.mock.yaml
 
@@ -45,5 +51,6 @@ jobs:
           path: |
             results/mock/validation/
             results/validation/source_export_validation_self_test*.tsv
+            results/validation/source_work_order_acceptance_self_test*.tsv
             logs/
           if-no-files-found: warn
