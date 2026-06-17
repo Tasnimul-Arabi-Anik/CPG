@@ -1,0 +1,42 @@
+# Fixture-backed query/export plan for workflow smoke testing.
+
+queries:
+  - query_id: mock_imported_public_query
+    source_id: mock_imported_public_phages
+    record_layer: cultured_phages
+    target_database: mock_public_export
+    acquisition_mode: bundled_fixture_export
+    query_string: 'mock Klebsiella phage export rows'
+    expected_export_path: data/metadata/mock_public_source_export.tsv
+    expected_columns:
+      - public_accession
+      - organism
+      - host
+      - length_bp
+      - gc_percent
+      - country
+      - collection_year
+      - fasta_path
+      - description
+    identity_columns_required:
+      - public_accession
+    review_priority: fixture
+    rationale: Exercises source query planning with an existing reviewed export fixture.
+    notes: Fixture only; not biological evidence.
+
+  - query_id: mock_curated_manual_query
+    source_id: mock_curated_samples
+    record_layer: curated_fixture_samples
+    target_database: mock_manual_table
+    acquisition_mode: bundled_fixture_manifest
+    query_string: 'mock curated sample table rows'
+    expected_columns:
+      - genome_id
+      - raw_sequence_path
+      - notes
+    identity_columns_required:
+      - genome_id
+      - raw_sequence_path
+    review_priority: fixture
+    rationale: Exercises query planning for a source populated directly as a manifest.
+    notes: Fixture only; not biological evidence.

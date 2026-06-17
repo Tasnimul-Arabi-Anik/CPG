@@ -1,0 +1,5 @@
+annotation_gene_id	domain_id	domain_name	start_aa	end_aa	evalue	evidence_source
+mock_phage_001|gp002	PF03906	phage_tail_fiber_repeat	20	210	1e-20	mock_hmmscan
+mock_phage_002|gp002	PF06737	polysaccharide_deacetylase_like_depolymerase	30	220	1e-18	mock_hmmscan
+mock_prophage_001|gp002	PF06737	polysaccharide_depolymerase_tailspike	25	180	2e-12	mock_hmmscan
+mock_phage_002|gp003	PF99999	remote_tail_fiber_receptor_binding_domain	15	160	5e-08	mock_hmmscan

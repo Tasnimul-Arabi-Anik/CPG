@@ -1,0 +1,88 @@
+# Local public-source import configuration.
+# This stage normalizes downloaded/exported metadata tables into source manifests.
+# Imports are disabled until the corresponding input export is reviewed locally.
+
+imports:
+  - import_id: inphared_klebsiella_phages
+    enabled: false
+    input_path: data/metadata/source_exports/inphared_klebsiella_phages.tsv
+    output_path: data/metadata/source_manifests/inphared_klebsiella_phages.tsv
+    delimiter: auto
+    overwrite: true
+    source_label: INPHARED
+    record_type_default: phage
+    phage_lifestyle_default: NA
+    require_klebsiella: true
+    require_phage_keyword: true
+    exclude_regex: "plasmid|not a phage|non-phage"
+    notes: Imported from a local INPHARED export; review metadata before enabling in source_catalog.yaml.
+
+  - import_id: ncbi_virus_klebsiella_phages
+    enabled: false
+    input_path: data/metadata/source_exports/ncbi_virus_klebsiella_phages.tsv
+    output_path: data/metadata/source_manifests/ncbi_virus_klebsiella_phages.tsv
+    delimiter: auto
+    overwrite: true
+    source_label: NCBI_Virus
+    record_type_default: phage
+    phage_lifestyle_default: NA
+    require_klebsiella: true
+    require_phage_keyword: true
+    exclude_regex: "plasmid|not a phage|non-phage"
+    notes: Imported from a local NCBI Virus/GenBank export; review accessions before enabling in source_catalog.yaml.
+
+  - import_id: literature_klebsiella_phages
+    enabled: false
+    input_path: data/metadata/source_exports/literature_klebsiella_phages.tsv
+    output_path: data/metadata/source_manifests/literature_klebsiella_phages.tsv
+    delimiter: auto
+    overwrite: true
+    source_label: literature
+    record_type_default: phage
+    phage_lifestyle_default: NA
+    require_klebsiella: true
+    require_phage_keyword: true
+    exclude_regex: "plasmid|not a phage|non-phage"
+    notes: Imported from a manually curated literature table.
+
+  - import_id: klebsiella_prophages
+    enabled: false
+    input_path: data/metadata/source_exports/klebsiella_prophages.tsv
+    output_path: data/metadata/source_manifests/klebsiella_prophages.tsv
+    delimiter: auto
+    overwrite: true
+    source_label: prophage_mining
+    record_type_default: prophage
+    phage_lifestyle_default: temperate
+    require_klebsiella: true
+    require_phage_keyword: true
+    exclude_regex: "plasmid|not a phage|non-phage"
+    notes: Imported from a local prophage-mining export linked to Klebsiella host genomes; review coordinates and host links before enabling in source_catalog.yaml.
+
+  - import_id: metagenomic_discovery_contigs
+    enabled: false
+    input_path: data/metadata/source_exports/metagenomic_discovery_contigs.tsv
+    output_path: data/metadata/source_manifests/metagenomic_discovery_contigs.tsv
+    delimiter: auto
+    overwrite: true
+    source_label: metagenomic_discovery
+    record_type_default: metagenomic_viral_contig
+    phage_lifestyle_default: ambiguous
+    require_klebsiella: false
+    require_phage_keyword: true
+    exclude_regex: "plasmid|not a phage|non-phage"
+    notes: Optional discovery-layer import; keep separate from the primary dereplicated cultured/prophage atlas unless explicitly merged.
+
+  - import_id: klebsiella_host_genomes
+    enabled: false
+    input_path: data/metadata/source_exports/klebsiella_host_genomes.tsv
+    output_path: data/metadata/source_manifests/klebsiella_host_genomes.tsv
+    delimiter: auto
+    overwrite: true
+    source_label: host_genome_catalog
+    record_type_default: host
+    phage_lifestyle_default: NA
+    require_klebsiella: true
+    require_phage_keyword: false
+    exclude_regex: "contaminant|withdrawn|suppressed"
+    notes: Imported from a local Klebsiella host-genome catalog; review K/O/ST/AMR/virulence and raw_sequence_path links before enabling in source_catalog.yaml.

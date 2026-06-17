@@ -1,0 +1,85 @@
+# Real-study source catalog for building config/samples.tsv.
+# Enable sources after their TSV manifests are populated and reviewed.
+
+output_columns:
+  - record_type
+  - genome_id
+  - accession
+  - source
+  - isolation_host
+  - host_species
+  - host_strain
+  - country
+  - year
+  - phage_lifestyle
+  - genome_length
+  - gc_percent
+  - K_type
+  - O_type
+  - ST
+  - AMR_markers
+  - virulence_markers
+  - raw_sequence_path
+  - notes
+
+# A populated source manifest must contain at least one of these columns.
+# Other metadata columns can be filled from source defaults or NA during early curation.
+identity_columns_any:
+  - genome_id
+  - accession
+  - raw_sequence_path
+
+sources:
+  - source_id: inphared_klebsiella_phages
+    path: data/metadata/source_manifests/inphared_klebsiella_phages.tsv
+    enabled: false
+    required: false
+    source_label: INPHARED
+    record_type_default: phage
+    phage_lifestyle_default: NA
+    notes: Planned curated cultured-phage source; enable after metadata review.
+
+  - source_id: ncbi_virus_klebsiella_phages
+    path: data/metadata/source_manifests/ncbi_virus_klebsiella_phages.tsv
+    enabled: false
+    required: false
+    source_label: NCBI_Virus
+    record_type_default: phage
+    phage_lifestyle_default: NA
+    notes: Planned GenBank/RefSeq/NCBI Virus source; enable after accession review.
+
+  - source_id: literature_klebsiella_phages
+    path: data/metadata/source_manifests/literature_klebsiella_phages.tsv
+    enabled: false
+    required: false
+    source_label: literature
+    record_type_default: phage
+    phage_lifestyle_default: NA
+    notes: Planned manually curated literature-linked source.
+
+  - source_id: klebsiella_prophages
+    path: data/metadata/source_manifests/klebsiella_prophages.tsv
+    enabled: false
+    required: false
+    source_label: prophage_mining
+    record_type_default: prophage
+    phage_lifestyle_default: temperate
+    notes: Planned prophage source linked to Klebsiella host genomes.
+
+  - source_id: metagenomic_discovery_contigs
+    path: data/metadata/source_manifests/metagenomic_discovery_contigs.tsv
+    enabled: false
+    required: false
+    source_label: metagenomic_discovery
+    record_type_default: metagenomic_viral_contig
+    phage_lifestyle_default: ambiguous
+    notes: Optional discovery layer; keep separate from the primary taxonomic atlas.
+
+  - source_id: klebsiella_host_genomes
+    path: data/metadata/source_manifests/klebsiella_host_genomes.tsv
+    enabled: false
+    required: false
+    source_label: host_genome_catalog
+    record_type_default: host
+    phage_lifestyle_default: NA
+    notes: Planned host-genome source for K/O/ST/AMR/virulence and defense annotations.

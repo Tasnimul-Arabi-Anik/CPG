@@ -1,0 +1,5 @@
+record_type	genome_id	accession	source	isolation_host	host_species	host_strain	country	year	phage_lifestyle	genome_length	gc_percent	K_type	O_type	ST	AMR_markers	virulence_markers	raw_sequence_path	notes
+phage	mock_phage_001	NA	literature	Klebsiella pneumoniae	Klebsiella pneumoniae	Mock strain A	NA	2026	virulent	45000	51.2	K1	O1	ST23	NA	NA		Small mock row for manifest validation.
+phage	mock_phage_002	NA	literature	Klebsiella pneumoniae	Klebsiella pneumoniae	Mock strain B	NA	2026	virulent	47000	51.0	K2	O2	ST258	NA	NA		Second mock phage for dereplication testing with distinct K/O and ST metadata.
+prophage	mock_prophage_001	NA	mock_host_001	Klebsiella pneumoniae	Klebsiella pneumoniae	Mock strain A	NA	2026	temperate	39000	52.1	K1	O1	ST23	NA	NA		Mock prophage row for singleton cluster testing.
+host	mock_host_001	NA	literature	NA	Klebsiella pneumoniae	Mock strain A	NA	2026	NA	5300000	57.4	K1	O1	ST23	blaKPC	ybt		Small mock host row for schema testing.

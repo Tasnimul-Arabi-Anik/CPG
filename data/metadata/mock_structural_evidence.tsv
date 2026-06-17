@@ -1,0 +1,4 @@
+annotation_gene_id	structural_hit_id	structural_hit_name	tm_score	probability	evidence_source
+mock_phage_002|gp002	foldseek_mock_001	Klebsiella_capsule_depolymerase_tailspike_fold	0.72	0.98	mock_foldseek
+mock_prophage_001|gp002	foldseek_mock_002	phage_tailspike_receptor_binding_fold	0.61	0.91	mock_foldseek
+mock_phage_002|gp003	foldseek_mock_003	remote_tail_fiber_receptor_binding_fold	0.58	0.86	mock_foldseek

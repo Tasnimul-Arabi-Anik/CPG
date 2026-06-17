@@ -1,0 +1,5 @@
+public_accession	organism	host	length_bp	gc_percent	country	collection_year	fasta_path	description
+MK000001	Klebsiella phage MockPublic1	Klebsiella pneumoniae	12000	50	Bangladesh	2024	data/raw/mock_public/MK000001.fna	Complete genome of Klebsiella bacteriophage MockPublic1
+MK000002	Escherichia phage NonTarget	Escherichia coli	43000	49.8	USA	2023		Complete genome of Escherichia bacteriophage NonTarget
+MK000003	Klebsiella pneumoniae plasmid pMock	Klebsiella pneumoniae	120000	55	USA	2022		Klebsiella plasmid record, not a phage
+MK000004	Klebsiella phage MockPublic2	Klebsiella quasipneumoniae	13000	50	Germany	2021-04	data/raw/mock_public/MK000004.fna	Klebsiella virus MockPublic2 isolate genome

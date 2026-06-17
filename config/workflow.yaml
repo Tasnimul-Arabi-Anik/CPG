@@ -1,0 +1,300 @@
+execution:
+  python: python
+  stop_on_error: true
+tool_audit:
+  enabled: true
+  availability: results/qc/tool_availability.tsv
+  report: results/qc/tool_audit_report.tsv
+source_queries:
+  enabled: true
+  config: config/source_queries.yaml
+  catalog: config/source_catalog.yaml
+  imports_config: config/source_imports.yaml
+  plan: results/qc/source_query_plan.tsv
+  report: results/qc/source_query_report.tsv
+source_export_templates:
+  enabled: true
+  templates_dir: results/qc/source_export_templates
+  manifest: results/qc/source_export_template_manifest.tsv
+  report: results/qc/source_export_template_report.tsv
+source_export_validation:
+  enabled: true
+  validation: results/qc/source_export_validation.tsv
+  report: results/qc/source_export_validation_report.tsv
+source_imports:
+  enabled: true
+  config: config/source_imports.yaml
+  report: results/qc/source_import_report.tsv
+source_plan:
+  enabled: true
+  catalog: config/source_catalog.yaml
+  imports_config: config/source_imports.yaml
+  plan: results/qc/source_acquisition_plan.tsv
+  report: results/qc/source_acquisition_report.tsv
+source_audit:
+  enabled: true
+  catalog: config/source_catalog.yaml
+  readiness: results/qc/source_catalog_readiness.tsv
+  report: results/qc/source_catalog_audit_report.tsv
+sample_builder:
+  enabled: true
+  catalog: config/source_catalog.yaml
+  output_samples: results/source_builder/samples.tsv
+  report: results/source_builder/sample_source_report.tsv
+sequence_acquisition:
+  enabled: true
+  raw_directory: data/raw/genomes
+sequence_fetch_manifest:
+  enabled: true
+  manifest: results/qc/sequence_fetch_manifest.tsv
+  commands: results/qc/sequence_fetch_commands.sh
+  report: results/qc/sequence_fetch_report.tsv
+external_evidence:
+  enabled: true
+external_evidence_templates:
+  enabled: true
+  templates_dir: results/qc/external_evidence_templates
+  manifest: results/qc/external_evidence_template_manifest.tsv
+  report: results/qc/external_evidence_template_report.tsv
+inputs:
+  samples: config/samples.tsv
+  thresholds: config/thresholds.yaml
+  tools: config/tools.yaml
+  pairwise_similarity: ''
+  annotation_input: ''
+  domain_evidence: ''
+  structural_evidence: ''
+  kleborate_input: ''
+  kaptive_input: ''
+  host_defense_input: ''
+  phage_antidefense_input: ''
+outputs:
+  qc:
+    source_query_plan: results/qc/source_query_plan.tsv
+    source_export_template_manifest: results/qc/source_export_template_manifest.tsv
+    source_export_validation: results/qc/source_export_validation.tsv
+    source_export_validation_report: results/qc/source_export_validation_report.tsv
+    source_export_template_report: results/qc/source_export_template_report.tsv
+    source_query_report: results/qc/source_query_report.tsv
+    manifest: results/qc/phage_genome_manifest.tsv
+    manifest_report: results/qc/manifest_validation_report.tsv
+    excluded: results/qc/excluded_genomes.tsv
+    sequence_acquisition_plan: results/qc/sequence_acquisition_plan.tsv
+    sequence_fetch_manifest: results/qc/sequence_fetch_manifest.tsv
+    sequence_fetch_commands: results/qc/sequence_fetch_commands.sh
+    sequence_fetch_report: results/qc/sequence_fetch_report.tsv
+    sequence_acquisition_report: results/qc/sequence_acquisition_report.tsv
+    sequence_qc: results/qc/genome_sequence_qc.tsv
+    sequence_qc_report: results/qc/genome_sequence_qc_report.tsv
+    external_evidence_plan: results/qc/external_evidence_plan.tsv
+    external_evidence_template_manifest: results/qc/external_evidence_template_manifest.tsv
+    external_evidence_template_report: results/qc/external_evidence_template_report.tsv
+    external_evidence_report: results/qc/external_evidence_report.tsv
+    source_curation_tasks: results/qc/source_curation_tasks.tsv
+    source_curation_tasks_report: results/qc/source_curation_tasks_report.tsv
+    source_export_starter_kit_manifest: results/qc/source_export_starter_kit_manifest.tsv
+    source_export_starter_kit_report: results/qc/source_export_starter_kit_report.tsv
+    minimum_source_curation_plan: results/qc/minimum_source_curation_plan.tsv
+    minimum_hypothesis_source_plan: results/qc/minimum_hypothesis_source_plan.tsv
+    minimum_source_curation_report: results/qc/minimum_source_curation_report.tsv
+    priority_source_export_preflight: results/qc/priority_source_export_preflight.tsv
+    priority_source_export_preflight_issues: results/qc/priority_source_export_preflight_issues.tsv
+    priority_source_export_preflight_report: results/qc/priority_source_export_preflight_report.tsv
+    priority_source_collection_packet_manifest: results/qc/priority_source_collection_packet_manifest.tsv
+    priority_source_collection_packet_report: results/qc/priority_source_collection_packet_report.tsv
+    source_enablement_plan: results/qc/source_enablement_plan.tsv
+    source_enablement_report: results/qc/source_enablement_report.tsv
+    source_enablement_apply_report: results/qc/source_enablement_apply_report.tsv
+    source_overlap_groups: results/qc/source_overlap_groups.tsv
+    source_overlap_summary: results/qc/source_overlap_summary.tsv
+    source_overlap_report: results/qc/source_overlap_report.tsv
+    sample_support_by_hypothesis: results/qc/sample_support_by_hypothesis.tsv
+    sample_support_summary: results/qc/sample_support_summary.tsv
+    sample_support_report: results/qc/sample_support_report.tsv
+    sample_support_source_bridge: results/qc/sample_support_source_bridge.tsv
+    sample_support_source_bridge_report: results/qc/sample_support_source_bridge_report.tsv
+    sample_support_export_preflight: results/qc/sample_support_export_preflight.tsv
+    sample_support_export_preflight_report: results/qc/sample_support_export_preflight_report.tsv
+    source_readiness_dashboard: results/qc/source_readiness_dashboard.tsv
+    source_readiness_dashboard_report: results/qc/source_readiness_dashboard_report.tsv
+    source_curation_work_order: results/qc/source_curation_work_order.tsv
+    source_curation_work_order_report: results/qc/source_curation_work_order_report.tsv
+    source_work_order_packet_manifest: results/qc/source_work_order_packet_manifest.tsv
+    source_work_order_packet_report: results/qc/source_work_order_packet_report.tsv
+    source_work_order_acceptance: results/qc/source_work_order_acceptance.tsv
+    source_work_order_acceptance_report: results/qc/source_work_order_acceptance_report.tsv
+    source_post_acceptance_plan: results/qc/source_post_acceptance_plan.tsv
+    source_post_acceptance_report: results/qc/source_post_acceptance_report.tsv
+    sample_support_curation_packet_manifest: results/qc/sample_support_curation_packet_manifest.tsv
+    sample_support_curation_packet_report: results/qc/sample_support_curation_packet_report.tsv
+    source_curation_packet_manifest: results/qc/source_curation_packet_manifest.tsv
+    source_curation_packet_report: results/qc/source_curation_packet_report.tsv
+    source_query_commands: results/qc/source_query_commands.tsv
+    source_query_commands_shell: results/qc/source_query_commands.sh
+    source_query_commands_report: results/qc/source_query_commands_report.tsv
+    source_export_column_dictionary: results/qc/source_export_column_dictionary.tsv
+    source_export_column_dictionary_report: results/qc/source_export_column_dictionary_report.tsv
+    hypothesis_source_unlock_plan: results/qc/hypothesis_source_unlock_plan.tsv
+    hypothesis_source_unlock_matrix: results/qc/hypothesis_source_unlock_matrix.tsv
+    hypothesis_source_unlock_report: results/qc/hypothesis_source_unlock_report.tsv
+    external_evidence_unlock_plan: results/qc/external_evidence_unlock_plan.tsv
+    external_evidence_unlock_matrix: results/qc/external_evidence_unlock_matrix.tsv
+    external_evidence_unlock_report: results/qc/external_evidence_unlock_report.tsv
+  clusters:
+    ani: results/clusters/phage_ani.tsv
+    clusters: results/clusters/phage_clusters.tsv
+    representatives: results/clusters/representatives.tsv
+    report: results/clusters/dereplication_report.tsv
+  annotations:
+    annotations: results/annotations/phage_annotations.tsv
+    gene_clusters: results/annotations/gene_clusters.tsv
+    pangenome: results/annotations/pangenome_matrix.tsv
+    report: results/annotations/annotation_report.tsv
+  rbp_depolymerase:
+    candidates: results/rbp_depolymerase/candidates.tsv
+    domain_architectures: results/rbp_depolymerase/domain_architectures.tsv
+    module_clusters: results/rbp_depolymerase/module_clusters.tsv
+    novel_candidates: results/rbp_depolymerase/novel_candidates.tsv
+    report: results/rbp_depolymerase/rbp_depolymerase_report.tsv
+  host_features:
+    host_metadata: results/host_features/host_metadata.tsv
+    kaptive: results/host_features/kaptive_results.tsv
+    kleborate: results/host_features/kleborate_results.tsv
+    phage_host_links: results/host_features/phage_host_links.tsv
+    report: results/host_features/host_feature_report.tsv
+  defense_systems:
+    host_defense: results/defense_systems/host_defense_systems.tsv
+    phage_antidefense: results/defense_systems/phage_antidefense_candidates.tsv
+    compatibility: results/defense_systems/compatibility_features.tsv
+    report: results/defense_systems/defense_counterdefense_report.tsv
+  models:
+    model_comparison: results/models/model_comparison.tsv
+    feature_importance: results/models/feature_importance.tsv
+    prediction_errors: results/models/prediction_errors.tsv
+    hypothesis_summary: results/models/hypothesis_summary.tsv
+    report: results/models/model_report.tsv
+  figures:
+    directory: results/figures
+    manifest: results/figures/figure_manifest.tsv
+    report: results/figures/figure_generation_report.tsv
+  validation:
+    samples: results/source_builder/samples.tsv
+    workflow_config: config/workflow.yaml
+    schema: results/validation/schema_validation.tsv
+    hypotheses: results/validation/hypothesis_coverage.tsv
+    inventory: results/validation/output_inventory.tsv
+    report: results/validation/workflow_validation_report.tsv
+    study_readiness: results/validation/study_readiness.tsv
+    study_readiness_report: results/validation/study_readiness_report.tsv
+    readiness_action_plan: results/validation/readiness_action_plan.tsv
+    readiness_action_report: results/validation/readiness_action_report.tsv
+    hypothesis_traceability: results/validation/hypothesis_traceability.tsv
+    hypothesis_traceability_report: results/validation/hypothesis_traceability_report.tsv
+    goal_completion_audit: results/validation/goal_completion_audit.tsv
+    goal_completion_report: results/validation/goal_completion_report.tsv
+    run_report: results/validation/workflow_run_report.tsv
+logs:
+  directory: logs
+source_curation_tasks:
+  enabled: true
+  tasks: results/qc/source_curation_tasks.tsv
+  report: results/qc/source_curation_tasks_report.tsv
+source_export_starter_kit:
+  enabled: true
+  directory: results/qc/source_export_starter_kit
+  manifest: results/qc/source_export_starter_kit_manifest.tsv
+  report: results/qc/source_export_starter_kit_report.tsv
+minimum_source_curation:
+  enabled: true
+  source_plan: results/qc/minimum_source_curation_plan.tsv
+  hypothesis_plan: results/qc/minimum_hypothesis_source_plan.tsv
+  report: results/qc/minimum_source_curation_report.tsv
+priority_source_preflight:
+  enabled: true
+  max_rank: 2
+  summary: results/qc/priority_source_export_preflight.tsv
+  issues: results/qc/priority_source_export_preflight_issues.tsv
+  report: results/qc/priority_source_export_preflight_report.tsv
+priority_source_collection_packet:
+  enabled: true
+  directory: results/qc/priority_source_collection_packet
+  manifest: results/qc/priority_source_collection_packet_manifest.tsv
+  report: results/qc/priority_source_collection_packet_report.tsv
+source_enablement:
+  enabled: true
+  plan: results/qc/source_enablement_plan.tsv
+  report: results/qc/source_enablement_report.tsv
+source_enablement_apply:
+  enabled: true
+  report: results/qc/source_enablement_apply_report.tsv
+  enable_imports: true
+  enable_catalog: true
+  apply: false
+source_overlap:
+  enabled: true
+  overlaps: results/qc/source_overlap_groups.tsv
+  summary: results/qc/source_overlap_summary.tsv
+  report: results/qc/source_overlap_report.tsv
+sample_support:
+  enabled: true
+  hypotheses: results/qc/sample_support_by_hypothesis.tsv
+  summary: results/qc/sample_support_summary.tsv
+  report: results/qc/sample_support_report.tsv
+sample_support_sources:
+  enabled: true
+  bridge: results/qc/sample_support_source_bridge.tsv
+  report: results/qc/sample_support_source_bridge_report.tsv
+sample_support_export_preflight:
+  enabled: true
+  preflight: results/qc/sample_support_export_preflight.tsv
+  report: results/qc/sample_support_export_preflight_report.tsv
+source_readiness_dashboard:
+  enabled: true
+  dashboard: results/qc/source_readiness_dashboard.tsv
+  report: results/qc/source_readiness_dashboard_report.tsv
+source_curation_work_order:
+  enabled: true
+  work_order: results/qc/source_curation_work_order.tsv
+  report: results/qc/source_curation_work_order_report.tsv
+source_work_order_packets:
+  enabled: true
+  directory: results/qc/source_work_order_packets
+  manifest: results/qc/source_work_order_packet_manifest.tsv
+  report: results/qc/source_work_order_packet_report.tsv
+source_work_order_acceptance:
+  enabled: true
+  acceptance: results/qc/source_work_order_acceptance.tsv
+  report: results/qc/source_work_order_acceptance_report.tsv
+source_post_acceptance:
+  enabled: true
+  plan: results/qc/source_post_acceptance_plan.tsv
+  report: results/qc/source_post_acceptance_report.tsv
+sample_support_curation_packet:
+  enabled: true
+  directory: results/qc/sample_support_curation_packet
+  manifest: results/qc/sample_support_curation_packet_manifest.tsv
+  report: results/qc/sample_support_curation_packet_report.tsv
+source_curation_packet:
+  enabled: true
+  directory: results/qc/source_curation_packet
+  manifest: results/qc/source_curation_packet_manifest.tsv
+  report: results/qc/source_curation_packet_report.tsv
+source_query_commands:
+  enabled: true
+  commands: results/qc/source_query_commands.tsv
+  shell: results/qc/source_query_commands.sh
+  report: results/qc/source_query_commands_report.tsv
+source_export_dictionary:
+  enabled: true
+  dictionary: results/qc/source_export_column_dictionary.tsv
+  report: results/qc/source_export_column_dictionary_report.tsv
+hypothesis_source_unlocks:
+  enabled: true
+  plan: results/qc/hypothesis_source_unlock_plan.tsv
+  matrix: results/qc/hypothesis_source_unlock_matrix.tsv
+  report: results/qc/hypothesis_source_unlock_report.tsv
+external_evidence_unlocks:
+  enabled: true
+  plan: results/qc/external_evidence_unlock_plan.tsv
+  matrix: results/qc/external_evidence_unlock_matrix.tsv
+  report: results/qc/external_evidence_unlock_report.tsv

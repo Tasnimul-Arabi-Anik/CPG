@@ -1,0 +1,19 @@
+# Fixture-backed source catalog used by config/workflow.mock.yaml.
+
+sources:
+  - source_id: mock_curated_samples
+    path: data/metadata/mock_samples.tsv
+    enabled: true
+    required: true
+    source_label: mock_fixture
+    record_type_default: phage
+    notes: Fixture source exercising the sample-table builder.
+
+  - source_id: mock_imported_public_phages
+    path: results/mock/source_imports/mock_public_klebsiella_phages.tsv
+    enabled: true
+    required: true
+    source_label: mock_public_export
+    record_type_default: phage
+    notes: Imported fixture source exercising source_imports -> source_catalog -> sample_builder integration.
+

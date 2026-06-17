@@ -1,0 +1,10 @@
+genome_id	gene_id	contig_id	start	end	strand	product	protein_id	protein_sequence	protein_length_aa	phrog_id	phrog_category	functional_category	evidence	tool
+mock_phage_001	gp001	mock_phage_001	1	900	+	terminase large subunit	mock_phage_001_gp001	MSTNPKPQRKTKRNTNRRPQDVKFPGG		phrog_1	head and packaging	DNA packaging	PHROGs mock	mock_pharokka
+mock_phage_001	gp002	mock_phage_001	901	2100	+	tail fiber protein	mock_phage_001_gp002	MAAAAPPPGGGTTTSSSNNNQQQRRR		phrog_9001	tail	receptor binding protein	PHROGs mock	mock_pharokka
+mock_phage_001	gp003	mock_phage_001	2101	2600	+	hypothetical protein	mock_phage_001_gp003	MQQQQQQQQQQQQQQQ			unknown	hypothetical	no hit	mock_pharokka
+mock_phage_002	gp001	mock_phage_002	1	930	+	terminase large subunit	mock_phage_002_gp001	MSTNPKPQRKTKRNTNRRPQDVKFPGG		phrog_1	head and packaging	DNA packaging	PHROGs mock	mock_pharokka
+mock_phage_002	gp002	mock_phage_002	931	2210	+	capsule depolymerase tailspike	mock_phage_002_gp002	MNNNNVVVVTTTTPPPPAAAAGGGG		phrog_9002	tail	capsule depolymerase	PHROGs mock	mock_pharokka
+mock_phage_002	gp003	mock_phage_002	2211	3000	+	hypothetical protein	mock_phage_002_gp003	MHHHHGGGGFFFFTTTTSSSS			unknown	hypothetical	no hit	mock_pharokka
+mock_prophage_001	gp001	mock_prophage_001	1	870	+	integrase	mock_prophage_001_gp001	MIIIIKKKKLLLLFFFF		phrog_2000	lysogeny	integration	PHROGs mock	mock_pharokka
+mock_prophage_001	gp002	mock_prophage_001	871	1900	+	tailspike receptor binding protein	mock_prophage_001_gp002	MSSSSGGGGAAAATTTT		phrog_9002	tail	receptor binding protein	PHROGs mock	mock_pharokka
+mock_phage_001	gp004	mock_phage_001	2601	3300	+	DNA methyltransferase anti-restriction protein	mock_phage_001_gp004	MMMMTTTTGGGGCCCC			DNA modification	methyltransferase	keyword mock	mock_pharokka

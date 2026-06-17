@@ -1,0 +1,2 @@
+phage_genome_id	annotation_gene_id	gene_id	gene_cluster_id	product	antidefense_class	target_defense_system	evidence_type	evidence_source	confidence_score
+mock_phage_002	mock_phage_002|gp003	gp003	gene_cluster_000005	remote anti-restriction protein	anti_restriction_modification	restriction-modification	curated_mock	mock_antidefense_db	0.80

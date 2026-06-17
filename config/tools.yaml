@@ -1,0 +1,169 @@
+# Tool selections and paths for the Klebsiella phage CPG workflow.
+# Keep external tool choices here rather than hard-coding them in scripts.
+
+workflow:
+  orchestrator: snakemake
+  direct_runner: scripts/run_workflow.py
+  direct_runner_config: config/workflow.yaml
+  smoke_test_config: config/workflow.mock.yaml
+  default_threads: 1
+
+dataset_curation:
+  source_audit_script: scripts/audit_source_catalog.py
+  sample_builder_script: scripts/build_samples_from_sources.py
+  source_catalog: config/source_catalog.yaml
+  mock_source_catalog: config/source_catalog.mock.yaml
+  manifest_script: scripts/00_build_phage_manifest.py
+
+dereplication:
+  dereplication_script: scripts/01_dereplicate_phages.py
+  optional_pairwise_similarity_schema: docs/dereplication_schema.md
+
+annotation_pangenome:
+  annotation_script: scripts/02_build_annotation_tables.py
+  optional_annotation_schema: docs/annotation_schema.md
+
+rbp_depolymerase:
+  candidate_script: scripts/03_predict_rbps_depolymerases.py
+  candidate_schema: docs/rbp_depolymerase_schema.md
+  optional_domain_evidence_schema: docs/rbp_depolymerase_schema.md
+  optional_structural_evidence_schema: docs/rbp_depolymerase_schema.md
+
+host_features:
+  integration_script: scripts/04_integrate_host_features.py
+  host_feature_schema: docs/host_feature_schema.md
+
+defense_counterdefense:
+  integration_script: scripts/05_integrate_defense_counterdefense.py
+  defense_counterdefense_schema: docs/defense_counterdefense_schema.md
+  optional_host_defense_schema: docs/defense_counterdefense_schema.md
+  optional_phage_antidefense_schema: docs/defense_counterdefense_schema.md
+
+model_comparison:
+  comparison_script: scripts/06_compare_feature_models.py
+  modeling_schema: docs/modeling_schema.md
+
+figure_generation:
+  figure_script: scripts/07_generate_figure_sources.py
+  figure_generation_schema: docs/figure_generation_schema.md
+
+workflow_validation:
+  validation_script: scripts/08_validate_workflow.py
+  workflow_validation_schema: docs/workflow_validation_schema.md
+
+workflow_runner:
+  runner_script: scripts/run_workflow.py
+  runner_config: config/workflow.yaml
+  smoke_test_config: config/workflow.mock.yaml
+  runner_schema: docs/workflow_runner.md
+
+planned_tools:
+  phage_annotation:
+    primary: pharokka
+    structure_informed: phold
+  genome_similarity:
+    species_like: viridic
+    screening: mash
+  host_annotation:
+    klebsiella_screening: kleborate
+    k_o_typing: kaptive
+  defense_annotation:
+    host_defense: defensefinder
+    alternative_host_defense: padloc
+
+notes:
+  - Specialized bioinformatics tools are listed as planned tools and should be added to environment files only when their workflow stage is implemented.
+
+tool_audit:
+  default_version_timeout_seconds: 10
+  tools:
+    - tool_id: python
+      stage: workflow_core
+      purpose: run Python workflow scripts
+      command: python
+      version_args: ["--version"]
+      required_for_current_workflow: true
+      install_hint: conda environment from environment.yml
+      notes: Required by the direct workflow runner.
+
+    - tool_id: snakemake
+      stage: workflow_core
+      purpose: preferred workflow orchestration
+      command: snakemake
+      version_args: ["--version"]
+      required_for_current_workflow: false
+      install_hint: mamba install -c bioconda snakemake
+      notes: Optional locally because scripts/run_workflow.py is the validated fallback.
+
+    - tool_id: mash
+      stage: dereplication
+      purpose: fast genome similarity screening
+      command: mash
+      version_args: ["--version"]
+      required_for_current_workflow: false
+      install_hint: mamba install -c bioconda mash
+      notes: Planned external similarity tool; current workflow accepts precomputed pairwise tables.
+
+    - tool_id: viridic
+      stage: dereplication
+      purpose: intergenomic similarity for phage species-like clustering
+      command: viridic
+      version_args: ["--version"]
+      required_for_current_workflow: false
+      install_hint: install/run VIRIDIC separately and provide pairwise TSV output
+      notes: Planned external similarity tool; not required for schema smoke tests.
+
+    - tool_id: pharokka
+      stage: annotation_pangenome
+      purpose: standardized bacteriophage annotation
+      command: pharokka.py
+      version_args: ["--version"]
+      required_for_current_workflow: false
+      install_hint: mamba install -c bioconda pharokka
+      notes: Planned annotation source for Stage 3 optional annotation input.
+
+    - tool_id: phold
+      stage: rbp_depolymerase
+      purpose: structure-informed phage protein annotation
+      command: phold
+      version_args: ["--version"]
+      required_for_current_workflow: false
+      install_hint: install Phold in a compatible environment and provide structural evidence TSV
+      notes: Planned structural evidence source for RBP/depolymerase prioritization.
+
+    - tool_id: kleborate
+      stage: host_features
+      purpose: Klebsiella species/ST/AMR/virulence annotation
+      command: kleborate
+      version_args: ["--version"]
+      required_for_current_workflow: false
+      install_hint: mamba install -c bioconda kleborate
+      notes: Planned source for Stage 5 optional Kleborate input.
+
+    - tool_id: kaptive
+      stage: host_features
+      purpose: Klebsiella K/O locus typing
+      command: kaptive
+      version_args: ["--version"]
+      required_for_current_workflow: false
+      install_hint: mamba install -c bioconda kaptive
+      notes: Planned source for Stage 5 optional Kaptive input.
+
+    - tool_id: defensefinder
+      stage: defense_counterdefense
+      purpose: bacterial defense system annotation
+      command: defense-finder
+      version_args: ["--version"]
+      required_for_current_workflow: false
+      install_hint: install DefenseFinder and provide host defense TSV output
+      notes: Planned source for Stage 6 optional host defense input.
+
+    - tool_id: padloc
+      stage: defense_counterdefense
+      purpose: alternative bacterial defense system annotation
+      command: padloc
+      version_args: ["--version"]
+      required_for_current_workflow: false
+      install_hint: install PADLOC separately and provide host defense TSV output
+      notes: Alternative planned source for Stage 6 optional host defense input.
+

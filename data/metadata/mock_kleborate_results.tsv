@@ -1,0 +1,2 @@
+sample	species	ST	virulence_score	resistance_score	AMR_markers	virulence_markers	ybt	iuc	iro	rmpA	rmpA2
+mock_host_001	Klebsiella pneumoniae	ST23	4	2	blaKPC;blaSHV	ybt;iuc;rmpA	ybt 1	iuc 1	NA	present	NA

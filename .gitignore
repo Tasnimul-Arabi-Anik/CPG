@@ -1,0 +1,17 @@
+# Raw data and generated outputs can be large. Keep directory sentinels tracked.
+data/raw/*
+!data/raw/.gitkeep
+!data/raw/mock_public/
+!data/raw/mock_public/*.fna
+
+results/**
+!results/**/
+!results/**/.gitkeep
+
+logs/*
+!logs/.gitkeep
+
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.snakemake/

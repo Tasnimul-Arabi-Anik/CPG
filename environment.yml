@@ -1,0 +1,23 @@
+name: klebsiella-phage-cpg
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.11
+  - pandas
+  - numpy
+  - scipy
+  - scikit-learn
+  - statsmodels
+  - matplotlib
+  - seaborn
+  - biopython
+  - snakemake
+  - pyyaml
+  - networkx
+  - jupyterlab
+  - pyarrow
+  - pip
+  - pip:
+      - rich
+      - typer

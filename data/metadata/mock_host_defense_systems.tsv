@@ -1,0 +1,3 @@
+sample	system	type	subtype	gene_count	genes	contig	start	end	tool	confidence
+mock_host_001	Type I restriction-modification	restriction-modification	Type I RM	3	hsds;hsdm;hsdr	contig_1	1000	6000	MockDefenseFinder	0.95
+mock_host_001	CRISPR-Cas I-E	CRISPR-Cas	I-E	6	cas3;cas8e;cas7;cas5;cas6;cas1	contig_2	8000	16000	MockPADLOC	0.90

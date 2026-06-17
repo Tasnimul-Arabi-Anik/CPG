@@ -1,0 +1,16 @@
+# Fixture-backed source import configuration for workflow smoke testing.
+
+imports:
+  - import_id: mock_public_klebsiella_phages
+    enabled: true
+    input_path: data/metadata/mock_public_source_export.tsv
+    output_path: results/mock/source_imports/mock_public_klebsiella_phages.tsv
+    delimiter: auto
+    overwrite: true
+    source_label: mock_public_export
+    record_type_default: phage
+    phage_lifestyle_default: ambiguous
+    require_klebsiella: true
+    require_phage_keyword: true
+    exclude_regex: "plasmid|not a phage|non-phage"
+    notes: Fixture source import; not real biological evidence.

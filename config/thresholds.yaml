@@ -1,0 +1,57 @@
+# Thresholds for QC, clustering, candidate scoring, and model comparison.
+# Defaults marked "review" are placeholders that should be revisited with literature/tool docs.
+
+genome_qc:
+  min_genome_length_bp: 10000
+  max_genome_length_bp: 1000000
+  min_gc_percent: 20
+  max_gc_percent: 80
+  max_n_percent: 5
+  max_ambiguous_percent: 1
+  metadata_length_tolerance_bp: 0
+  metadata_gc_tolerance_percent: 1
+  exclude_failed_local_sequence_qc_from_clustering: true
+  require_complete_genome_for_primary_atlas: true
+
+dereplication:
+  species_like_identity_percent: 95
+  species_like_coverage_percent: 85
+  representative_selection_order:
+    - complete_genome
+    - has_host_metadata
+    - has_source_metadata
+    - longest_sequence
+  status: review
+
+rbp_depolymerase:
+  min_protein_length_aa: 150
+  high_confidence_score: 0.75
+  medium_confidence_score: 0.50
+  require_synteny_for_high_confidence: true
+  novelty_tiers:
+    tier_1: no_sequence_hit_has_structural_or_domain_support
+    tier_2: weak_sequence_hit_with_synteny_support
+    tier_3: known_family_variant
+
+modeling:
+  min_records_per_class: 5
+  test_fraction: 0.2
+  random_seed: 20260616
+  compare_feature_sets:
+    - taxonomy_only
+    - whole_genome_similarity
+    - rbp_depolymerase_modules
+    - host_k_o
+    - host_defense
+    - receptor_plus_defense_counterdefense
+
+
+sample_support:
+  min_total_records: 1
+  min_cultured_phages: 1
+  min_host_genomes: 1
+  min_prophages: 1
+  min_k_typed_records: 1
+  min_o_typed_records: 1
+  min_st_typed_records: 1
+  min_phage_rows_with_host_metadata: 1

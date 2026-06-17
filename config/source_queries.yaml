@@ -1,0 +1,155 @@
+# Planned public-source query/export handoffs for the real study.
+# This file records reproducible query intent, but the workflow intentionally does not
+# download from public services. Save reviewed exports at the expected paths, then
+# enable the matching source import and catalog entries.
+
+queries:
+  - query_id: inphared_klebsiella_cultured_phages
+    source_id: inphared_klebsiella_phages
+    record_layer: cultured_phages
+    target_database: INPHARED
+    acquisition_mode: reviewed_local_export
+    query_string: 'host genus/name contains "Klebsiella" AND genome_status is complete/high-quality phage genome'
+    expected_export_path: data/metadata/source_exports/inphared_klebsiella_phages.tsv
+    expected_columns:
+      - accession
+      - genome_id
+      - host_species
+      - host_strain
+      - country
+      - year
+      - genome_length
+      - gc_percent
+      - raw_sequence_path
+      - notes
+    identity_columns_required:
+      - genome_id
+      - accession
+      - raw_sequence_path
+    review_priority: primary
+    rationale: Curated complete cultured phage genomes provide the primary atlas backbone before dereplication.
+    notes: Keep INPHARED metadata provenance and snapshot date in the export notes column.
+
+  - query_id: ncbi_virus_klebsiella_cultured_phages
+    source_id: ncbi_virus_klebsiella_phages
+    record_layer: cultured_phages
+    target_database: NCBI_Virus_GenBank_RefSeq
+    acquisition_mode: reviewed_local_export
+    query_string: '((Klebsiella[All Fields]) AND (bacteriophage[Title] OR phage[Title] OR Klebsiella phage[Organism])) NOT plasmid[Title]'
+    expected_export_path: data/metadata/source_exports/ncbi_virus_klebsiella_phages.tsv
+    expected_columns:
+      - accession
+      - genome_id
+      - host_species
+      - country
+      - year
+      - genome_length
+      - gc_percent
+      - notes
+    identity_columns_required:
+      - accession
+      - genome_id
+    review_priority: primary
+    rationale: NCBI Virus/GenBank/RefSeq fills cultured phage records not present in the INPHARED snapshot.
+    notes: Review duplicate accessions against INPHARED before enabling both sources.
+
+  - query_id: literature_klebsiella_phage_accessions
+    source_id: literature_klebsiella_phages
+    record_layer: literature_curated_phages
+    target_database: manual_literature_review
+    acquisition_mode: reviewed_manual_table
+    query_string: 'Klebsiella bacteriophage OR Klebsiella phage AND genome AND depolymerase OR tailspike OR receptor-binding protein'
+    expected_export_path: data/metadata/source_exports/literature_klebsiella_phages.tsv
+    expected_columns:
+      - accession
+      - genome_id
+      - host_species
+      - host_strain
+      - country
+      - year
+      - phage_lifestyle
+      - notes
+    identity_columns_required:
+      - accession
+      - genome_id
+    review_priority: primary_manual
+    rationale: Literature-linked records preserve host-range, K/O, and experimental metadata often absent from public sequence tables.
+    notes: Include DOI/PMID in notes when available.
+
+  - query_id: klebsiella_species_complex_prophage_catalog
+    source_id: klebsiella_prophages
+    record_layer: prophages
+    target_database: local_prophage_mining_export
+    acquisition_mode: reviewed_local_export
+    query_string: 'Klebsiella pneumoniae species complex host genomes with prophage calls, host genome ID, prophage coordinates, and protein IDs'
+    expected_export_path: data/metadata/source_exports/klebsiella_prophages.tsv
+    expected_columns:
+      - genome_id
+      - host_species
+      - host_strain
+      - accession
+      - K_type
+      - O_type
+      - ST
+      - raw_sequence_path
+      - notes
+    identity_columns_required:
+      - genome_id
+      - raw_sequence_path
+      - accession
+    review_priority: primary
+    rationale: Prophages are the key reservoir for testing hidden RBP/depolymerase diversity linked to host K/O background.
+    notes: Keep host genome ID and prophage coordinates in notes until a dedicated prophage schema is added.
+
+  - query_id: metagenomic_klebsiella_viral_contigs_discovery
+    source_id: metagenomic_discovery_contigs
+    record_layer: metagenomic_discovery
+    target_database: optional_metagenomic_viral_contig_catalog
+    acquisition_mode: reviewed_local_export
+    query_string: 'viral contigs predicted from Klebsiella-associated samples, kept as a separate discovery layer'
+    expected_export_path: data/metadata/source_exports/metagenomic_discovery_contigs.tsv
+    expected_columns:
+      - genome_id
+      - source
+      - isolation_host
+      - country
+      - year
+      - genome_length
+      - gc_percent
+      - raw_sequence_path
+      - notes
+    identity_columns_required:
+      - genome_id
+      - raw_sequence_path
+    review_priority: optional_discovery
+    rationale: Discovery contigs can suggest novel modules but should not drive primary taxonomic conclusions.
+    notes: Keep completeness and contamination evidence in notes or a later QC table.
+
+  - query_id: klebsiella_host_genome_catalog
+    source_id: klebsiella_host_genomes
+    record_layer: host_genomes
+    target_database: NCBI_Assembly_or_local_host_catalog
+    acquisition_mode: reviewed_local_export
+    query_string: 'Klebsiella pneumoniae species complex assemblies with K/O typing, MLST, AMR, virulence, and defense-system output compatibility'
+    expected_export_path: data/metadata/source_exports/klebsiella_host_genomes.tsv
+    expected_columns:
+      - genome_id
+      - accession
+      - host_species
+      - host_strain
+      - country
+      - year
+      - K_type
+      - O_type
+      - ST
+      - AMR_markers
+      - virulence_markers
+      - raw_sequence_path
+      - notes
+    identity_columns_required:
+      - genome_id
+      - accession
+      - raw_sequence_path
+    review_priority: primary
+    rationale: Host genomes are required for K/O/ST/AMR/virulence and defense/counter-defense compatibility tests.
+    notes: Prefer records with complete Kaptive/Kleborate and PADLOC/DefenseFinder outputs.

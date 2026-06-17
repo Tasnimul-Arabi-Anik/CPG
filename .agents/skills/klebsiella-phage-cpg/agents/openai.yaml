@@ -1,0 +1,4 @@
+interface:
+  display_name: "Klebsiella Phage CPG"
+  short_description: "Guide Klebsiella phage genomics workflows"
+  default_prompt: "Use -phage-cpg to continue the Klebsiella phage comparative genomics workflow."
