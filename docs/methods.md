@@ -118,6 +118,8 @@ The builder records provenance, missing source files, duplicate genome IDs, miss
 
 The default source catalog includes disabled placeholders for INPHARED, NCBI Virus, literature-linked cultured phages, prophages, metagenomic discovery contigs, and host genomes. These entries should be enabled only after their source TSVs are populated and reviewed.
 
+The initial NCBI Virus/GenBank/RefSeq cultured-phage source unlock uses a metadata-only seed batch from NCBI E-utilities with the query `"Klebsiella phage"[Title] AND "complete genome"[Title]`. Rows are stored in `data/metadata/source_exports/ncbi_virus_klebsiella_phages.tsv`, imported into `data/metadata/source_manifests/ncbi_virus_klebsiella_phages.tsv`, and enabled only after source-export validation and manifest review. Local FASTA paths are intentionally not populated by this source step; accession-backed sequence retrieval is deferred to the sequence fetch manifest so raw-data acquisition remains explicit and reviewable.
+
 ## Sample Support Audit
 
 After generated sample-table construction and source-overlap auditing, `scripts/audit_sample_support.py` checks whether the current sample table satisfies minimum configured support for H1-H6. The audit counts cultured phages, prophages, host genomes, K/O/ST-typed records, and phage rows with host metadata. It writes a per-hypothesis support table, a metric summary, and a concise report. This stage prevents empty or weakly populated real-data runs from being interpreted as biological support for the hypotheses.

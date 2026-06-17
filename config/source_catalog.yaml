@@ -41,7 +41,7 @@ sources:
 
   - source_id: ncbi_virus_klebsiella_phages
     path: data/metadata/source_manifests/ncbi_virus_klebsiella_phages.tsv
-    enabled: false
+    enabled: true
     required: false
     source_label: NCBI_Virus
     record_type_default: phage
