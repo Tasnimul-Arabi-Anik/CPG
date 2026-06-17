@@ -20,6 +20,11 @@ ACCEPTANCE_COLUMNS = [
     "required_fields",
     "missing_required_columns",
     "satisfying_row_count",
+    "rows_with_raw_sequence_path",
+    "rows_with_existing_raw_sequence_path",
+    "raw_sequence_path_issues",
+    "rows_with_provenance_notes",
+    "provenance_note_issues",
     "acceptance_status",
     "blocking_issue",
     "next_action",
@@ -148,6 +153,36 @@ def missing_columns(required_fields: list[str], fieldnames: list[str]) -> list[s
     return missing
 
 
+
+
+def intake_lint(root: Path, rows: list[dict[str, str]]) -> dict[str, str]:
+    rows_with_raw_path = 0
+    rows_with_existing_raw_path = 0
+    raw_path_issues: list[str] = []
+    rows_with_notes = 0
+    provenance_issues: list[str] = []
+    for index, row in enumerate(rows, start=2):
+        raw_path = normalize(row.get("raw_sequence_path"))
+        if not is_missing(raw_path):
+            rows_with_raw_path += 1
+            resolved = resolve(root, raw_path)
+            if resolved.exists() and resolved.is_file():
+                rows_with_existing_raw_path += 1
+            else:
+                raw_path_issues.append(f"row{index}:missing_or_not_file:{raw_path}")
+        notes = normalize(row.get("notes"))
+        if not is_missing(notes):
+            rows_with_notes += 1
+        elif "notes" in row:
+            provenance_issues.append(f"row{index}:notes_missing")
+    return {
+        "rows_with_raw_sequence_path": str(rows_with_raw_path),
+        "rows_with_existing_raw_sequence_path": str(rows_with_existing_raw_path),
+        "raw_sequence_path_issues": ";".join(raw_path_issues) if raw_path_issues else "NA",
+        "rows_with_provenance_notes": str(rows_with_notes),
+        "provenance_note_issues": ";".join(provenance_issues) if provenance_issues else "NA",
+    }
+
 def row_satisfies(required_fields: list[str], row: dict[str, str]) -> bool:
     identity_fields = [field for field in required_fields if field in IDENTITY_FIELDS]
     if identity_fields and not any(not is_missing(row.get(field, "")) for field in identity_fields):
@@ -171,6 +206,11 @@ def check_one(root: Path, work: dict[str, str]) -> dict[str, str]:
         "expected_export_path": display_path(root, export_path) if str(export_path) else "NA",
         "minimum_rows_to_add": str(minimum_rows),
         "required_fields": ";".join(required_fields) if required_fields else "NA",
+        "rows_with_raw_sequence_path": "0",
+        "rows_with_existing_raw_sequence_path": "0",
+        "raw_sequence_path_issues": "NA",
+        "rows_with_provenance_notes": "0",
+        "provenance_note_issues": "NA",
     }
     if not required_fields:
         return {
@@ -217,6 +257,7 @@ def check_one(root: Path, work: dict[str, str]) -> dict[str, str]:
             "next_action": "Configure expected_export_path as a TSV or CSV file path, not a directory.",
         }
     fieldnames, rows = read_export(export_path)
+    lint = intake_lint(root, rows)
     missing = missing_columns(required_fields, fieldnames)
     satisfying = 0 if missing else sum(1 for row in rows if row_satisfies(required_fields, row))
     if not rows:
@@ -237,6 +278,7 @@ def check_one(root: Path, work: dict[str, str]) -> dict[str, str]:
         action = "Rerun source import, enablement, sample support, and downstream workflow stages."
     return {
         **base,
+        **lint,
         "export_exists": "true",
         "export_row_count": str(len(rows)),
         "missing_required_columns": ";".join(missing) if missing else "NA",

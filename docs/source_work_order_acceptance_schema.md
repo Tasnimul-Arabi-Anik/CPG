@@ -27,6 +27,11 @@ The config-driven workflow runs this stage after `stage_0_source_work_order_pack
 | `required_fields` | Required fields for this work order. |
 | `missing_required_columns` | Missing required columns, or `NA`. |
 | `satisfying_row_count` | Rows with enough populated values for this work order. |
+| `rows_with_raw_sequence_path` | Rows with non-missing `raw_sequence_path` values. |
+| `rows_with_existing_raw_sequence_path` | Rows whose `raw_sequence_path` resolves to an existing local file. |
+| `raw_sequence_path_issues` | Row-level missing or non-file local sequence path warnings, or `NA`. |
+| `rows_with_provenance_notes` | Rows with non-missing `notes` values. |
+| `provenance_note_issues` | Row-level missing-note warnings when a `notes` column exists, or `NA`. |
 | `acceptance_status` | `accepted`, `missing_export`, `export_empty`, `missing_required_columns`, or `insufficient_reviewed_rows`. |
 | `blocking_issue` | Whether this work order still blocks source curation. |
 | `next_action` | Next curation or workflow action. |
@@ -41,4 +46,4 @@ The config-driven workflow runs this stage after `stage_0_source_work_order_pack
 
 ## Interpretation
 
-An accepted work order means the reviewed export appears to satisfy the row and field requirements for that curation task. It does not mean the full project goal is complete. Source export validation, manifest import, source enablement, sample support, external evidence, models, figures, and H1-H6 traceability still need to pass.
+An accepted work order means the reviewed export appears to satisfy the row and field requirements for that curation task. The raw-sequence and provenance columns are lint signals for reviewer attention; they do not by themselves convert an accepted work order into biological evidence. It does not mean the full project goal is complete. Source export validation, manifest import, source enablement, sample support, external evidence, models, figures, and H1-H6 traceability still need to pass.
