@@ -41,6 +41,8 @@ One row per retained gene annotation. Important columns:
 | `genome_id` | Genome identifier from the manifest. |
 | `species_cluster_id` | Stage 2 species-like cluster. |
 | `annotation_gene_id` | Globally unique gene ID, formatted as `genome_id|gene_id`. |
+| `protein_id` | Protein accession or source identifier when available. |
+| `protein_sequence` | Amino acid sequence preserved for external domain/profile and structural annotation runs. |
 | `product` | Product annotation, preserving hypothetical proteins. |
 | `phrog_id` | PHROG or homologous group ID when available. |
 | `module_hint` | Coarse module inferred from product/category keywords. |

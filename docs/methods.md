@@ -679,6 +679,23 @@ python scripts/create_external_evidence_run_packets.py \
 
 Output schemas are documented in `docs/external_evidence_run_packet_schema.md`.
 
+## External Evidence Protein Handoff
+
+After normalized annotation, `scripts/export_external_evidence_proteins.py` writes FASTA files and a manifest for external domain/profile and structure-informed RBP/depolymerase evidence generation. The all-protein FASTA supports broad production scans; the prioritized FASTA is a smaller run target for RBP/depolymerase-focused HMM/profile, Foldseek, or Phold-style analyses. Priority labels are run-target hints only and are not treated as domain or structural evidence.
+
+Implemented command:
+
+```bash
+python scripts/export_external_evidence_proteins.py \
+  --annotations results/annotations/phage_annotations.tsv \
+  --all-proteins-output results/qc/external_evidence_proteins/phage_proteins.faa \
+  --candidate-proteins-output results/qc/external_evidence_proteins/rbp_depolymerase_candidate_proteins.faa \
+  --manifest-output results/qc/external_evidence_proteins/protein_export_manifest.tsv \
+  --report-output results/qc/external_evidence_proteins/protein_export_report.tsv
+```
+
+Output schemas are documented in `docs/external_evidence_protein_handoff_schema.md`.
+
 ## External Evidence Acceptance
 
 `check_external_evidence_acceptance.py` reads `results/qc/external_evidence_plan.tsv` after optional evidence TSVs are configured and writes `results/qc/external_evidence_acceptance.tsv`. This table reports whether each evidence layer is accepted for workflow use, missing, schema-invalid, waiting for sequence data, or accepted with provenance lint. It also counts rows with populated `evidence_source`, `tool`, `evidence`, or `notes` fields so production evidence can be reviewed before claims are strengthened.

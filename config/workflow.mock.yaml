@@ -321,6 +321,12 @@ hypothesis_source_unlocks:
   plan: results/mock/qc/hypothesis_source_unlock_plan.tsv
   matrix: results/mock/qc/hypothesis_source_unlock_matrix.tsv
   report: results/mock/qc/hypothesis_source_unlock_report.tsv
+external_evidence_proteins:
+  enabled: true
+  all_proteins: results/mock/qc/external_evidence_proteins/phage_proteins.faa
+  candidate_proteins: results/mock/qc/external_evidence_proteins/rbp_depolymerase_candidate_proteins.faa
+  manifest: results/mock/qc/external_evidence_proteins/protein_export_manifest.tsv
+  report: results/mock/qc/external_evidence_proteins/protein_export_report.tsv
 external_evidence_run_packets:
   enabled: true
   directory: results/mock/qc/external_evidence_run_packets

@@ -101,6 +101,20 @@ def render_packet(root: Path, row: dict[str, str], template: dict[str, str]) -> 
     suggested_command = row.get("suggested_command", "")
     configured_path = row.get("configured_input_path", "")
     optional_key = row.get("optional_input_key", "")
+    protein_handoff_lines: list[str] = []
+    if evidence_id in {"rbp_domain_evidence", "rbp_structural_evidence"}:
+        protein_handoff_lines = [
+            "## Workflow Protein Inputs",
+            "",
+            "The workflow exports protein FASTA files after normalized annotation so domain/profile and structure-informed tools can be run against stable `annotation_gene_id` values:",
+            "",
+            "- All phage/prophage proteins: `results/qc/external_evidence_proteins/phage_proteins.faa`",
+            "- RBP/depolymerase-prioritized proteins: `results/qc/external_evidence_proteins/rbp_depolymerase_candidate_proteins.faa`",
+            "- Protein manifest with priority rationale: `results/qc/external_evidence_proteins/protein_export_manifest.tsv`",
+            "",
+            "Priority labels are run-target hints only; they are not domain or structural evidence and should not be used as novelty support without external tool results.",
+            "",
+        ]
     lines = [
         f"# External Evidence Packet: {evidence_id}",
         "",
@@ -134,6 +148,7 @@ def render_packet(root: Path, row: dict[str, str], template: dict[str, str]) -> 
         "",
         "The command is advisory. Run the appropriate standard tool in the environment where its databases and compute resources are available, then normalize the output to the template columns.",
         "",
+        *protein_handoff_lines,
         "## Acceptance Checklist",
         "",
         "- The TSV is derived from reviewed sequence-backed records, not mock fixtures.",

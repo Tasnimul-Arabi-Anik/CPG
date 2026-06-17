@@ -68,6 +68,7 @@ STAGE_ORDER = [
     "stage_1_pipeline_efficiency_audit",
     "stage_2_dereplication",
     "stage_3_annotations",
+    "stage_3_external_evidence_proteins",
     "stage_4_rbp_depolymerase",
     "stage_5_host_features",
     "stage_6_defense_counterdefense",
@@ -256,6 +257,11 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     external_evidence_run_packets_dir = configured_path(config, root, ("external_evidence_run_packets", "directory"), "results/qc/external_evidence_run_packets")
     external_evidence_run_packets_manifest = configured_path(config, root, ("external_evidence_run_packets", "manifest"), "results/qc/external_evidence_run_packet_manifest.tsv")
     external_evidence_run_packets_report = configured_path(config, root, ("external_evidence_run_packets", "report"), "results/qc/external_evidence_run_packet_report.tsv")
+    external_evidence_proteins_enabled = nested_get(config, ("external_evidence_proteins", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
+    external_evidence_all_proteins = configured_path(config, root, ("external_evidence_proteins", "all_proteins"), "results/qc/external_evidence_proteins/phage_proteins.faa")
+    external_evidence_candidate_proteins = configured_path(config, root, ("external_evidence_proteins", "candidate_proteins"), "results/qc/external_evidence_proteins/rbp_depolymerase_candidate_proteins.faa")
+    external_evidence_protein_manifest = configured_path(config, root, ("external_evidence_proteins", "manifest"), "results/qc/external_evidence_proteins/protein_export_manifest.tsv")
+    external_evidence_protein_report = configured_path(config, root, ("external_evidence_proteins", "report"), "results/qc/external_evidence_proteins/protein_export_report.tsv")
     external_evidence_acceptance_enabled = nested_get(config, ("external_evidence_acceptance", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
     external_evidence_acceptance = configured_path(config, root, ("external_evidence_acceptance", "acceptance"), "results/qc/external_evidence_acceptance.tsv")
     external_evidence_acceptance_report = configured_path(config, root, ("external_evidence_acceptance", "report"), "results/qc/external_evidence_acceptance_report.tsv")
@@ -1458,6 +1464,37 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
             logs_dir / "02_build_annotation_tables.log",
             [annotations, gene_clusters, pangenome, annotation_report],
         ),
+    ])
+
+    if external_evidence_proteins_enabled:
+        stages.append(
+            Stage(
+                "stage_3_external_evidence_proteins",
+                [
+                    python,
+                    script("export_external_evidence_proteins.py"),
+                    "--annotations",
+                    annotations.as_posix(),
+                    "--all-proteins-output",
+                    external_evidence_all_proteins.as_posix(),
+                    "--candidate-proteins-output",
+                    external_evidence_candidate_proteins.as_posix(),
+                    "--manifest-output",
+                    external_evidence_protein_manifest.as_posix(),
+                    "--report-output",
+                    external_evidence_protein_report.as_posix(),
+                ],
+                logs_dir / "03_export_external_evidence_proteins.log",
+                [
+                    external_evidence_all_proteins,
+                    external_evidence_candidate_proteins,
+                    external_evidence_protein_manifest,
+                    external_evidence_protein_report,
+                ],
+            )
+        )
+
+    stages.extend([
         Stage(
             "stage_4_rbp_depolymerase",
             [
