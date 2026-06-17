@@ -48,6 +48,7 @@ Start with these files:
 - `docs/limitations.md`: computational prediction and validation boundaries.
 - `results/validation/goal_completion_audit.tsv`: current objective audit after a workflow run.
 - `results/validation/readiness_action_plan.tsv`: ranked actions needed before manuscript-level claims.
+- `results/qc/external_evidence_plan.tsv`: evidence readiness, provenance origin, and real-claim usability status.
 
 ## What To Review Technically
 
@@ -57,7 +58,7 @@ Reviewers should focus on:
 - whether mock data exercise all major workflow layers without pretending to be real data;
 - whether H1-H6 each map to a quantitative test and figure/data output;
 - whether real and mock paths are separated cleanly;
-- whether optional external evidence tables have clear schemas;
+- whether optional external evidence tables have clear schemas and provenance labels separating mock fixtures from production evidence;
 - whether claim wording is conservative and tied to current evidence status.
 
 ## Current Biological Blocker

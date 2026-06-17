@@ -103,7 +103,7 @@ REQUIRED_OUTPUTS = [
     ("stage_1_sequence_fetch_manifest", "results/qc/sequence_fetch_manifest.tsv", ["command_id", "genome_id", "acquisition_status", "command_class", "requires_network", "ready_to_run", "next_action"]),
     ("stage_1_sequence_fetch_report", "results/qc/sequence_fetch_report.tsv", ["severity", "item", "message"]),
     ("stage_1_sequence_qc", "results/qc/genome_sequence_qc.tsv", ["genome_id", "raw_sequence_path", "sequence_qc_status", "total_length_bp", "gc_percent_observed", "passes_sequence_qc"]),
-    ("stage_1_external_evidence_plan", "results/qc/external_evidence_plan.tsv", ["evidence_id", "analysis_layer", "optional_input_key", "configured_input_path", "configured_input_schema_status", "configured_input_missing_columns", "eligible_sequence_records", "tool_status", "evidence_status", "next_action"]),
+    ("stage_1_external_evidence_plan", "results/qc/external_evidence_plan.tsv", ["evidence_id", "analysis_layer", "optional_input_key", "configured_input_path", "configured_input_schema_status", "configured_input_missing_columns", "eligible_sequence_records", "tool_status", "evidence_status", "evidence_origin", "real_claim_use_status", "next_action"]),
     ("stage_1_external_evidence_report", "results/qc/external_evidence_report.tsv", ["severity", "item", "message"]),
     ("stage_1_external_evidence_template_manifest", "results/qc/external_evidence_template_manifest.tsv", ["evidence_id", "optional_input_key", "template_path", "required_columns_spec", "header_columns", "template_status", "next_action"]),
     ("stage_1_external_evidence_template_report", "results/qc/external_evidence_template_report.tsv", ["severity", "item", "message"]),

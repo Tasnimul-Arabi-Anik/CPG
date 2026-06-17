@@ -25,6 +25,9 @@ PLAN_COLUMNS = [
     "tool_ids",
     "tool_status",
     "evidence_status",
+    "evidence_origin",
+    "real_claim_use_status",
+    "provenance_note",
     "blocking_for_manuscript",
     "next_action",
     "suggested_command",
@@ -282,6 +285,34 @@ def validate_input_schema(fieldnames: list[str], required_all: list[str], requir
     return status, ";".join(required), ";".join(missing)
 
 
+def evidence_provenance(configured_value: str, evidence_status: str) -> tuple[str, str, str]:
+    if not configured_value:
+        return (
+            "not_configured",
+            "not_usable_for_real_claims",
+            "No reviewed evidence TSV is configured for this evidence layer.",
+        )
+    normalized = configured_value.replace("\\", "/").lower()
+    is_mock = "/mock" in normalized or "mock_" in normalized or normalized.startswith("data/metadata/mock")
+    if is_mock:
+        return (
+            "mock_fixture",
+            "fixture_only_not_real_claims",
+            "Configured evidence path is a mock fixture for scaffold validation only.",
+        )
+    if evidence_status == "provided_input_ready":
+        return (
+            "configured_reviewed_tsv",
+            "usable_after_source_and_claim_audits",
+            "Configured TSV is schema-valid and populated; still review methods/provenance before manuscript claims.",
+        )
+    return (
+        "configured_but_not_ready",
+        "not_usable_for_real_claims",
+        "Configured evidence path is missing, empty, or schema-invalid.",
+    )
+
+
 def classify(
     configured_path: str,
     input_exists: bool,
@@ -333,6 +364,7 @@ def plan_evidence(root: Path, workflow_config: Path, tool_availability: Path, ma
         status_text = tool_status(tool_ids, tool_rows)
         tools_available = any_tool_available(tool_ids, tool_rows)
         evidence_status, next_action = classify(configured_value, input_exists, len(input_rows), schema_status, eligible, tool_ids, tools_available)
+        evidence_origin, real_claim_use_status, provenance_note = evidence_provenance(configured_value, evidence_status)
         suggested = spec["command"] if evidence_status in {"ready_to_run_external_tool", "missing_tool_or_input", "manual_evidence_required", "waiting_for_sequence_data"} else spec["next_when_ready"]
         plan.append(
             {
@@ -351,6 +383,9 @@ def plan_evidence(root: Path, workflow_config: Path, tool_availability: Path, ma
                 "tool_ids": ";".join(tool_ids),
                 "tool_status": status_text,
                 "evidence_status": evidence_status,
+                "evidence_origin": evidence_origin,
+                "real_claim_use_status": real_claim_use_status,
+                "provenance_note": provenance_note,
                 "blocking_for_manuscript": spec["blocking_for_manuscript"],
                 "next_action": next_action,
                 "suggested_command": suggested,
@@ -368,9 +403,17 @@ def plan_evidence(root: Path, workflow_config: Path, tool_availability: Path, ma
     invalid_schema = [row["evidence_id"] for row in plan if row["evidence_status"] == "configured_input_schema_invalid"]
     if invalid_schema:
         add_report(report, "warning", "configured_input_schema_invalid", "Schema-invalid evidence inputs: " + ";".join(invalid_schema))
+    origin_counts: dict[str, int] = {}
+    for row in plan:
+        origin_counts[row["evidence_origin"]] = origin_counts.get(row["evidence_origin"], 0) + 1
+    add_report(report, "info", "evidence_origin", ";".join(f"{origin}:{count}" for origin, count in sorted(origin_counts.items())))
+    fixture_ready = [row["evidence_id"] for row in plan if row["evidence_origin"] == "mock_fixture" and row["evidence_status"] == "provided_input_ready"]
+    if fixture_ready:
+        add_report(report, "warning", "fixture_evidence", "Fixture evidence is ready for scaffold tests only: " + ";".join(fixture_ready))
     ready = status_counts.get("provided_input_ready", 0)
-    if ready < len(plan):
-        add_report(report, "warning", "production_evidence", f"{len(plan) - ready} evidence input(s) still need production data, tool runs, or configured TSVs.")
+    real_ready = sum(1 for row in plan if row["real_claim_use_status"] == "usable_after_source_and_claim_audits")
+    if real_ready < len(plan):
+        add_report(report, "warning", "production_evidence", f"{len(plan) - real_ready} evidence input(s) still need production data, tool runs, or configured TSVs for real claims.")
     return plan, report
 
 

@@ -38,6 +38,9 @@ Default path: `results/qc/external_evidence_plan.tsv`.
 | `tool_ids` | Planned tools associated with this evidence. |
 | `tool_status` | Availability status from `results/qc/tool_availability.tsv`. |
 | `evidence_status` | Current readiness state. |
+| `evidence_origin` | Provenance class: `not_configured`, `configured_but_not_ready`, `configured_reviewed_tsv`, or `mock_fixture`. |
+| `real_claim_use_status` | Whether the evidence can support real manuscript claims: `not_usable_for_real_claims`, `fixture_only_not_real_claims`, or `usable_after_source_and_claim_audits`. |
+| `provenance_note` | Short interpretation note for source/provenance review. |
 | `blocking_for_manuscript` | Whether this evidence is required for manuscript-ready claims. |
 | `next_action` | Immediate next action. |
 | `suggested_command` | Command hint or handoff description. It is not executed by the workflow. |
@@ -62,7 +65,7 @@ The planner validates only the minimum columns required by downstream scripts. P
 
 ## Production Use
 
-Use this table after sequence QC. For final analyses, evidence rows should usually be `provided_input_ready`, meaning a reviewed TSV is configured under `inputs` in `config/workflow.yaml`. Tool commands are advisory because external tool installation, databases, and HPC paths are environment-specific.
+Use this table after sequence QC. For final analyses, evidence rows should usually be `provided_input_ready` with `evidence_origin=configured_reviewed_tsv` and `real_claim_use_status=usable_after_source_and_claim_audits`, meaning a reviewed production TSV is configured under `inputs` in `config/workflow.yaml`. Rows marked `mock_fixture` are useful for scaffold validation only and must not support biological claims. Tool commands are advisory because external tool installation, databases, and HPC paths are environment-specific.
 
 ## Related Templates
 
@@ -71,3 +74,7 @@ After this plan is generated, `scripts/create_external_evidence_templates.py` wr
 ## Evidence Unlock Planning
 
 `results/qc/external_evidence_unlock_plan.tsv` and `results/qc/external_evidence_unlock_matrix.tsv` map external evidence readiness to H1-H6. They show which evidence TSVs are blocking each hypothesis after source and sequence curation.
+
+## Provenance Fields
+
+The evidence plan separates readiness from provenance. A mock fixture can be schema-valid and populated, but it is still marked `fixture_only_not_real_claims`. A production TSV can support real claims only after it is populated, schema-valid, externally reviewed, and the downstream source, readiness, and claim audits pass.

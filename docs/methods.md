@@ -558,7 +558,7 @@ Before sample generation, `scripts/plan_source_queries.py` records query intent 
 
 ## External Evidence Planning
 
-After sequence QC, `scripts/plan_external_evidence.py` writes `results/qc/external_evidence_plan.tsv`. The table maps each planned external evidence source to a workflow optional input key, minimum TSV schema checks, sequence-data prerequisite, planned tools, current tool availability, and the next action required for manuscript-ready analyses. This makes missing production evidence explicit before downstream model and figure stages run.
+After sequence QC, `scripts/plan_external_evidence.py` writes `results/qc/external_evidence_plan.tsv`. The table maps each planned external evidence source to a workflow optional input key, minimum TSV schema checks, sequence-data prerequisite, planned tools, current tool availability, evidence provenance, real-claim usability, and the next action required for manuscript-ready analyses. The `evidence_origin` and `real_claim_use_status` fields explicitly separate mock fixtures from production evidence so scaffold tests cannot be mistaken for biological support. This makes missing production evidence explicit before downstream model and figure stages run.
 
 ## Sequence Acquisition Planning
 
