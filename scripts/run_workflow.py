@@ -71,6 +71,7 @@ STAGE_ORDER = [
     "stage_3_external_evidence_proteins",
     "stage_4_rbp_depolymerase",
     "stage_5_host_features",
+    "stage_5_host_defense_handoff",
     "stage_6_defense_counterdefense",
     "stage_7_models",
     "stage_8_figures",
@@ -393,6 +394,10 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     kleborate = out("host_features", "kleborate", "results/host_features/kleborate_results.tsv")
     phage_host_links = out("host_features", "phage_host_links", "results/host_features/phage_host_links.tsv")
     host_report = out("host_features", "report", "results/host_features/host_feature_report.tsv")
+    host_defense_handoff_enabled = nested_get(config, ("host_defense_handoff", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
+    host_defense_handoff_manifest = configured_path(config, root, ("host_defense_handoff", "manifest"), "results/qc/host_defense_run_handoff.tsv")
+    host_defense_handoff_commands = configured_path(config, root, ("host_defense_handoff", "commands"), "results/qc/host_defense_run_commands.sh")
+    host_defense_handoff_report = configured_path(config, root, ("host_defense_handoff", "report"), "results/qc/host_defense_run_handoff_report.tsv")
 
     host_defense = out("defense_systems", "host_defense", "results/defense_systems/host_defense_systems.tsv")
     phage_antidefense = out("defense_systems", "phage_antidefense", "results/defense_systems/phage_antidefense_candidates.tsv")
@@ -1543,6 +1548,34 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
             logs_dir / "04_integrate_host_features.log",
             [host_metadata, kaptive, kleborate, phage_host_links, host_report],
         ),
+    ])
+
+    if host_defense_handoff_enabled:
+        stages.append(
+            Stage(
+                "stage_5_host_defense_handoff",
+                [
+                    python,
+                    script("create_host_defense_run_handoff.py"),
+                    "--host-metadata",
+                    host_metadata.as_posix(),
+                    "--sequence-plan",
+                    sequence_acquisition_plan.as_posix(),
+                    "--manifest-output",
+                    host_defense_handoff_manifest.as_posix(),
+                    "--commands-output",
+                    host_defense_handoff_commands.as_posix(),
+                    "--report-output",
+                    host_defense_handoff_report.as_posix(),
+                    "--root",
+                    root.as_posix(),
+                ],
+                logs_dir / "05_create_host_defense_run_handoff.log",
+                [host_defense_handoff_manifest, host_defense_handoff_commands, host_defense_handoff_report],
+            )
+        )
+
+    stages.extend([
         Stage(
             "stage_6_defense_counterdefense",
             [

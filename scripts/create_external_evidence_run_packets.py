@@ -101,6 +101,19 @@ def render_packet(root: Path, row: dict[str, str], template: dict[str, str]) -> 
     suggested_command = row.get("suggested_command", "")
     configured_path = row.get("configured_input_path", "")
     optional_key = row.get("optional_input_key", "")
+    host_defense_handoff_lines: list[str] = []
+    if evidence_id == "host_defense_systems":
+        host_defense_handoff_lines = [
+            "## Workflow Host FASTA Inputs",
+            "",
+            "The workflow exports a host-defense run handoff for reviewed host genomes with local FASTA files:",
+            "",
+            "- Host defense run manifest: `results/qc/host_defense_run_handoff.tsv`",
+            "- DefenseFinder/PADLOC command file: `results/qc/host_defense_run_commands.sh`",
+            "",
+            "These files are run instructions only; they are not host defense calls and should not be configured as `inputs.host_defense_input`.",
+            "",
+        ]
     protein_handoff_lines: list[str] = []
     if evidence_id in {"rbp_domain_evidence", "rbp_structural_evidence"}:
         protein_handoff_lines = [
@@ -149,6 +162,7 @@ def render_packet(root: Path, row: dict[str, str], template: dict[str, str]) -> 
         "The command is advisory. Run the appropriate standard tool in the environment where its databases and compute resources are available, then normalize the output to the template columns.",
         "",
         *protein_handoff_lines,
+        *host_defense_handoff_lines,
         "## Acceptance Checklist",
         "",
         "- The TSV is derived from reviewed sequence-backed records, not mock fixtures.",

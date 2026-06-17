@@ -491,6 +491,24 @@ python scripts/04_integrate_host_features.py \
 
 Optional Kleborate and Kaptive input schemas are documented in `docs/host_feature_schema.md`.
 
+## Host Defense Run Handoff
+
+After host feature integration, `scripts/create_host_defense_run_handoff.py` creates a DefenseFinder/PADLOC run manifest for reviewed host genome records with local FASTA files. The manifest and command file are production handoffs only; host defense calls are not accepted until reviewed tool output is normalized and configured as `inputs.host_defense_input`.
+
+Implemented command:
+
+```bash
+python scripts/create_host_defense_run_handoff.py \
+  --host-metadata results/host_features/host_metadata.tsv \
+  --sequence-plan results/qc/sequence_acquisition_plan.tsv \
+  --manifest-output results/qc/host_defense_run_handoff.tsv \
+  --commands-output results/qc/host_defense_run_commands.sh \
+  --report-output results/qc/host_defense_run_handoff_report.tsv \
+  --root .
+```
+
+Output schemas are documented in `docs/host_defense_run_handoff_schema.md`.
+
 ## Stage 6: Defense/Counter-Defense Feature Integration
 
 The defense/counter-defense script consumes host metadata, phage-host links, phage annotations, and optional host defense or phage anti-defense evidence tables. It writes normalized host defense systems, phage anti-defense candidates, and compatibility rows that combine receptor metadata with defense/counter-defense features.
