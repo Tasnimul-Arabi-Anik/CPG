@@ -29,3 +29,7 @@ The validator also checks that the selected workflow config exists and contains 
 The documentation audit also requires the source catalog schema so dataset population can be reproduced before Stage 1 manifest validation.
 
 The required output schema audit includes `source_catalog_readiness.tsv` and `source_catalog_audit_report.tsv` so planned, disabled, populated, and invalid source manifests are visible in validation reports. It also requires `results/models/hypothesis_summary.tsv` so H1-H6 have a single audited manuscript-facing evidence summary.
+
+## Mock Fixture Boundary
+
+The workflow validator checks the selected workflow config for mock fixture path references. `config/workflow.mock.yaml` is allowed to reference `data/metadata/mock*`, `data/raw/mock*`, and `results/mock*` paths because it is a fixture workflow. The real workflow config should not reference mock fixture paths; if it does, `workflow_validation_report.tsv` records a `mock_fixture_boundary` failure.

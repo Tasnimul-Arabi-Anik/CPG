@@ -333,6 +333,43 @@ def remap_results_path(rel_path: str, results_dir: Path) -> Path:
     return results_dir / suffix
 
 
+def flatten_config_values(value: object) -> list[str]:
+    values: list[str] = []
+    if isinstance(value, dict):
+        for nested in value.values():
+            values.extend(flatten_config_values(nested))
+    elif isinstance(value, list):
+        for nested in value:
+            values.extend(flatten_config_values(nested))
+    elif isinstance(value, str):
+        values.append(value)
+    return values
+
+
+def mock_fixture_references(config_text: str) -> list[str]:
+    try:
+        import yaml  # type: ignore
+        loaded = yaml.safe_load(config_text) or {}
+        values = flatten_config_values(loaded)
+    except Exception:
+        values = [line.strip() for line in config_text.splitlines()]
+    refs: list[str] = []
+    for value in values:
+        normalized = value.replace("\\", "/")
+        lowered = normalized.lower()
+        if (
+            "/mock" in lowered
+            or "mock_" in lowered
+            or lowered.startswith("results/mock")
+            or lowered.startswith("data/metadata/mock")
+            or lowered.startswith("data/raw/mock")
+            or lowered.endswith(".mock.yaml")
+        ):
+            if normalized not in refs:
+                refs.append(normalized)
+    return refs
+
+
 def validate_schemas(root: Path, results_dir: Path) -> list[dict[str, str]]:
     rows = []
     for stage, rel_path, required_columns in REQUIRED_OUTPUTS:
@@ -454,6 +491,15 @@ def validate_configs(root: Path, report: list[dict[str, str]], workflow_config: 
         add_report(report, "error", "workflow_config", "fail", f"{display_path(root, workflow_config)} missing sections: " + ";".join(missing_sections))
     else:
         add_report(report, "info", "workflow_config", "pass", f"Workflow config {display_path(root, workflow_config)} exists with required top-level sections.")
+
+    mock_refs = mock_fixture_references(text)
+    is_mock_config = workflow_config.name.endswith(".mock.yaml") or "/mock" in display_path(root, workflow_config).lower()
+    if is_mock_config:
+        add_report(report, "info", "mock_fixture_boundary", "pass", f"Mock workflow config allows fixture references; fixture_refs={len(mock_refs)}.")
+    elif mock_refs:
+        add_report(report, "error", "mock_fixture_boundary", "fail", "Real workflow config references mock fixture paths: " + ";".join(mock_refs[:20]))
+    else:
+        add_report(report, "info", "mock_fixture_boundary", "pass", "Real workflow config has no mock fixture path references.")
 
 
 def validate_figures(root: Path, results_dir: Path, report: list[dict[str, str]]) -> None:

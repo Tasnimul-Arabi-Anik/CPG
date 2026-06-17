@@ -57,7 +57,7 @@ Reviewers should focus on:
 - whether source-curation gates prevent unreviewed or malformed rows from becoming evidence;
 - whether mock data exercise all major workflow layers without pretending to be real data;
 - whether H1-H6 each map to a quantitative test and figure/data output;
-- whether real and mock paths are separated cleanly;
+- whether real and mock paths are separated cleanly, including the `mock_fixture_boundary` validation row;
 - whether optional external evidence tables have clear schemas and provenance labels separating mock fixtures from production evidence;
 - whether claim wording is conservative and tied to current evidence status.
 
@@ -93,4 +93,4 @@ That claim requires populated reviewed source data, sequence/evidence tables, H1
 
 ## GitHub Review Notes
 
-Generated `results/` files and workflow logs are ignored by Git except directory sentinels. Reviewers should regenerate outputs locally or through CI. Small mock FASTA fixtures under `data/raw/mock_public/` are tracked because the mock workflow depends on them.
+Generated `results/` files and workflow logs are ignored by Git except directory sentinels. Reviewers should regenerate outputs locally or through CI. Small mock FASTA fixtures under `data/raw/mock_public/` are tracked because the mock workflow depends on them. The validation report includes `mock_fixture_boundary`; it should pass for the real workflow by reporting no mock fixture path references.
