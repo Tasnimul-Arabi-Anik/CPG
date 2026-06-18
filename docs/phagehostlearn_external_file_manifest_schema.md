@@ -2,7 +2,7 @@
 
 `data/metadata/external/phagehostlearn/phagehostlearn_file_manifest.tsv` records the expected local files for the PhageHostLearn benchmark source. The benchmark files are ignored by Git; this manifest preserves where they should be placed and how to verify them.
 
-`scripts/validate_phagehostlearn_external_files.py` validates the manifest without downloading files. Missing files are warnings by default so mock and seed workflows can run from a clean checkout. If a file is present, size and MD5 mismatches are blocking errors. SHA-256 is checked when `expected_sha256` is populated; rows with `expected_sha256=NA` become `sha256_pending_local_review` warnings after size and MD5 pass. Use `--require-present` when running a production/local benchmark review that requires all files, and `--require-sha256` when local SHA-256 review is mandatory.
+`scripts/audit_phagehostlearn_dataset.py` validates the manifest as part of the consolidated source-level audit without downloading files. Missing files are warnings by default so mock and seed workflows can run from a clean checkout. If a file is present, size and MD5 mismatches are blocking errors. SHA-256 is checked when `expected_sha256` is populated; rows with `expected_sha256=NA` become `sha256_pending_local_review` warnings after size and MD5 pass. Use `--require-present` when running a production/local benchmark review that requires all files, and `--require-sha256` when local SHA-256 review is mandatory.
 
 ## Manifest Columns
 
@@ -29,4 +29,4 @@ The companion report records summary counts and repeats the claim boundary: chec
 
 ## Self-Test
 
-`self_test_phagehostlearn_external_files.py` covers matching checksums, missing-file warnings, missing-file errors under `--require-present`, checksum mismatch, and invalid path rejection.
+`self_test_phagehostlearn_dataset.py` covers the consolidated dataset audit, including file-manifest handling through the `external_file_integrity` check.

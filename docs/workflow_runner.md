@@ -56,10 +56,6 @@ python scripts/run_workflow.py --config config/workflow.yaml --stages stage_1_ma
 - `stage_0_source_export_validation` when `source_export_validation.enabled: true`
 - `stage_0_source_imports` when `source_imports.enabled: true`
 - `stage_0_source_manifest_drift` when `source_manifest_drift.enabled: true`
-- `stage_0_phagehostlearn_external_files` when `phagehostlearn_external_files.enabled: true`
-- `stage_0_phagehostlearn_host_archive` when `phagehostlearn_host_archive.enabled: true`
-- `stage_0_phagehostlearn_metadata_support` when `phagehostlearn_metadata_support.enabled: true`
-- `stage_0_phagehostlearn_map_review` when `phagehostlearn_map_review.enabled: true`
 - `stage_0_assay_matrix_normalization` when `assay_matrix_normalization.enabled: true`
 - `stage_0_source_plan` when `source_plan.enabled: true`
 - `stage_0_source_audit` when `source_audit.enabled: true`
@@ -186,15 +182,7 @@ This writes populated test outputs under `results/mock/` and stage logs under `l
 
 The runner writes `results/qc/source_readiness_dashboard.tsv` through `stage_0_source_readiness_dashboard`. This table is the ranked source-curation dashboard that combines export validation, enablement dry-run status, and sample-support preflight blockers.
 
-The runner can normalize reviewed host-by-phage assay matrices through `stage_0_assay_matrix_normalization` when `assay_matrix_normalization.enabled: true`. This stage is disabled in the base profile so seed and clean-checkout runs do not import unreviewed PhageHostLearn rows; it should only be enabled after the external file checks pass locally and source-to-canonical maps are reviewed.
-
-The runner writes `results/<profile>/qc/phagehostlearn_2024_external_files.tsv` through `stage_0_phagehostlearn_external_files`. This provenance audit verifies local PhageHostLearn files against the tracked checksum manifest when they are present and reports clean-checkout missing files as warnings.
-
-The runner writes `results/<profile>/qc/phagehostlearn_2024_host_archive.tsv` through `stage_0_phagehostlearn_host_archive`. This curation audit compares PhageHostLearn host source IDs with FASTA members in the verified host-genome archive and keeps missing archive/member rows as source-review blockers rather than assay evidence.
-
-The runner writes `results/<profile>/qc/phagehostlearn_2024_metadata_support.tsv` through `stage_0_phagehostlearn_metadata_support`. This curation audit compares PhageHostLearn matrix IDs with optional RBPbase and Locibase support files while keeping pending ID maps blocked and non-claim-bearing.
-
-The runner writes `results/<profile>/qc/phagehostlearn_2024_map_review.tsv` through `stage_0_phagehostlearn_map_review`. This curation audit turns metadata-support and map/export status into row-level manual review recommendations without editing the map files.
+The runner audits reviewed assay benchmark datasets through the generic `stage_0_assay_dataset_audit` stage. The current adapter is `scripts/audit_phagehostlearn_dataset.py`, which keeps PhageHostLearn-specific file, archive, mapping, parity, and metadata checks behind that generic workflow surface. The runner can then normalize reviewed host-by-phage assay matrices through `stage_0_assay_matrix_normalization` when `assay_matrix_normalization.enabled: true`. This stage is disabled in the base profile so clean-checkout runs do not regenerate reviewed PhageHostLearn rows implicitly; it should only be enabled after the dataset audit and source-to-canonical maps are reviewed.
 
 The runner writes `results/qc/source_curation_work_order.tsv` through `stage_0_source_curation_work_order`. This table converts the source readiness dashboard into concrete reviewed-row curation tasks with required fields, minimum rows, and validation commands.
 
