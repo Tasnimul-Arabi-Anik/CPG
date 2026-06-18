@@ -45,6 +45,7 @@ Each Markdown packet includes:
 - the workflow input key to configure;
 - the fillable TSV template path and required columns;
 - advisory production command text;
+- RBP/domain and structural packets include copy-paste normalization commands for reviewed HMMER, Foldseek, Phold, or generic TSV outputs;
 - an acceptance checklist for provenance and missing-value handling;
 - a rerun command for evidence planning, validation, readiness, and claim-support audits.
 
