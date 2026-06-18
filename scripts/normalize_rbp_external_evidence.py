@@ -7,6 +7,8 @@ import argparse
 import csv
 import hashlib
 import json
+import math
+import tempfile
 from pathlib import Path
 from typing import Iterable
 
@@ -46,9 +48,10 @@ STRUCTURAL_COLUMNS = [
 REPORT_COLUMNS = ["severity", "item", "message"]
 MISSING = {"", "NA", "N/A", "na", "n/a", "None", "none", "-"}
 
-ANNOTATION_ID_ALIASES = ["annotation_gene_id", "protein_id", "query", "qseqid", "gene_id", "id"]
+ANNOTATION_ID_ALIASES = ["annotation_gene_id", "protein_id", "gene_id", "id"]
 DEFAULT_FOLDSEEK_FIELDS = "query,target,alntmscore,prob,evalue"
 DEFAULT_PHOLD_FIELDS = "annotation_gene_id,structural_hit_id,structural_hit_name,probability"
+LEGACY_PROVENANCE_FIELDS = ["tool", "tool_version", "database", "database_version", "command", "run_date"]
 
 
 class NormalizationError(Exception):
@@ -95,14 +98,26 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--annotation-manifest",
         default="",
-        help="Optional Stage 3 annotation or protein manifest TSV used to validate annotation_gene_id values.",
+        help="Optional Stage 3 annotation or protein manifest TSV used to canonicalize annotation_gene_id values.",
     )
-    parser.add_argument("--tool", default="", help="Tool name to record in normalized evidence provenance.")
-    parser.add_argument("--tool-version", default="", help="Tool version to record in normalized evidence provenance.")
-    parser.add_argument("--database", default="", help="Database/profile/template set name used for the search.")
-    parser.add_argument("--database-version", default="", help="Database/profile/template set version used for the search.")
-    parser.add_argument("--command", default="", help="Reviewed command used to generate the input evidence.")
-    parser.add_argument("--run-date", default="", help="Reviewed run or retrieval date for the input evidence.")
+    parser.add_argument("--domain-tool", default="", help="Domain/profile tool name to record when row-level provenance is absent.")
+    parser.add_argument("--domain-tool-version", default="", help="Domain/profile tool version to record when row-level provenance is absent.")
+    parser.add_argument("--domain-database", default="", help="Domain/profile database name to record when row-level provenance is absent.")
+    parser.add_argument("--domain-database-version", default="", help="Domain/profile database version to record when row-level provenance is absent.")
+    parser.add_argument("--domain-command", default="", help="Reviewed command used to generate the domain/profile input.")
+    parser.add_argument("--domain-run-date", default="", help="Reviewed domain/profile run or retrieval date.")
+    parser.add_argument("--structural-tool", default="", help="Structural annotation tool name to record when row-level provenance is absent.")
+    parser.add_argument("--structural-tool-version", default="", help="Structural annotation tool version to record when row-level provenance is absent.")
+    parser.add_argument("--structural-database", default="", help="Structural database/template set name to record when row-level provenance is absent.")
+    parser.add_argument("--structural-database-version", default="", help="Structural database/template set version to record when row-level provenance is absent.")
+    parser.add_argument("--structural-command", default="", help="Reviewed command used to generate the structural input.")
+    parser.add_argument("--structural-run-date", default="", help="Reviewed structural run or retrieval date.")
+    parser.add_argument("--tool", default="", help=argparse.SUPPRESS)
+    parser.add_argument("--tool-version", default="", help=argparse.SUPPRESS)
+    parser.add_argument("--database", default="", help=argparse.SUPPRESS)
+    parser.add_argument("--database-version", default="", help=argparse.SUPPRESS)
+    parser.add_argument("--command", default="", help=argparse.SUPPRESS)
+    parser.add_argument("--run-date", default="", help=argparse.SUPPRESS)
     parser.add_argument(
         "--overwrite-empty",
         action="store_true",
@@ -148,17 +163,30 @@ def add_output_checksums(rows: list[dict[str, str]], columns: list[str]) -> list
     return output
 
 
-def provenance(path: Path, args: argparse.Namespace | None, default_tool: str, evidence_source: str) -> dict[str, str]:
+def provenance(path: Path, args: argparse.Namespace | None, default_tool: str, evidence_source: str, evidence_type: str = "") -> dict[str, str]:
+    prefix = f"{evidence_type}_" if evidence_type else ""
     return {
         "evidence_source": evidence_source,
-        "tool": normalize(getattr(args, "tool", "")) or default_tool,
-        "tool_version": normalize(getattr(args, "tool_version", "")),
-        "database": normalize(getattr(args, "database", "")),
-        "database_version": normalize(getattr(args, "database_version", "")),
-        "command": normalize(getattr(args, "command", "")),
-        "run_date": normalize(getattr(args, "run_date", "")),
+        "tool": normalize(getattr(args, f"{prefix}tool", "")) or normalize(getattr(args, "tool", "")) or default_tool,
+        "tool_version": normalize(getattr(args, f"{prefix}tool_version", "")) or normalize(getattr(args, "tool_version", "")),
+        "database": normalize(getattr(args, f"{prefix}database", "")) or normalize(getattr(args, "database", "")),
+        "database_version": normalize(getattr(args, f"{prefix}database_version", "")) or normalize(getattr(args, "database_version", "")),
+        "command": normalize(getattr(args, f"{prefix}command", "")) or normalize(getattr(args, "command", "")),
+        "run_date": normalize(getattr(args, f"{prefix}run_date", "")) or normalize(getattr(args, "run_date", "")),
         "input_checksum": file_sha256(path),
         "output_checksum": "",
+    }
+
+
+def row_provenance_fields(row: dict[str, str]) -> dict[str, str]:
+    return {
+        "tool": first_value(row, ["tool"]),
+        "tool_version": first_value(row, ["tool_version", "tool-version", "version"]),
+        "database": first_value(row, ["database", "db", "profile_database", "template_database"]),
+        "database_version": first_value(row, ["database_version", "database-version", "db_version", "profile_database_version", "template_database_version"]),
+        "command": first_value(row, ["command", "run_command"]),
+        "run_date": first_value(row, ["run_date", "date", "retrieved_at"]),
+        "input_checksum": first_value(row, ["input_checksum", "source_checksum"]),
     }
 
 
@@ -167,8 +195,10 @@ def with_provenance(row: dict[str, str], prov: dict[str, str]) -> dict[str, str]
     for column in ["evidence_source"] + PROVENANCE_COLUMNS:
         if column == "evidence_source":
             output[column] = output.get(column) or prov.get(column, "")
+        elif column == "output_checksum":
+            output[column] = ""
         else:
-            output[column] = prov.get(column, "")
+            output[column] = output.get(column) or prov.get(column, "")
     return output
 
 
@@ -232,6 +262,31 @@ def write_tsv(path: Path, columns: Iterable[str], rows: Iterable[dict[str, str]]
             writer.writerow({column: row.get(column, "") for column in fieldnames})
 
 
+def build_temp_tsv(path: Path, columns: Iterable[str], rows: Iterable[dict[str, str]]) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = list(columns)
+    with tempfile.NamedTemporaryFile("w", newline="", encoding="utf-8", dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False) as handle:
+        tmp_path = Path(handle.name)
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, delimiter="\t")
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({column: row.get(column, "") for column in fieldnames})
+    return tmp_path
+
+
+def replace_outputs_atomically(plans: list[tuple[Path, list[str], list[dict[str, str]]]]) -> None:
+    temp_paths: list[tuple[Path, Path]] = []
+    try:
+        for path, columns, rows in plans:
+            temp_paths.append((path, build_temp_tsv(path, columns, rows)))
+        for path, tmp_path in temp_paths:
+            tmp_path.replace(path)
+    finally:
+        for _, tmp_path in temp_paths:
+            if tmp_path.exists():
+                tmp_path.unlink()
+
+
 def first_value(row: dict[str, str], aliases: list[str]) -> str:
     for alias in aliases:
         if alias in row and not is_missing(row[alias]):
@@ -244,19 +299,48 @@ def first_value(row: dict[str, str], aliases: list[str]) -> str:
     return ""
 
 
-def load_annotation_ids(path_text: str) -> set[str]:
+def load_annotation_id_map(path_text: str) -> dict[str, str]:
     if is_missing(path_text):
-        return set()
+        return {}
     path = Path(path_text)
     fieldnames, rows = read_tsv(path)
-    ids = set()
+    if "annotation_gene_id" not in fieldnames:
+        raise NormalizationError(f"Annotation manifest is missing required annotation_gene_id column: {path}")
+    aliases: dict[str, set[str]] = {}
     for row in rows:
-        value = first_value(row, ANNOTATION_ID_ALIASES)
-        if not is_missing(value):
-            ids.add(value)
-    if not ids and fieldnames:
+        canonical = normalize(row.get("annotation_gene_id", ""))
+        if is_missing(canonical):
+            continue
+        for column in ANNOTATION_ID_ALIASES:
+            value = normalize(row.get(column, ""))
+            if not is_missing(value):
+                aliases.setdefault(value, set()).add(canonical)
+        aliases.setdefault(canonical, set()).add(canonical)
+    ambiguous = {identifier: sorted(values) for identifier, values in aliases.items() if len(values) > 1}
+    if ambiguous:
+        examples = ";".join(f"{identifier}->{','.join(values)}" for identifier, values in sorted(ambiguous.items())[:5])
+        raise NormalizationError(f"Ambiguous annotation identifier mapping in annotation manifest: {examples}")
+    id_map = {identifier: next(iter(values)) for identifier, values in aliases.items()}
+    if not id_map and fieldnames:
         raise NormalizationError(f"Annotation manifest has no recognizable annotation IDs: {path}")
-    return ids
+    return id_map
+
+
+def load_annotation_ids(path_text: str) -> set[str]:
+    return set(load_annotation_id_map(path_text))
+
+
+def canonicalize_annotation_id(row: dict[str, str], id_map: dict[str, str], evidence_type: str) -> tuple[str, bool]:
+    annotation_gene_id = normalize(row.get("annotation_gene_id", ""))
+    if is_missing(annotation_gene_id):
+        raise NormalizationError(f"{evidence_type.capitalize()} evidence row is missing annotation_gene_id")
+    if not id_map:
+        return annotation_gene_id, False
+    canonical = id_map.get(annotation_gene_id)
+    if canonical is None:
+        raise NormalizationError(f"Unknown annotation_gene_id in {evidence_type} evidence: {annotation_gene_id}")
+    row["annotation_gene_id"] = canonical
+    return canonical, canonical != annotation_gene_id
 
 
 def parse_float(value: str, field: str, row_id: str, minimum: float | None = None, maximum: float | None = None) -> str:
@@ -266,6 +350,8 @@ def parse_float(value: str, field: str, row_id: str, minimum: float | None = Non
         parsed = float(value)
     except ValueError as exc:
         raise NormalizationError(f"{row_id}: {field} is not numeric: {value}") from exc
+    if not math.isfinite(parsed):
+        raise NormalizationError(f"{row_id}: {field} is non-finite: {value}")
     if minimum is not None and parsed < minimum:
         raise NormalizationError(f"{row_id}: {field} is below {minimum:g}: {value}")
     if maximum is not None and parsed > maximum:
@@ -290,6 +376,8 @@ def parse_int_field(value: str, field: str, row_id: str) -> str:
         parsed_float = float(value)
     except ValueError as exc:
         raise NormalizationError(f"{row_id}: {field} is not an integer coordinate: {value}") from exc
+    if not math.isfinite(parsed_float):
+        raise NormalizationError(f"{row_id}: {field} is non-finite: {value}")
     if not parsed_float.is_integer():
         raise NormalizationError(f"{row_id}: {field} is not an integer coordinate: {value}")
     parsed = int(parsed_float)
@@ -300,7 +388,7 @@ def parse_int_field(value: str, field: str, row_id: str) -> str:
 
 def normalize_domain_generic(path: Path, prov: dict[str, str] | None = None) -> list[dict[str, str]]:
     _, rows = read_tsv(path)
-    prov = prov or provenance(path, None, "generic_domain_review", f"generic_tsv:{path}")
+    prov = prov or provenance(path, None, "generic_domain_review", f"generic_tsv:{path}", "domain")
     output = []
     for row in rows:
         annotation_gene_id = first_value(row, ["annotation_gene_id", "target_name", "target", "protein_id", "query", "qseqid"])
@@ -319,6 +407,7 @@ def normalize_domain_generic(path: Path, prov: dict[str, str] | None = None) -> 
                     "evalue": first_value(row, ["evalue", "i_evalue", "E-value", "eval"]),
                     "evidence_source": first_value(row, ["evidence_source", "tool", "source"]) or prov["evidence_source"],
                     "notes": first_value(row, ["notes"]) or "normalized reviewed domain evidence",
+                    **row_provenance_fields(row),
                 },
                 prov,
             )
@@ -329,7 +418,7 @@ def normalize_domain_generic(path: Path, prov: dict[str, str] | None = None) -> 
 def normalize_domain_hmmer_domtblout(path: Path, hmmer_mode: str = "hmmsearch", prov: dict[str, str] | None = None) -> list[dict[str, str]]:
     if hmmer_mode not in {"hmmsearch", "hmmscan"}:
         raise NormalizationError(f"Unsupported hmmer mode: {hmmer_mode}")
-    prov = prov or provenance(path, None, "hmmer", f"hmmer_domtblout:{path}")
+    prov = prov or provenance(path, None, "hmmer", f"hmmer_domtblout:{path}", "domain")
     output = []
     with path.open(encoding="utf-8") as handle:
         for line_number, line in enumerate(handle, start=1):
@@ -375,7 +464,7 @@ def normalize_domain_hmmer_domtblout(path: Path, hmmer_mode: str = "hmmsearch", 
 
 def normalize_structural_generic(path: Path, prov: dict[str, str] | None = None) -> list[dict[str, str]]:
     _, rows = read_tsv(path)
-    prov = prov or provenance(path, None, "generic_structural_review", f"generic_tsv:{path}")
+    prov = prov or provenance(path, None, "generic_structural_review", f"generic_tsv:{path}", "structural")
     return normalize_structural_rows(rows, prov, "generic structural evidence")
 
 
@@ -397,6 +486,7 @@ def normalize_structural_rows(rows: list[dict[str, str]], prov: dict[str, str], 
                     "probability": first_value(row, ["probability", "prob", "confidence", "phold_probability"]),
                     "evidence_source": first_value(row, ["evidence_source", "tool", "source"]) or prov["evidence_source"],
                     "notes": first_value(row, ["notes"]) or f"normalized reviewed {notes}",
+                    **row_provenance_fields(row),
                 },
                 prov,
             )
@@ -405,27 +495,27 @@ def normalize_structural_rows(rows: list[dict[str, str]], prov: dict[str, str], 
 
 
 def normalize_structural_foldseek(path: Path, fields_text: str = DEFAULT_FOLDSEEK_FIELDS, prov: dict[str, str] | None = None) -> list[dict[str, str]]:
-    prov = prov or provenance(path, None, "foldseek", f"foldseek_tsv:{path}")
+    prov = prov or provenance(path, None, "foldseek", f"foldseek_tsv:{path}", "structural")
     rows = read_headerless_or_headered(path, fields_text, "foldseek_tsv")
     return normalize_structural_rows(rows, prov, "Foldseek structural evidence")
 
 
 def normalize_structural_phold(path: Path, fields_text: str = DEFAULT_PHOLD_FIELDS, prov: dict[str, str] | None = None) -> list[dict[str, str]]:
-    prov = prov or provenance(path, None, "phold", f"phold_tsv:{path}")
+    prov = prov or provenance(path, None, "phold", f"phold_tsv:{path}", "structural")
     rows = read_headerless_or_headered(path, fields_text, "phold_tsv")
     return normalize_structural_rows(rows, prov, "Phold structural evidence")
 
 
-def validate_domain_rows(rows: list[dict[str, str]], allowed_ids: set[str], report: list[dict[str, str]]) -> list[dict[str, str]]:
+def validate_domain_rows(rows: list[dict[str, str]], id_map: dict[str, str], report: list[dict[str, str]]) -> list[dict[str, str]]:
     seen: set[tuple[str, str, str, str]] = set()
     output = []
     duplicate_count = 0
+    translated_count = 0
+    direct_count = 0
     for row in rows:
-        row_id = row.get("annotation_gene_id", "<missing_annotation_gene_id>")
-        if is_missing(row.get("annotation_gene_id")):
-            raise NormalizationError("Domain evidence row is missing annotation_gene_id")
-        if allowed_ids and row["annotation_gene_id"] not in allowed_ids:
-            raise NormalizationError(f"Unknown annotation_gene_id in domain evidence: {row['annotation_gene_id']}")
+        row_id, translated = canonicalize_annotation_id(row, id_map, "domain")
+        translated_count += int(translated)
+        direct_count += int(not translated)
         if is_missing(row.get("domain_id")):
             raise NormalizationError(f"{row_id}: domain_id is required")
         row["start_aa"] = parse_int_field(row.get("start_aa", ""), "start_aa", row_id)
@@ -441,19 +531,21 @@ def validate_domain_rows(rows: list[dict[str, str]], allowed_ids: set[str], repo
         output.append(row)
     if duplicate_count:
         add_report(report, "warning", "domain_duplicates", f"Skipped {duplicate_count} duplicate domain evidence rows.")
+    if rows and id_map:
+        add_report(report, "info", "domain_annotation_ids", f"direct_matches={direct_count}; translated_aliases={translated_count}")
     return add_output_checksums(output, DOMAIN_COLUMNS)
 
 
-def validate_structural_rows(rows: list[dict[str, str]], allowed_ids: set[str], report: list[dict[str, str]]) -> list[dict[str, str]]:
+def validate_structural_rows(rows: list[dict[str, str]], id_map: dict[str, str], report: list[dict[str, str]]) -> list[dict[str, str]]:
     seen: set[tuple[str, str]] = set()
     output = []
     duplicate_count = 0
+    translated_count = 0
+    direct_count = 0
     for row in rows:
-        row_id = row.get("annotation_gene_id", "<missing_annotation_gene_id>")
-        if is_missing(row.get("annotation_gene_id")):
-            raise NormalizationError("Structural evidence row is missing annotation_gene_id")
-        if allowed_ids and row["annotation_gene_id"] not in allowed_ids:
-            raise NormalizationError(f"Unknown annotation_gene_id in structural evidence: {row['annotation_gene_id']}")
+        row_id, translated = canonicalize_annotation_id(row, id_map, "structural")
+        translated_count += int(translated)
+        direct_count += int(not translated)
         if is_missing(row.get("structural_hit_id")):
             raise NormalizationError(f"{row_id}: structural_hit_id is required")
         row["tm_score"] = parse_float(row.get("tm_score", ""), "tm_score", row_id, 0.0, 1.0)
@@ -466,82 +558,151 @@ def validate_structural_rows(rows: list[dict[str, str]], allowed_ids: set[str], 
         output.append(row)
     if duplicate_count:
         add_report(report, "warning", "structural_duplicates", f"Skipped {duplicate_count} duplicate structural evidence rows.")
+    if rows and id_map:
+        add_report(report, "info", "structural_annotation_ids", f"direct_matches={direct_count}; translated_aliases={translated_count}")
     return add_output_checksums(output, STRUCTURAL_COLUMNS)
 
 
-def maybe_write_empty_output(path: Path, columns: list[str], overwrite_empty: bool, report: list[dict[str, str]], item: str) -> None:
+def maybe_plan_empty_output(path: Path, columns: list[str], overwrite_empty: bool, report: list[dict[str, str]], item: str) -> tuple[Path, list[str], list[dict[str, str]]] | None:
     if path.exists() and not overwrite_empty:
         add_report(report, "info", item, f"no input supplied; preserved existing output because --overwrite-empty was not set: {path}")
-        return
-    write_tsv(path, columns, [])
+        return None
     add_report(report, "info", item, f"no input supplied; wrote header-only output: {path}")
+    return (path, columns, [])
 
 
-def normalize_domain_from_args(args: argparse.Namespace, allowed_ids: set[str], report: list[dict[str, str]]) -> list[dict[str, str]]:
+def maybe_write_empty_output(path: Path, columns: list[str], overwrite_empty: bool, report: list[dict[str, str]], item: str) -> None:
+    plan = maybe_plan_empty_output(path, columns, overwrite_empty, report, item)
+    if plan is not None:
+        replace_outputs_atomically([plan])
+
+
+def normalize_domain_from_args(args: argparse.Namespace, id_map: dict[str, str], report: list[dict[str, str]]) -> list[dict[str, str]]:
     path = Path(args.domain_input)
     if not path.exists():
         raise NormalizationError(f"Domain input does not exist: {path}")
-    prov = provenance(path, args, "hmmer" if args.domain_format == "hmmer_domtblout" else "generic_domain_review", f"{args.domain_format}:{path}")
+    prov = provenance(path, args, "hmmer" if args.domain_format == "hmmer_domtblout" else "generic_domain_review", f"{args.domain_format}:{path}", "domain")
     if args.domain_format == "hmmer_domtblout":
         rows = normalize_domain_hmmer_domtblout(path, args.hmmer_mode, prov)
     else:
         rows = normalize_domain_generic(path, prov)
-    rows = validate_domain_rows(rows, allowed_ids, report)
+    rows = validate_domain_rows(rows, id_map, report)
     add_report(report, "info", "domain_evidence", f"normalized_rows={len(rows)}; input={path}; format={args.domain_format}")
     return rows
 
 
-def normalize_structural_from_args(args: argparse.Namespace, allowed_ids: set[str], report: list[dict[str, str]]) -> list[dict[str, str]]:
+def normalize_structural_from_args(args: argparse.Namespace, id_map: dict[str, str], report: list[dict[str, str]]) -> list[dict[str, str]]:
     path = Path(args.structural_input)
     if not path.exists():
         raise NormalizationError(f"Structural input does not exist: {path}")
     default_tool = {"foldseek_tsv": "foldseek", "phold_tsv": "phold"}.get(args.structural_format, "generic_structural_review")
-    prov = provenance(path, args, default_tool, f"{args.structural_format}:{path}")
+    prov = provenance(path, args, default_tool, f"{args.structural_format}:{path}", "structural")
     if args.structural_format == "foldseek_tsv":
         rows = normalize_structural_foldseek(path, args.foldseek_fields, prov)
     elif args.structural_format == "phold_tsv":
         rows = normalize_structural_phold(path, args.phold_fields, prov)
     else:
         rows = normalize_structural_generic(path, prov)
-    rows = validate_structural_rows(rows, allowed_ids, report)
+    rows = validate_structural_rows(rows, id_map, report)
     add_report(report, "info", "structural_evidence", f"normalized_rows={len(rows)}; input={path}; format={args.structural_format}")
     return rows
 
 
-def main() -> int:
-    args = parse_args()
-    report: list[dict[str, str]] = []
+def comparable_path(path_text: str) -> Path:
+    return Path(path_text).expanduser().resolve(strict=False)
+
+
+def has_legacy_provenance(args: argparse.Namespace) -> bool:
+    return any(not is_missing(getattr(args, field, "")) for field in LEGACY_PROVENANCE_FIELDS)
+
+
+def validate_shared_provenance(args: argparse.Namespace) -> None:
+    if not is_missing(args.domain_input) and not is_missing(args.structural_input) and has_legacy_provenance(args):
+        raise NormalizationError("Shared provenance arguments cannot be used when both domain and structural inputs are supplied; use --domain-* and --structural-* provenance arguments.")
+
+
+def validate_path_collisions(args: argparse.Namespace) -> None:
+    domain_output = comparable_path(args.domain_output)
+    structural_output = comparable_path(args.structural_output)
+    report_output = comparable_path(args.report_output)
+    if domain_output == structural_output:
+        raise NormalizationError("domain_output and structural_output must be different paths")
+    if report_output in {domain_output, structural_output}:
+        raise NormalizationError("report_output must not be the same path as an evidence output")
+    input_paths = []
+    if not is_missing(args.domain_input):
+        input_paths.append(("domain_input", comparable_path(args.domain_input)))
+    if not is_missing(args.structural_input):
+        input_paths.append(("structural_input", comparable_path(args.structural_input)))
+    output_paths = [("domain_output", domain_output), ("structural_output", structural_output), ("report_output", report_output)]
+    for input_name, input_path in input_paths:
+        for output_name, output_path in output_paths:
+            if input_path == output_path:
+                raise NormalizationError(f"{input_name} must not be the same path as {output_name}")
+
+
+def report_output_collides_with_evidence_output(args: argparse.Namespace) -> bool:
+    report_output = comparable_path(args.report_output)
+    return report_output in {comparable_path(args.domain_output), comparable_path(args.structural_output)}
+
+
+def prepare_output_plans(args: argparse.Namespace, id_map: dict[str, str], report: list[dict[str, str]]) -> tuple[list[tuple[Path, list[str], list[dict[str, str]]]], int, int]:
+    plans: list[tuple[Path, list[str], list[dict[str, str]]]] = []
     domain_rows: list[dict[str, str]] = []
     structural_rows: list[dict[str, str]] = []
+    domain_output = Path(args.domain_output)
+    structural_output = Path(args.structural_output)
+
+    if not is_missing(args.domain_input):
+        domain_rows = normalize_domain_from_args(args, id_map, report)
+        plans.append((domain_output, DOMAIN_COLUMNS, domain_rows))
+    else:
+        plan = maybe_plan_empty_output(domain_output, DOMAIN_COLUMNS, args.overwrite_empty, report, "domain_evidence")
+        if plan is not None:
+            plans.append(plan)
+
+    if not is_missing(args.structural_input):
+        structural_rows = normalize_structural_from_args(args, id_map, report)
+        plans.append((structural_output, STRUCTURAL_COLUMNS, structural_rows))
+    else:
+        plan = maybe_plan_empty_output(structural_output, STRUCTURAL_COLUMNS, args.overwrite_empty, report, "structural_evidence")
+        if plan is not None:
+            plans.append(plan)
+
+    return plans, len(domain_rows), len(structural_rows)
+
+
+def run(args: argparse.Namespace) -> int:
+    report: list[dict[str, str]] = []
+    domain_count = 0
+    structural_count = 0
 
     try:
-        allowed_ids = load_annotation_ids(args.annotation_manifest)
-        if allowed_ids:
-            add_report(report, "info", "annotation_manifest", f"loaded_annotation_gene_ids={len(allowed_ids)}; path={args.annotation_manifest}")
+        validate_path_collisions(args)
+        validate_shared_provenance(args)
+        id_map = load_annotation_id_map(args.annotation_manifest)
+        if id_map:
+            canonical_ids = sorted(set(id_map.values()))
+            translated_aliases = sum(1 for identifier, canonical in id_map.items() if identifier != canonical)
+            add_report(report, "info", "annotation_manifest", f"loaded_annotation_gene_ids={len(canonical_ids)}; translated_aliases={translated_aliases}; path={args.annotation_manifest}")
 
-        domain_output = Path(args.domain_output)
-        structural_output = Path(args.structural_output)
-        if not is_missing(args.domain_input):
-            domain_rows = normalize_domain_from_args(args, allowed_ids, report)
-            write_tsv(domain_output, DOMAIN_COLUMNS, domain_rows)
-        else:
-            maybe_write_empty_output(domain_output, DOMAIN_COLUMNS, args.overwrite_empty, report, "domain_evidence")
-
-        if not is_missing(args.structural_input):
-            structural_rows = normalize_structural_from_args(args, allowed_ids, report)
-            write_tsv(structural_output, STRUCTURAL_COLUMNS, structural_rows)
-        else:
-            maybe_write_empty_output(structural_output, STRUCTURAL_COLUMNS, args.overwrite_empty, report, "structural_evidence")
+        plans, domain_count, structural_count = prepare_output_plans(args, id_map, report)
+        replace_outputs_atomically(plans)
 
     except NormalizationError as exc:
         add_report(report, "error", "normalization", str(exc))
-        write_tsv(Path(args.report_output), REPORT_COLUMNS, report)
+        if not report_output_collides_with_evidence_output(args):
+            write_tsv(Path(args.report_output), REPORT_COLUMNS, report)
         print(f"RBP external evidence normalization failed: {exc}")
         return 1
 
     write_tsv(Path(args.report_output), REPORT_COLUMNS, report)
-    print(f"RBP external evidence normalization complete: domain_rows={len(domain_rows)}; structural_rows={len(structural_rows)}.")
+    print(f"RBP external evidence normalization complete: domain_rows={domain_count}; structural_rows={structural_count}.")
     return 0
+
+
+def main() -> int:
+    return run(parse_args())
 
 
 if __name__ == "__main__":

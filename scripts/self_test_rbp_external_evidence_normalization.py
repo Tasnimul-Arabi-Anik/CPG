@@ -44,6 +44,11 @@ def write_tsv(path: Path, columns: Iterable[str], rows: Iterable[dict[str, str]]
             writer.writerow({column: row.get(column, "") for column in fieldnames})
 
 
+def read_tsv(path: Path) -> list[dict[str, str]]:
+    with path.open(newline="", encoding="utf-8") as handle:
+        return list(csv.DictReader(handle, delimiter="\t"))
+
+
 def write_text(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
@@ -59,6 +64,18 @@ def make_args(tmpdir: Path, **overrides: str | bool) -> argparse.Namespace:
         "foldseek_fields": normalizer.DEFAULT_FOLDSEEK_FIELDS,
         "phold_fields": normalizer.DEFAULT_PHOLD_FIELDS,
         "annotation_manifest": "",
+        "domain_tool": "",
+        "domain_tool_version": "",
+        "domain_database": "",
+        "domain_database_version": "",
+        "domain_command": "",
+        "domain_run_date": "",
+        "structural_tool": "",
+        "structural_tool_version": "",
+        "structural_database": "",
+        "structural_database_version": "",
+        "structural_command": "",
+        "structural_run_date": "",
         "tool": "",
         "tool_version": "",
         "database": "",
@@ -139,16 +156,16 @@ def check_error_case(
 
 def normalize_domain(path: Path, tmpdir: Path, **overrides: str | bool) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
     report: list[dict[str, str]] = []
-    args = make_args(tmpdir, domain_input=str(path), **overrides)
-    allowed_ids = normalizer.load_annotation_ids(str(tmpdir / "annotation_manifest.tsv"))
-    return normalizer.normalize_domain_from_args(args, allowed_ids, report), report
+    args = make_args(tmpdir, domain_input=str(path), annotation_manifest=str(tmpdir / "annotation_manifest.tsv"), **overrides)
+    id_map = normalizer.load_annotation_id_map(args.annotation_manifest)
+    return normalizer.normalize_domain_from_args(args, id_map, report), report
 
 
 def normalize_structural(path: Path, tmpdir: Path, **overrides: str | bool) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
     report: list[dict[str, str]] = []
-    args = make_args(tmpdir, structural_input=str(path), **overrides)
-    allowed_ids = normalizer.load_annotation_ids(str(tmpdir / "annotation_manifest.tsv"))
-    return normalizer.normalize_structural_from_args(args, allowed_ids, report), report
+    args = make_args(tmpdir, structural_input=str(path), annotation_manifest=str(tmpdir / "annotation_manifest.tsv"), **overrides)
+    id_map = normalizer.load_annotation_id_map(args.annotation_manifest)
+    return normalizer.normalize_structural_from_args(args, id_map, report), report
 
 
 def run_tests() -> list[dict[str, str]]:
@@ -158,12 +175,12 @@ def run_tests() -> list[dict[str, str]]:
         manifest = tmpdir / "annotation_manifest.tsv"
         write_text(
             manifest,
-            "annotation_gene_id\tphage_id\tproduct\n"
-            "geneA\tphage1\ttail fiber\n"
-            "geneB\tphage1\ttail spike\n"
-            "geneC\tphage2\tdepolymerase\n"
-            "geneD\tphage2\thypothetical protein\n"
-            "geneE\tphage3\ttail fiber\n",
+            "annotation_gene_id\tprotein_id\tgene_id\tphage_id\tproduct\n"
+            "geneA\tprotA\taliasA\tphage1\ttail fiber\n"
+            "geneB\tprotB\taliasB\tphage1\ttail spike\n"
+            "geneC\tprotC\taliasC\tphage2\tdepolymerase\n"
+            "geneD\tprotD\taliasD\tphage2\thypothetical protein\n"
+            "geneE\tprotE\taliasE\tphage3\ttail fiber\n",
         )
 
         generic_domain = tmpdir / "domain.tsv"
@@ -172,11 +189,18 @@ def run_tests() -> list[dict[str, str]]:
             "annotation_gene_id\tdomain_id\tdomain_name\tstart_aa\tend_aa\tevalue\tevidence_source\tnotes\n"
             "geneA\tPF00001\tTail fiber domain\t5\t120\t1e-20\thmmer-test\treviewed\n",
         )
-        domain_rows, _ = normalize_domain(generic_domain, tmpdir, tool="hmmer", tool_version="3.4", database="pfam", database_version="review-fixture")
+        domain_rows, _ = normalize_domain(
+            generic_domain,
+            tmpdir,
+            domain_tool="hmmer",
+            domain_tool_version="3.4",
+            domain_database="pfam",
+            domain_database_version="review-fixture",
+        )
         rows.append(
             check_case(
                 "generic_domain",
-                "generic domain TSV is normalized with provenance columns",
+                "generic domain TSV is normalized with type-specific provenance columns",
                 domain_rows,
                 [],
                 1,
@@ -192,6 +216,26 @@ def run_tests() -> list[dict[str, str]]:
                 )
                 if domain_rows
                 else "",
+            )
+        )
+
+        row_provenance = tmpdir / "row_provenance_domain.tsv"
+        write_text(
+            row_provenance,
+            "annotation_gene_id\tdomain_id\tdomain_name\tstart_aa\tend_aa\tevalue\ttool\tdatabase\n"
+            "geneA\tPF00001\tTail fiber domain\t5\t120\t1e-20\trow_hmmer\trow_pfam\n",
+        )
+        row_prov_rows, _ = normalize_domain(row_provenance, tmpdir, domain_tool="cli_hmmer", domain_database="cli_pfam")
+        rows.append(
+            check_case(
+                "row_level_provenance_precedence",
+                "row-level provenance is retained ahead of CLI provenance",
+                row_prov_rows,
+                [],
+                1,
+                0,
+                "row_hmmer|row_pfam",
+                "|".join([row_prov_rows[0].get("tool", ""), row_prov_rows[0].get("database", "")]) if row_prov_rows else "",
             )
         )
 
@@ -403,6 +447,236 @@ def run_tests() -> list[dict[str, str]]:
                 existing_output.read_text(encoding="utf-8").splitlines()[1],
             )
         )
+
+        transactional_domain = tmpdir / "transactional_domain.tsv"
+        transactional_structural = tmpdir / "transactional_structural.tsv"
+        domain_out = tmpdir / "transactional_domain_out.tsv"
+        structural_out = tmpdir / "transactional_structural_out.tsv"
+        write_text(transactional_domain, generic_domain.read_text(encoding="utf-8"))
+        write_text(
+            transactional_structural,
+            "annotation_gene_id\tstructural_hit_id\tstructural_hit_name\tprobability\n"
+            "geneE\tphold:tailspike\tTailspike-like receptor binding protein\tnan\n",
+        )
+        write_text(domain_out, "sentinel\nkeep_domain\n")
+        write_text(structural_out, "sentinel\nkeep_structural\n")
+        txn_args = make_args(
+            tmpdir,
+            annotation_manifest=str(manifest),
+            domain_input=str(transactional_domain),
+            structural_input=str(transactional_structural),
+            domain_output=str(domain_out),
+            structural_output=str(structural_out),
+            report_output=str(tmpdir / "transactional_report.tsv"),
+        )
+        txn_rc = normalizer.run(txn_args)
+        rows.append(
+            check_case(
+                "transactional_no_partial_write",
+                "valid domain evidence is not written when structural evidence validation fails",
+                [],
+                [],
+                0,
+                0,
+                "1|keep_domain|keep_structural",
+                "|".join(
+                    [
+                        str(txn_rc),
+                        domain_out.read_text(encoding="utf-8").splitlines()[1],
+                        structural_out.read_text(encoding="utf-8").splitlines()[1],
+                    ]
+                ),
+            )
+        )
+
+        distinct_domain = tmpdir / "distinct_domain.tsv"
+        distinct_structural = tmpdir / "distinct_structural.tsv"
+        write_text(distinct_domain, generic_domain.read_text(encoding="utf-8"))
+        write_text(distinct_structural, phold.read_text(encoding="utf-8"))
+        distinct_args = make_args(
+            tmpdir,
+            annotation_manifest=str(manifest),
+            domain_input=str(distinct_domain),
+            structural_input=str(distinct_structural),
+            structural_format="phold_tsv",
+            domain_output=str(tmpdir / "distinct_domain_out.tsv"),
+            structural_output=str(tmpdir / "distinct_structural_out.tsv"),
+            report_output=str(tmpdir / "distinct_report.tsv"),
+            domain_tool="hmmer",
+            domain_database="Pfam",
+            structural_tool="phold",
+            structural_database="PholdDB",
+        )
+        distinct_rc = normalizer.run(distinct_args)
+        distinct_domain_rows = read_tsv(Path(distinct_args.domain_output)) if distinct_rc == 0 else []
+        distinct_structural_rows = read_tsv(Path(distinct_args.structural_output)) if distinct_rc == 0 else []
+        rows.append(
+            check_case(
+                "domain_and_structural_distinct_provenance",
+                "domain and structural rows use evidence-type-specific provenance",
+                distinct_domain_rows,
+                distinct_structural_rows,
+                1,
+                1,
+                "hmmer|Pfam|phold|PholdDB",
+                "|".join(
+                    [
+                        distinct_domain_rows[0].get("tool", "") if distinct_domain_rows else "",
+                        distinct_domain_rows[0].get("database", "") if distinct_domain_rows else "",
+                        distinct_structural_rows[0].get("tool", "") if distinct_structural_rows else "",
+                        distinct_structural_rows[0].get("database", "") if distinct_structural_rows else "",
+                    ]
+                ),
+            )
+        )
+
+        protein_id_domain = tmpdir / "protein_id_domain.tsv"
+        write_text(
+            protein_id_domain,
+            "protein_id\tdomain_id\tdomain_name\tstart_aa\tend_aa\tevalue\n"
+            "protA\tPF00001\tTail fiber domain\t5\t120\t1e-20\n",
+        )
+        protein_rows, protein_report = normalize_domain(protein_id_domain, tmpdir)
+        rows.append(
+            check_case(
+                "canonical_protein_id_translation",
+                "protein_id aliases are translated to canonical annotation_gene_id",
+                protein_rows,
+                [],
+                1,
+                0,
+                "geneA|direct_matches=0; translated_aliases=1",
+                "|".join(
+                    [
+                        protein_rows[0].get("annotation_gene_id", "") if protein_rows else "",
+                        next((entry["message"] for entry in protein_report if entry["item"] == "domain_annotation_ids"), "missing_report"),
+                    ]
+                ),
+            )
+        )
+
+        ambiguous_manifest = tmpdir / "ambiguous_annotation_manifest.tsv"
+        write_text(
+            ambiguous_manifest,
+            "annotation_gene_id\tprotein_id\n"
+            "geneX\tshared_prot\n"
+            "geneY\tshared_prot\n",
+        )
+        rows.append(
+            check_error_case(
+                "ambiguous_identifier_mapping_fails",
+                "aliases mapping to multiple canonical annotation_gene_id values are blocking",
+                lambda: normalizer.load_annotation_id_map(str(ambiguous_manifest)),
+                "Ambiguous annotation identifier mapping",
+            )
+        )
+
+        nan_domain = tmpdir / "nan_domain.tsv"
+        write_text(
+            nan_domain,
+            "annotation_gene_id\tdomain_id\tdomain_name\tstart_aa\tend_aa\tevalue\n"
+            "geneA\tPF00001\tTail fiber domain\t5\t120\tnan\n",
+        )
+        rows.append(
+            check_error_case(
+                "nan_numeric_value_fails",
+                "non-finite numeric values are rejected",
+                lambda: normalize_domain(nan_domain, tmpdir),
+                "evalue is non-finite",
+            )
+        )
+
+        collision_args = make_args(tmpdir, domain_input=str(generic_domain), domain_output=str(generic_domain))
+        rows.append(
+            check_error_case(
+                "input_output_path_collision_fails",
+                "input/output path collisions are rejected before normalization",
+                lambda: normalizer.validate_path_collisions(collision_args),
+                "domain_input must not be the same path as domain_output",
+            )
+        )
+
+        overwrite_domain = tmpdir / "overwrite_domain.tsv"
+        overwrite_structural = tmpdir / "overwrite_structural.tsv"
+        write_text(overwrite_domain, "sentinel\nold_domain\n")
+        write_text(overwrite_structural, "sentinel\nold_structural\n")
+        overwrite_args = make_args(
+            tmpdir,
+            overwrite_empty=True,
+            domain_output=str(overwrite_domain),
+            structural_output=str(overwrite_structural),
+            report_output=str(tmpdir / "overwrite_report.tsv"),
+        )
+        overwrite_rc = normalizer.run(overwrite_args)
+        rows.append(
+            check_case(
+                "overwrite_empty_explicitly_replaces",
+                "--overwrite-empty replaces existing evidence outputs with header-only tables",
+                [],
+                [],
+                0,
+                0,
+                "0|annotation_gene_id|annotation_gene_id",
+                "|".join(
+                    [
+                        str(overwrite_rc),
+                        overwrite_domain.read_text(encoding="utf-8").splitlines()[0].split("\t")[0],
+                        overwrite_structural.read_text(encoding="utf-8").splitlines()[0].split("\t")[0],
+                    ]
+                ),
+            )
+        )
+
+        full_success_args = make_args(
+            tmpdir,
+            annotation_manifest=str(manifest),
+            domain_input=str(generic_domain),
+            structural_input=str(phold),
+            structural_format="phold_tsv",
+            domain_output=str(tmpdir / "full_success_domain.tsv"),
+            structural_output=str(tmpdir / "full_success_structural.tsv"),
+            report_output=str(tmpdir / "full_success_report.tsv"),
+            domain_tool="hmmer",
+            structural_tool="phold",
+        )
+        full_success_rc = normalizer.run(full_success_args)
+        full_success_domain_rows = read_tsv(Path(full_success_args.domain_output)) if full_success_rc == 0 else []
+        full_success_structural_rows = read_tsv(Path(full_success_args.structural_output)) if full_success_rc == 0 else []
+        rows.append(
+            check_case(
+                "full_cli_success",
+                "full run succeeds with valid domain and structural inputs",
+                full_success_domain_rows,
+                full_success_structural_rows,
+                1,
+                1,
+                "0",
+                str(full_success_rc),
+            )
+        )
+
+        full_failure_args = make_args(
+            tmpdir,
+            annotation_manifest=str(manifest),
+            domain_input=str(nan_domain),
+            domain_output=str(tmpdir / "full_failure_domain.tsv"),
+            structural_output=str(tmpdir / "full_failure_structural.tsv"),
+            report_output=str(tmpdir / "full_failure_report.tsv"),
+        )
+        full_failure_rc = normalizer.run(full_failure_args)
+        rows.append(
+            check_case(
+                "full_cli_failure_exit_code",
+                "full run exits nonzero on malformed reviewed evidence",
+                [],
+                [],
+                0,
+                0,
+                "1|False",
+                "|".join([str(full_failure_rc), str(Path(full_failure_args.domain_output).exists())]),
+            )
+        )
+
     return rows
 
 

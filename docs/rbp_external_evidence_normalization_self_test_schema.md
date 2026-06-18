@@ -6,16 +6,24 @@
 
 The fixture suite checks:
 
-- generic domain TSV normalization with provenance columns;
+- generic domain TSV normalization with type-specific provenance columns;
+- row-level provenance precedence over CLI provenance;
 - HMMER `domtblout` parsing for `hmmsearch` orientation;
 - HMMER `domtblout` parsing for `hmmscan` orientation;
 - headerless Foldseek TSV parsing with explicit field order;
 - headered Phold-style TSV parsing;
 - duplicate domain-hit reporting and de-duplication;
 - annotation-manifest referential-integrity failures;
+- canonical `protein_id` alias translation to `annotation_gene_id`;
+- ambiguous identifier mapping failures;
 - invalid domain-coordinate ordering and non-integer coordinate failures;
-- invalid structural-score failures;
-- preservation of existing outputs when an evidence input is absent and `--overwrite-empty` is not set.
+- invalid structural-score and non-finite numeric failures;
+- preservation of existing outputs when an evidence input is absent and `--overwrite-empty` is not set;
+- transactional no-partial-write behavior when one evidence type is malformed;
+- domain/structural distinct provenance in one invocation;
+- input/output path collision failures;
+- explicit `--overwrite-empty` replacement behavior;
+- full successful and failing command-path exit codes.
 
 ## Outputs
 

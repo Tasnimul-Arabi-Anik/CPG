@@ -103,13 +103,21 @@ python scripts/normalize_rbp_external_evidence.py \
   --structural-format foldseek_tsv \
   --foldseek-fields query,target,alntmscore,prob,evalue \
   --annotation-manifest results/annotations/phage_annotations.tsv \
-  --tool-version reviewed \
-  --database reviewed_profile_or_structure_set \
-  --database-version reviewed_snapshot \
+  --domain-tool hmmer \
+  --domain-tool-version reviewed \
+  --domain-database reviewed_profile_set \
+  --domain-database-version reviewed_profile_snapshot \
+  --structural-tool foldseek \
+  --structural-tool-version reviewed \
+  --structural-database reviewed_structure_set \
+  --structural-database-version reviewed_structure_snapshot \
   --domain-output data/metadata/external_evidence/rbp_domain_evidence.tsv \
   --structural-output data/metadata/external_evidence/rbp_structural_evidence.tsv \
   --report-output results/qc/normalize_rbp_external_evidence_report.tsv
 ```
+
+
+The normalizer validates all supplied evidence before replacing any output. Domain and structural outputs are written through temporary files and atomically replaced only after validation succeeds, so malformed structural evidence cannot partially update a valid domain-output table. Domain/profile and structural evidence use separate provenance flags; row-level provenance in reviewed input rows takes precedence over CLI provenance, and CLI provenance takes precedence over tool-specific defaults. Input/output path collisions are blocking.
 
 ## Report
 
