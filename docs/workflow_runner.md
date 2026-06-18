@@ -56,6 +56,7 @@ python scripts/run_workflow.py --config config/workflow.yaml --stages stage_1_ma
 - `stage_0_source_export_validation` when `source_export_validation.enabled: true`
 - `stage_0_source_imports` when `source_imports.enabled: true`
 - `stage_0_source_manifest_drift` when `source_manifest_drift.enabled: true`
+- `stage_0_phagehostlearn_external_files` when `phagehostlearn_external_files.enabled: true`
 - `stage_0_phagehostlearn_metadata_support` when `phagehostlearn_metadata_support.enabled: true`
 - `stage_0_phagehostlearn_map_review` when `phagehostlearn_map_review.enabled: true`
 - `stage_0_source_plan` when `source_plan.enabled: true`
@@ -182,6 +183,8 @@ python scripts/run_workflow.py --config config/workflow.mock.yaml
 This writes populated test outputs under `results/mock/` and stage logs under `logs/mock/`. It is intended to verify that optional pairwise similarity, annotation, domain, structural, host-feature, defense, and anti-defense evidence tables are wired correctly.
 
 The runner writes `results/qc/source_readiness_dashboard.tsv` through `stage_0_source_readiness_dashboard`. This table is the ranked source-curation dashboard that combines export validation, enablement dry-run status, and sample-support preflight blockers.
+
+The runner writes `results/<profile>/qc/phagehostlearn_2024_external_files.tsv` through `stage_0_phagehostlearn_external_files`. This provenance audit verifies local PhageHostLearn files against the tracked checksum manifest when they are present and reports clean-checkout missing files as warnings.
 
 The runner writes `results/<profile>/qc/phagehostlearn_2024_metadata_support.tsv` through `stage_0_phagehostlearn_metadata_support`. This curation audit compares PhageHostLearn matrix IDs with optional RBPbase and Locibase support files while keeping pending ID maps blocked and non-claim-bearing.
 

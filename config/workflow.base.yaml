@@ -164,6 +164,8 @@ outputs:
     pipeline_efficiency_report: '{results_dir}/validation/pipeline_efficiency_report.tsv'
     source_manifest_drift: '{results_dir}/qc/source_manifest_drift.tsv'
     source_manifest_drift_report: '{results_dir}/qc/source_manifest_drift_report.tsv'
+    phagehostlearn_external_files: '{results_dir}/qc/phagehostlearn_2024_external_files.tsv'
+    phagehostlearn_external_files_report: '{results_dir}/qc/phagehostlearn_2024_external_files_report.tsv'
     phagehostlearn_metadata_support: '{results_dir}/qc/phagehostlearn_2024_metadata_support.tsv'
     phagehostlearn_metadata_support_report: '{results_dir}/qc/phagehostlearn_2024_metadata_support_report.tsv'
     phagehostlearn_map_review: '{results_dir}/qc/phagehostlearn_2024_map_review.tsv'
@@ -231,6 +233,8 @@ outputs:
     phage_host_assay_import_self_test_report: '{results_dir}/validation/phage_host_assay_import_self_test_report.tsv'
     phage_host_assay_validation_self_test: '{results_dir}/validation/phage_host_assay_validation_self_test.tsv'
     phage_host_assay_validation_self_test_report: '{results_dir}/validation/phage_host_assay_validation_self_test_report.tsv'
+    phagehostlearn_external_files_self_test: '{results_dir}/validation/phagehostlearn_external_files_self_test.tsv'
+    phagehostlearn_external_files_self_test_report: '{results_dir}/validation/phagehostlearn_external_files_self_test_report.tsv'
     phagehostlearn_metadata_support_self_test: '{results_dir}/validation/phagehostlearn_metadata_support_self_test.tsv'
     phagehostlearn_metadata_support_self_test_report: '{results_dir}/validation/phagehostlearn_metadata_support_self_test_report.tsv'
     phagehostlearn_map_review_self_test: '{results_dir}/validation/phagehostlearn_map_review_self_test.tsv'
@@ -410,6 +414,12 @@ source_manifest_drift:
   enabled: true
   drift: '{results_dir}/qc/source_manifest_drift.tsv'
   report: '{results_dir}/qc/source_manifest_drift_report.tsv'
+phagehostlearn_external_files:
+  enabled: true
+  manifest: data/metadata/external/phagehostlearn/phagehostlearn_file_manifest.tsv
+  validation: '{results_dir}/qc/phagehostlearn_2024_external_files.tsv'
+  report: '{results_dir}/qc/phagehostlearn_2024_external_files_report.tsv'
+  require_present: false
 phagehostlearn_metadata_support:
   enabled: true
   matrix: data/metadata/external/phagehostlearn/phage_host_interactions.csv
