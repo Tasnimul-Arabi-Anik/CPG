@@ -12,9 +12,13 @@ python scripts/run_workflow.py --config config/workflow.yaml
 
 ## Workflow Profiles
 
+Workflow configs now resolve through `scripts/workflow_config.py`. `config/workflow.base.yaml` contains the shared stage wiring, while profile files are thin overlays with `extends: workflow.base.yaml`. `config/workflow.yaml` is a seed-profile alias via `extends: workflow.seed.yaml`.
+
 - `config/workflow.mock.yaml`: synthetic fixture workflow for offline CI and plumbing checks. Uses tracked mock FASTA files and writes to `results/mock/`.
 - `config/workflow.seed.yaml`: seed real-data workflow for reviewed source rows and bridge evidence. Writes to `results/seed/` and does not support biological claims.
-- `config/workflow.production.yaml`: production profile for sequence-backed records and accepted production evidence paths. It is a contract for manuscript-scale runs and should not be treated as passing until production evidence files exist.
+- `config/workflow.production.yaml`: production profile for sequence-backed records and accepted production evidence paths. It fails closed when production evidence or tested assay outcomes are absent.
+
+Each profile declares `profile.name`, `profile.evidence_class`, result/log namespaces, production-evidence requirements, and `allows_biological_claims: false`. The run report records `workflow_profile`, `evidence_class`, `workflow_config_path`, resolved config SHA-256, git commit, and run start time.
 
 ```bash
 python scripts/run_workflow.py --config config/workflow.seed.yaml
@@ -45,6 +49,7 @@ python scripts/run_workflow.py --config config/workflow.yaml --stages stage_1_ma
 
 ## Stage Names
 
+- `stage_0_profile_requirements` when `profile_requirements.enabled: true`
 - `stage_0_tool_audit` when `tool_audit.enabled: true`
 - `stage_0_source_queries` when `source_queries.enabled: true`
 - `stage_0_source_export_templates` when `source_export_templates.enabled: true`
@@ -138,7 +143,9 @@ All default outputs are under `results/`. The runner also writes:
 - `results/validation/workflow_run_report.tsv`
 - per-stage logs under `logs/`
 
-The workflow-run report records each command, log path, status, return code, and expected outputs. When `stage_11_goal_completion_audit` is selected, the direct runner refreshes that audit once after writing the final current-run report so `results/validation/goal_completion_audit.tsv` does not read a stale report from an earlier partial run.
+The workflow-run report records each command, log path, status, return code, expected outputs, workflow profile, evidence class, resolved workflow-config checksum, git commit, and run start time. When `stage_11_goal_completion_audit` is selected, the direct runner refreshes that audit once after writing the final current-run report so `results/validation/goal_completion_audit.tsv` does not read a stale report from an earlier partial run.
+
+`stage_0_profile_requirements` writes `workflow_profile_requirements.tsv` and fails production runs when required production evidence inputs or explicit tested phage-host assay outcomes are missing. Mock and seed profiles pass this gate but remain non-claim-bearing profiles.
 
 The runner regenerates `results/qc/source_query_plan.tsv` through `stage_0_source_queries`. This table records query intent, reviewed export paths, expected columns, and source rationale before source import.
 

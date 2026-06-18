@@ -30,6 +30,8 @@ For another AI or collaborator reviewing the repository, start with `docs/review
 
 ## Quick Start
 
+Workflow profiles are resolved through `scripts/workflow_config.py`: `config/workflow.base.yaml` holds shared stage wiring, `config/workflow.mock.yaml`, `config/workflow.seed.yaml`, and `config/workflow.production.yaml` are thin overlays, and `config/workflow.yaml` is the seed-profile alias. Production profile execution fails closed until reviewed production evidence inputs and explicit tested phage-host assay outcomes are configured.
+
 Create the environment:
 
 ```bash

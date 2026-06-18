@@ -33,3 +33,7 @@ The required output schema audit includes `source_catalog_readiness.tsv` and `so
 ## Mock Fixture Boundary
 
 The workflow validator checks the selected workflow config for mock fixture path references. `config/workflow.mock.yaml` is allowed to reference `data/metadata/mock*`, `data/raw/mock*`, and `results/mock*` paths because it is a fixture workflow. The real workflow config should not reference mock fixture paths; if it does, `workflow_validation_report.tsv` records a `mock_fixture_boundary` failure.
+
+## Workflow Run Report Metadata
+
+`results/<profile>/validation/workflow_run_report.tsv` includes `workflow_profile`, `evidence_class`, `workflow_config_path`, `workflow_config_sha256`, `git_commit`, and `run_started_at` so generated outputs are traceable to the resolved config and source revision.

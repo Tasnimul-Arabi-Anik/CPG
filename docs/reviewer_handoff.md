@@ -4,6 +4,8 @@ This repository is a reproducible seed-data workflow for a Klebsiella phage comp
 
 ## Current Review Position
 
+The workflow now uses base/profile workflow inheritance: `config/workflow.base.yaml` contains shared stage wiring, `workflow.mock.yaml`, `workflow.seed.yaml`, and `workflow.production.yaml` are thin overlays, and `workflow.yaml` aliases the seed profile. The run report records profile, evidence class, resolved config checksum, git commit, and run start time. Production profile execution is fail-closed until production evidence and assay outcomes are populated.
+
 The repository is ready for technical review of the workflow design, data contracts, mock analysis path, and minimum real-data path. It is not yet ready for biological interpretation from real data.
 
 Current expected state after running the real workflow:

@@ -2,7 +2,7 @@
 
 `data/metadata/sequence_acquisition_manifest.tsv` is the reviewed, checksum-backed record of raw FASTA acquisition for sequence-backed seed or production records. Raw FASTA files remain untracked under `data/raw/`, but this manifest records how to reconstruct and verify them.
 
-The mock workflow uses `data/metadata/mock_sequence_acquisition_manifest.tsv`, which points only to tracked fixture FASTA files under `data/raw/mock_public/`.
+The mock workflow uses `data/metadata/mock_sequence_acquisition_manifest.tsv`, which points only to tracked fixture FASTA files under `data/raw/mock_public/`. The seed workflow uses `data/metadata/seed_sequence_acquisition_manifest.tsv`, which preserves acquisition provenance as manual-review rows so a clean checkout can run seed metadata/bridge validation without ignored raw FASTA files. The production profile uses `data/metadata/sequence_acquisition_manifest.tsv` for checksum-enforced local raw-file verification.
 
 ## Command
 

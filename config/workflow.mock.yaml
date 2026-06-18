@@ -1,71 +1,32 @@
-execution:
-  python: python
-  stop_on_error: true
-tool_audit:
-  enabled: true
-  availability: results/mock/qc/tool_availability.tsv
-  report: results/mock/qc/tool_audit_report.tsv
+extends: workflow.base.yaml
+paths:
+  results_dir: results/mock
+  logs_dir: logs/mock
+profile:
+  name: mock
+  description: Synthetic fixture workflow for offline CI and plumbing validation.
+  evidence_class: synthetic_fixture
+  requires_local_sequences: false
+  requires_sequence_checksums: false
+  requires_production_external_evidence: false
+  allows_biological_claims: false
+  results_directory: results/mock
+  claim_scope: mock_fixture_only
 source_queries:
-  enabled: true
   config: config/source_queries.mock.yaml
   catalog: config/source_catalog.mock.yaml
   imports_config: config/source_imports.mock.yaml
-  plan: results/mock/qc/source_query_plan.tsv
-  report: results/mock/qc/source_query_report.tsv
-source_export_templates:
-  enabled: true
-  templates_dir: results/mock/qc/source_export_templates
-  manifest: results/mock/qc/source_export_template_manifest.tsv
-  report: results/mock/qc/source_export_template_report.tsv
-source_export_validation:
-  enabled: true
-  validation: results/mock/qc/source_export_validation.tsv
-  report: results/mock/qc/source_export_validation_report.tsv
 source_imports:
-  enabled: true
   config: config/source_imports.mock.yaml
-  report: results/mock/qc/source_import_report.tsv
 source_plan:
-  enabled: true
   catalog: config/source_catalog.mock.yaml
   imports_config: config/source_imports.mock.yaml
-  plan: results/mock/qc/source_acquisition_plan.tsv
-  report: results/mock/qc/source_acquisition_report.tsv
 source_audit:
-  enabled: true
   catalog: config/source_catalog.mock.yaml
-  readiness: results/mock/qc/source_catalog_readiness.tsv
-  report: results/mock/qc/source_catalog_audit_report.tsv
 sample_builder:
-  enabled: true
   catalog: config/source_catalog.mock.yaml
-  output_samples: results/mock/source_builder/samples.tsv
-  report: results/mock/source_builder/sample_source_report.tsv
-sequence_acquisition:
-  enabled: true
-  raw_directory: data/raw/genomes
-sequence_fetch_manifest:
-  enabled: true
-  manifest: results/mock/qc/sequence_fetch_manifest.tsv
-  commands: results/mock/qc/sequence_fetch_commands.sh
-  report: results/mock/qc/sequence_fetch_report.tsv
-sequence_fetch_review_packet:
-  enabled: true
-  packet: results/mock/qc/sequence_fetch_review_packet.md
-  report: results/mock/qc/sequence_fetch_review_packet_report.tsv
-external_evidence:
-  enabled: true
-external_evidence_templates:
-  enabled: true
-  templates_dir: results/mock/qc/external_evidence_templates
-  manifest: results/mock/qc/external_evidence_template_manifest.tsv
-  report: results/mock/qc/external_evidence_template_report.tsv
 inputs:
-  samples: results/mock/source_builder/samples.tsv
-  thresholds: config/thresholds.yaml
-  tools: config/tools.yaml
-  phage_host_assays: data/metadata/phage_host_assays.tsv
-  phage_host_relationships: data/metadata/phage_host_relationships.tsv
+  samples: '{results_dir}/source_builder/samples.tsv'
   pairwise_similarity: data/metadata/mock_pairwise_similarity.tsv
   annotation_input: data/metadata/mock_phage_annotations.tsv
   domain_evidence: data/metadata/mock_domain_evidence.tsv
@@ -75,317 +36,7 @@ inputs:
   host_defense_input: data/metadata/mock_host_defense_systems.tsv
   phage_antidefense_input: data/metadata/mock_phage_antidefense.tsv
 outputs:
-  qc:
-    source_query_plan: results/mock/qc/source_query_plan.tsv
-    source_export_template_manifest: results/mock/qc/source_export_template_manifest.tsv
-    source_export_validation: results/mock/qc/source_export_validation.tsv
-    source_export_validation_report: results/mock/qc/source_export_validation_report.tsv
-    source_export_template_report: results/mock/qc/source_export_template_report.tsv
-    source_query_report: results/mock/qc/source_query_report.tsv
-    manifest: results/mock/qc/phage_genome_manifest.tsv
-    manifest_report: results/mock/qc/manifest_validation_report.tsv
-    excluded: results/mock/qc/excluded_genomes.tsv
-    sequence_acquisition_plan: results/mock/qc/sequence_acquisition_plan.tsv
-    sequence_fetch_manifest: results/mock/qc/sequence_fetch_manifest.tsv
-    sequence_fetch_commands: results/mock/qc/sequence_fetch_commands.sh
-    sequence_fetch_report: results/mock/qc/sequence_fetch_report.tsv
-    sequence_fetch_review_packet: results/mock/qc/sequence_fetch_review_packet.md
-    sequence_fetch_review_packet_report: results/mock/qc/sequence_fetch_review_packet_report.tsv
-    sequence_acquisition_report: results/mock/qc/sequence_acquisition_report.tsv
-    sequence_qc: results/mock/qc/genome_sequence_qc.tsv
-    sequence_qc_report: results/mock/qc/genome_sequence_qc_report.tsv
-    external_evidence_plan: results/mock/qc/external_evidence_plan.tsv
-    external_evidence_template_manifest: results/mock/qc/external_evidence_template_manifest.tsv
-    external_evidence_template_report: results/mock/qc/external_evidence_template_report.tsv
-    external_evidence_run_packet_manifest: results/mock/qc/external_evidence_run_packet_manifest.tsv
-    external_evidence_run_packet_report: results/mock/qc/external_evidence_run_packet_report.tsv
-    external_evidence_acceptance: results/mock/qc/external_evidence_acceptance.tsv
-    external_evidence_acceptance_report: results/mock/qc/external_evidence_acceptance_report.tsv
-    external_evidence_report: results/mock/qc/external_evidence_report.tsv
-    source_curation_tasks: results/mock/qc/source_curation_tasks.tsv
-    source_curation_tasks_report: results/mock/qc/source_curation_tasks_report.tsv
-    source_export_starter_kit_manifest: results/mock/qc/source_export_starter_kit_manifest.tsv
-    source_export_starter_kit_report: results/mock/qc/source_export_starter_kit_report.tsv
-    minimum_source_curation_plan: results/mock/qc/minimum_source_curation_plan.tsv
-    minimum_hypothesis_source_plan: results/mock/qc/minimum_hypothesis_source_plan.tsv
-    minimum_source_curation_report: results/mock/qc/minimum_source_curation_report.tsv
-    priority_source_export_preflight: results/mock/qc/priority_source_export_preflight.tsv
-    priority_source_export_preflight_issues: results/mock/qc/priority_source_export_preflight_issues.tsv
-    priority_source_export_preflight_report: results/mock/qc/priority_source_export_preflight_report.tsv
-    priority_source_collection_packet_manifest: results/mock/qc/priority_source_collection_packet_manifest.tsv
-    priority_source_collection_packet_report: results/mock/qc/priority_source_collection_packet_report.tsv
-    source_enablement_plan: results/mock/qc/source_enablement_plan.tsv
-    source_enablement_report: results/mock/qc/source_enablement_report.tsv
-    source_enablement_apply_report: results/mock/qc/source_enablement_apply_report.tsv
-    source_overlap_groups: results/mock/qc/source_overlap_groups.tsv
-    source_overlap_summary: results/mock/qc/source_overlap_summary.tsv
-    source_overlap_report: results/mock/qc/source_overlap_report.tsv
-    sample_support_by_hypothesis: results/mock/qc/sample_support_by_hypothesis.tsv
-    sample_support_summary: results/mock/qc/sample_support_summary.tsv
-    sample_support_report: results/mock/qc/sample_support_report.tsv
-    sample_support_source_bridge: results/mock/qc/sample_support_source_bridge.tsv
-    sample_support_source_bridge_report: results/mock/qc/sample_support_source_bridge_report.tsv
-    sample_support_export_preflight: results/mock/qc/sample_support_export_preflight.tsv
-    sample_support_export_preflight_report: results/mock/qc/sample_support_export_preflight_report.tsv
-    source_readiness_dashboard: results/mock/qc/source_readiness_dashboard.tsv
-    source_readiness_dashboard_report: results/mock/qc/source_readiness_dashboard_report.tsv
-    source_curation_work_order: results/mock/qc/source_curation_work_order.tsv
-    source_curation_work_order_report: results/mock/qc/source_curation_work_order_report.tsv
-    source_work_order_packet_manifest: results/mock/qc/source_work_order_packet_manifest.tsv
-    source_work_order_packet_report: results/mock/qc/source_work_order_packet_report.tsv
-    source_work_order_acceptance: results/mock/qc/source_work_order_acceptance.tsv
-    source_work_order_acceptance_report: results/mock/qc/source_work_order_acceptance_report.tsv
-    source_post_acceptance_plan: results/mock/qc/source_post_acceptance_plan.tsv
-    source_post_acceptance_report: results/mock/qc/source_post_acceptance_report.tsv
-    sample_support_curation_packet_manifest: results/mock/qc/sample_support_curation_packet_manifest.tsv
-    sample_support_curation_packet_report: results/mock/qc/sample_support_curation_packet_report.tsv
-    source_curation_packet_manifest: results/mock/qc/source_curation_packet_manifest.tsv
-    source_curation_packet_report: results/mock/qc/source_curation_packet_report.tsv
-    source_query_commands: results/mock/qc/source_query_commands.tsv
-    source_query_commands_shell: results/mock/qc/source_query_commands.sh
-    source_query_commands_report: results/mock/qc/source_query_commands_report.tsv
-    source_export_column_dictionary: results/mock/qc/source_export_column_dictionary.tsv
-    source_export_column_dictionary_report: results/mock/qc/source_export_column_dictionary_report.tsv
-    hypothesis_source_unlock_plan: results/mock/qc/hypothesis_source_unlock_plan.tsv
-    hypothesis_source_unlock_matrix: results/mock/qc/hypothesis_source_unlock_matrix.tsv
-    hypothesis_source_unlock_report: results/mock/qc/hypothesis_source_unlock_report.tsv
-    external_evidence_unlock_plan: results/mock/qc/external_evidence_unlock_plan.tsv
-    external_evidence_unlock_matrix: results/mock/qc/external_evidence_unlock_matrix.tsv
-    external_evidence_unlock_report: results/mock/qc/external_evidence_unlock_report.tsv
-    production_evidence_handoff: results/mock/qc/production_evidence_handoff.md
-    production_evidence_handoff_report: results/mock/qc/production_evidence_handoff_report.tsv
-    pipeline_efficiency_audit: results/mock/validation/pipeline_efficiency_audit.tsv
-    pipeline_efficiency_report: results/mock/validation/pipeline_efficiency_report.tsv
-    source_manifest_drift: results/mock/qc/source_manifest_drift.tsv
-    source_manifest_drift_report: results/mock/qc/source_manifest_drift_report.tsv
-  clusters:
-    ani: results/mock/clusters/phage_ani.tsv
-    clusters: results/mock/clusters/phage_clusters.tsv
-    representatives: results/mock/clusters/representatives.tsv
-    report: results/mock/clusters/dereplication_report.tsv
-  annotations:
-    annotations: results/mock/annotations/phage_annotations.tsv
-    gene_clusters: results/mock/annotations/gene_clusters.tsv
-    pangenome: results/mock/annotations/pangenome_matrix.tsv
-    report: results/mock/annotations/annotation_report.tsv
-  rbp_depolymerase:
-    candidates: results/mock/rbp_depolymerase/candidates.tsv
-    domain_architectures: results/mock/rbp_depolymerase/domain_architectures.tsv
-    module_clusters: results/mock/rbp_depolymerase/module_clusters.tsv
-    novel_candidates: results/mock/rbp_depolymerase/novel_candidates.tsv
-    report: results/mock/rbp_depolymerase/rbp_depolymerase_report.tsv
-  host_features:
-    host_metadata: results/mock/host_features/host_metadata.tsv
-    kaptive: results/mock/host_features/kaptive_results.tsv
-    kleborate: results/mock/host_features/kleborate_results.tsv
-    phage_host_links: results/mock/host_features/phage_host_links.tsv
-    phage_host_relationships: results/mock/host_features/phage_host_relationships.tsv
-    report: results/mock/host_features/host_feature_report.tsv
-  defense_systems:
-    host_defense: results/mock/defense_systems/host_defense_systems.tsv
-    phage_antidefense: results/mock/defense_systems/phage_antidefense_candidates.tsv
-    compatibility: results/mock/defense_systems/compatibility_features.tsv
-    report: results/mock/defense_systems/defense_counterdefense_report.tsv
-  models:
-    model_comparison: results/mock/models/model_comparison.tsv
-    feature_importance: results/mock/models/feature_importance.tsv
-    prediction_errors: results/mock/models/prediction_errors.tsv
-    hypothesis_summary: results/mock/models/hypothesis_summary.tsv
-    report: results/mock/models/model_report.tsv
-  figures:
-    directory: results/mock/figures
-    manifest: results/mock/figures/figure_manifest.tsv
-    report: results/mock/figures/figure_generation_report.tsv
   validation:
-    results_dir: results/mock
-    samples: results/mock/source_builder/samples.tsv
     workflow_config: config/workflow.mock.yaml
-    schema: results/mock/validation/schema_validation.tsv
-    hypotheses: results/mock/validation/hypothesis_coverage.tsv
-    inventory: results/mock/validation/output_inventory.tsv
-    report: results/mock/validation/workflow_validation_report.tsv
-    source_export_validation_self_test: results/mock/validation/source_export_validation_self_test.tsv
-    source_export_validation_self_test_report: results/mock/validation/source_export_validation_self_test_report.tsv
-    external_evidence_acceptance_self_test: results/mock/validation/external_evidence_acceptance_self_test.tsv
-    external_evidence_acceptance_self_test_report: results/mock/validation/external_evidence_acceptance_self_test_report.tsv
-    rbp_external_evidence_normalization_self_test: results/mock/validation/rbp_external_evidence_normalization_self_test.tsv
-    rbp_external_evidence_normalization_self_test_report: results/mock/validation/rbp_external_evidence_normalization_self_test_report.tsv
-    defense_external_evidence_normalization_self_test: results/mock/validation/defense_external_evidence_normalization_self_test.tsv
-    defense_external_evidence_normalization_self_test_report: results/mock/validation/defense_external_evidence_normalization_self_test_report.tsv
-    phage_host_assay_validation_self_test: results/mock/validation/phage_host_assay_validation_self_test.tsv
-    phage_host_assay_validation_self_test_report: results/mock/validation/phage_host_assay_validation_self_test_report.tsv
-    phage_host_assay_validation: results/mock/validation/phage_host_assay_validation.tsv
-    phage_host_relationship_validation: results/mock/validation/phage_host_relationship_validation.tsv
-    phage_host_assay_validation_report: results/mock/validation/phage_host_assay_validation_report.tsv
-    study_readiness: results/mock/validation/study_readiness.tsv
-    study_readiness_report: results/mock/validation/study_readiness_report.tsv
-    readiness_action_plan: results/mock/validation/readiness_action_plan.tsv
-    readiness_action_report: results/mock/validation/readiness_action_report.tsv
-    hypothesis_traceability: results/mock/validation/hypothesis_traceability.tsv
-    hypothesis_traceability_report: results/mock/validation/hypothesis_traceability_report.tsv
-    claim_support_audit: results/mock/validation/claim_support_audit.tsv
-    claim_support_report: results/mock/validation/claim_support_report.tsv
-    goal_completion_audit: results/mock/validation/goal_completion_audit.tsv
-    goal_completion_report: results/mock/validation/goal_completion_report.tsv
-    run_report: results/mock/validation/workflow_run_report.tsv
-    sequence_acquisition_manifest_validation: results/mock/validation/sequence_acquisition_manifest_validation.tsv
-    sequence_acquisition_manifest_validation_report: results/mock/validation/sequence_acquisition_manifest_validation_report.tsv
-    sequence_acquisition_manifest_self_test: results/mock/validation/sequence_acquisition_manifest_self_test.tsv
-    sequence_acquisition_manifest_self_test_report: results/mock/validation/sequence_acquisition_manifest_self_test_report.tsv
-logs:
-  directory: logs/mock
-source_curation_tasks:
-  enabled: true
-  tasks: results/mock/qc/source_curation_tasks.tsv
-  report: results/mock/qc/source_curation_tasks_report.tsv
-source_export_starter_kit:
-  enabled: true
-  directory: results/mock/qc/source_export_starter_kit
-  manifest: results/mock/qc/source_export_starter_kit_manifest.tsv
-  report: results/mock/qc/source_export_starter_kit_report.tsv
-minimum_source_curation:
-  enabled: true
-  source_plan: results/mock/qc/minimum_source_curation_plan.tsv
-  hypothesis_plan: results/mock/qc/minimum_hypothesis_source_plan.tsv
-  report: results/mock/qc/minimum_source_curation_report.tsv
-priority_source_preflight:
-  enabled: true
-  max_rank: 2
-  summary: results/mock/qc/priority_source_export_preflight.tsv
-  issues: results/mock/qc/priority_source_export_preflight_issues.tsv
-  report: results/mock/qc/priority_source_export_preflight_report.tsv
-priority_source_collection_packet:
-  enabled: true
-  directory: results/mock/qc/priority_source_collection_packet
-  manifest: results/mock/qc/priority_source_collection_packet_manifest.tsv
-  report: results/mock/qc/priority_source_collection_packet_report.tsv
-source_enablement:
-  enabled: true
-  plan: results/mock/qc/source_enablement_plan.tsv
-  report: results/mock/qc/source_enablement_report.tsv
-source_enablement_apply:
-  enabled: true
-  report: results/mock/qc/source_enablement_apply_report.tsv
-  enable_imports: true
-  enable_catalog: true
-  apply: false
-source_overlap:
-  enabled: true
-  overlaps: results/mock/qc/source_overlap_groups.tsv
-  summary: results/mock/qc/source_overlap_summary.tsv
-  report: results/mock/qc/source_overlap_report.tsv
-sample_support:
-  enabled: true
-  hypotheses: results/mock/qc/sample_support_by_hypothesis.tsv
-  summary: results/mock/qc/sample_support_summary.tsv
-  report: results/mock/qc/sample_support_report.tsv
-sample_support_sources:
-  enabled: true
-  bridge: results/mock/qc/sample_support_source_bridge.tsv
-  report: results/mock/qc/sample_support_source_bridge_report.tsv
-sample_support_export_preflight:
-  enabled: true
-  preflight: results/mock/qc/sample_support_export_preflight.tsv
-  report: results/mock/qc/sample_support_export_preflight_report.tsv
-source_readiness_dashboard:
-  enabled: true
-  dashboard: results/mock/qc/source_readiness_dashboard.tsv
-  report: results/mock/qc/source_readiness_dashboard_report.tsv
-source_curation_work_order:
-  enabled: true
-  work_order: results/mock/qc/source_curation_work_order.tsv
-  report: results/mock/qc/source_curation_work_order_report.tsv
-source_work_order_packets:
-  enabled: true
-  directory: results/mock/qc/source_work_order_packets
-  manifest: results/mock/qc/source_work_order_packet_manifest.tsv
-  report: results/mock/qc/source_work_order_packet_report.tsv
-source_curation_issue_bodies:
-  enabled: true
-  directory: results/mock/qc/github_issue_bodies
-  manifest: results/mock/qc/source_curation_issue_manifest.tsv
-  commands: results/mock/qc/source_curation_issue_commands.tsv
-  shell: results/mock/qc/source_curation_issue_commands.sh
-  report: results/mock/qc/source_curation_issue_report.tsv
-source_work_order_acceptance:
-  enabled: true
-  acceptance: results/mock/qc/source_work_order_acceptance.tsv
-  report: results/mock/qc/source_work_order_acceptance_report.tsv
-source_post_acceptance:
-  enabled: true
-  plan: results/mock/qc/source_post_acceptance_plan.tsv
-  report: results/mock/qc/source_post_acceptance_report.tsv
-sample_support_curation_packet:
-  enabled: true
-  directory: results/mock/qc/sample_support_curation_packet
-  manifest: results/mock/qc/sample_support_curation_packet_manifest.tsv
-  report: results/mock/qc/sample_support_curation_packet_report.tsv
-source_curation_packet:
-  enabled: true
-  directory: results/mock/qc/source_curation_packet
-  manifest: results/mock/qc/source_curation_packet_manifest.tsv
-  report: results/mock/qc/source_curation_packet_report.tsv
-source_query_commands:
-  enabled: true
-  commands: results/mock/qc/source_query_commands.tsv
-  shell: results/mock/qc/source_query_commands.sh
-  report: results/mock/qc/source_query_commands_report.tsv
-source_export_dictionary:
-  enabled: true
-  dictionary: results/mock/qc/source_export_column_dictionary.tsv
-  report: results/mock/qc/source_export_column_dictionary_report.tsv
-hypothesis_source_unlocks:
-  enabled: true
-  plan: results/mock/qc/hypothesis_source_unlock_plan.tsv
-  matrix: results/mock/qc/hypothesis_source_unlock_matrix.tsv
-  report: results/mock/qc/hypothesis_source_unlock_report.tsv
-external_evidence_proteins:
-  enabled: true
-  all_proteins: results/mock/qc/external_evidence_proteins/phage_proteins.faa
-  candidate_proteins: results/mock/qc/external_evidence_proteins/rbp_depolymerase_candidate_proteins.faa
-  manifest: results/mock/qc/external_evidence_proteins/protein_export_manifest.tsv
-  report: results/mock/qc/external_evidence_proteins/protein_export_report.tsv
-phage_antidefense_handoff:
-  enabled: true
-  manifest: results/mock/qc/phage_antidefense_screening_handoff.tsv
-  commands: results/mock/qc/phage_antidefense_screening_commands.sh
-  report: results/mock/qc/phage_antidefense_screening_handoff_report.tsv
-external_evidence_run_packets:
-  enabled: true
-  directory: results/mock/qc/external_evidence_run_packets
-  manifest: results/mock/qc/external_evidence_run_packet_manifest.tsv
-  report: results/mock/qc/external_evidence_run_packet_report.tsv
-host_defense_handoff:
-  enabled: true
-  manifest: results/mock/qc/host_defense_run_handoff.tsv
-  commands: results/mock/qc/host_defense_run_commands.sh
-  report: results/mock/qc/host_defense_run_handoff_report.tsv
-external_evidence_acceptance:
-  enabled: true
-  acceptance: results/mock/qc/external_evidence_acceptance.tsv
-  report: results/mock/qc/external_evidence_acceptance_report.tsv
-external_evidence_unlocks:
-  enabled: true
-  plan: results/mock/qc/external_evidence_unlock_plan.tsv
-  matrix: results/mock/qc/external_evidence_unlock_matrix.tsv
-  report: results/mock/qc/external_evidence_unlock_report.tsv
-production_evidence_handoff:
-  enabled: true
-  handoff: results/mock/qc/production_evidence_handoff.md
-  report: results/mock/qc/production_evidence_handoff_report.tsv
-pipeline_efficiency:
-  enabled: true
-  audit: results/mock/validation/pipeline_efficiency_audit.tsv
-  report: results/mock/validation/pipeline_efficiency_report.tsv
-profile:
-  name: mock
-  description: Synthetic fixture workflow for offline CI and plumbing validation.
 sequence_acquisition_manifest:
-  enabled: true
   manifest: data/metadata/mock_sequence_acquisition_manifest.tsv
-  validation: results/mock/validation/sequence_acquisition_manifest_validation.tsv
-  report: results/mock/validation/sequence_acquisition_manifest_validation_report.tsv
-source_manifest_drift:
-  enabled: true
-  drift: results/mock/qc/source_manifest_drift.tsv
-  report: results/mock/qc/source_manifest_drift_report.tsv

@@ -4,20 +4,17 @@
 #   snakemake --config workflow_config=config/workflow.mock.yaml --cores 1
 
 import glob
+import sys
 from pathlib import Path
 
-import yaml
+sys.path.insert(0, "scripts")
+from workflow_config import load_workflow_config
 
 WORKFLOW_CONFIG = config.get("workflow_config", "config/workflow.yaml")
 PYTHON = config.get("python", "python")
 
 
-def load_yaml(path):
-    with open(path, encoding="utf-8") as handle:
-        return yaml.safe_load(handle) or {}
-
-
-WF = load_yaml(WORKFLOW_CONFIG)
+WF = load_workflow_config(WORKFLOW_CONFIG, ".")
 
 
 def nested_get(data, keys, default=""):

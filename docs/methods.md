@@ -1,5 +1,13 @@
 # Methods
 
+## Workflow Profiles and Config Resolution
+
+Workflow execution uses `scripts/workflow_config.py` to resolve `extends:` inheritance and deep-merge profile overlays into `config/workflow.base.yaml`. `config/workflow.mock.yaml`, `config/workflow.seed.yaml`, and `config/workflow.production.yaml` define profile semantics, result/log namespaces, and evidence requirements without duplicating the full workflow. `config/workflow.yaml` currently extends the seed profile as the default local workflow.
+
+`stage_0_profile_requirements` validates resolved profile semantics before downstream stages run. Mock and seed profiles can run without production evidence and keep `allows_biological_claims: false`. The production profile is fail-closed: it reports blocking errors until required production evidence inputs and populated tested phage-host assay outcomes exist.
+
+`workflow_run_report.tsv` records profile name, evidence class, resolved config SHA-256, git commit, and run start time so generated outputs can be traced to the profile and config state that produced them.
+
 ## Tool Availability Audit
 
 Before source import and dataset curation, `scripts/audit_tool_availability.py` checks command availability for workflow-core tools and planned external bioinformatics tools listed in `config/tools.yaml`. Missing specialized tools are warnings unless they are marked required for the current workflow; this keeps the direct Python workflow runnable while making production tool gaps explicit.

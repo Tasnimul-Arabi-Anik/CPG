@@ -7,9 +7,12 @@ import argparse
 import csv
 import subprocess
 import sys
+from datetime import datetime, timezone
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
+
+from workflow_config import WorkflowConfigError, load_workflow_config, resolved_config_sha256
 
 
 REPORT_COLUMNS = [
@@ -21,9 +24,16 @@ REPORT_COLUMNS = [
     "expected_outputs",
     "missing_outputs",
     "message",
+    "workflow_profile",
+    "evidence_class",
+    "workflow_config_path",
+    "workflow_config_sha256",
+    "git_commit",
+    "run_started_at",
 ]
 
 STAGE_ORDER = [
+    "stage_0_profile_requirements",
     "stage_0_tool_audit",
     "stage_0_source_queries",
     "stage_0_source_export_templates",
@@ -121,19 +131,6 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_yaml(path: Path) -> dict:
-    try:
-        import yaml  # type: ignore
-    except ImportError as exc:
-        raise WorkflowError("PyYAML is required to read workflow configuration.") from exc
-    if not path.exists():
-        raise WorkflowError(f"Workflow config does not exist: {path}")
-    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    if not isinstance(data, dict):
-        raise WorkflowError(f"Workflow config must contain a YAML mapping: {path}")
-    return data
-
-
 def nested_get(data: dict, path: tuple[str, ...], default: str = "") -> str:
     current: object = data
     for key in path:
@@ -196,6 +193,32 @@ def write_tsv(path: Path, columns: Iterable[str], rows: Iterable[dict[str, str]]
             writer.writerow({column: row.get(column, "") for column in fieldnames})
 
 
+def git_commit(root: Path) -> str:
+    try:
+        result = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=root, check=False, capture_output=True, text=True)
+    except OSError:
+        return "unknown"
+    return result.stdout.strip() if result.returncode == 0 and result.stdout.strip() else "unknown"
+
+
+def workflow_run_metadata(config: dict, root: Path, config_path: Path, run_started_at: str) -> dict[str, str]:
+    profile = config.get("profile", {}) if isinstance(config.get("profile", {}), dict) else {}
+    return {
+        "workflow_profile": str(profile.get("name", "default")),
+        "evidence_class": str(profile.get("evidence_class", "unspecified")),
+        "workflow_config_path": rel_or_abs(root, config_path),
+        "workflow_config_sha256": resolved_config_sha256(config),
+        "git_commit": git_commit(root),
+        "run_started_at": run_started_at,
+    }
+
+
+def with_run_metadata(row: dict[str, str], metadata: dict[str, str]) -> dict[str, str]:
+    output = dict(row)
+    output.update(metadata)
+    return output
+
+
 def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     python = nested_get(config, ("execution", "python"), sys.executable) or sys.executable
     logs_dir = configured_path(config, root, ("logs", "directory"), "logs")
@@ -204,6 +227,19 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
         root,
         ("outputs", "validation", "run_report"),
         "results/validation/workflow_run_report.tsv",
+    )
+    profile_requirements_enabled = nested_get(config, ("profile_requirements", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
+    profile_requirements_validation = configured_path(
+        config,
+        root,
+        ("profile_requirements", "validation"),
+        "results/validation/workflow_profile_requirements.tsv",
+    )
+    profile_requirements_report = configured_path(
+        config,
+        root,
+        ("profile_requirements", "report"),
+        "results/validation/workflow_profile_requirements_report.tsv",
     )
 
     script = lambda name: (root / "scripts" / name).as_posix()
@@ -486,6 +522,27 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     goal_completion_report = out("validation", "goal_completion_report", "results/validation/goal_completion_report.tsv")
 
     stages = []
+    if profile_requirements_enabled:
+        stages.append(
+            Stage(
+                "stage_0_profile_requirements",
+                [
+                    python,
+                    script("validate_workflow_profile_requirements.py"),
+                    "--config",
+                    validation_workflow_config,
+                    "--validation-output",
+                    profile_requirements_validation.as_posix(),
+                    "--report-output",
+                    profile_requirements_report.as_posix(),
+                    "--root",
+                    root.as_posix(),
+                ],
+                logs_dir / "00_validate_workflow_profile_requirements.log",
+                [profile_requirements_validation, profile_requirements_report],
+            )
+        )
+
     if tool_audit_enabled:
         stages.append(
             Stage(
@@ -2042,12 +2099,12 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     return stages, run_report
 
 
-def run_stage(root: Path, stage: Stage, dry_run: bool) -> dict[str, str]:
+def run_stage(root: Path, stage: Stage, dry_run: bool, metadata: dict[str, str]) -> dict[str, str]:
     ensure_parent_dirs([stage.log_path, *stage.expected_outputs])
     command = command_text(stage.command)
     if dry_run:
         print(f"[dry-run] {stage.name}: {command}")
-        return {
+        return with_run_metadata({
             "stage": stage.name,
             "status": "dry_run",
             "return_code": "",
@@ -2056,7 +2113,7 @@ def run_stage(root: Path, stage: Stage, dry_run: bool) -> dict[str, str]:
             "expected_outputs": ";".join(rel_or_abs(root, path) for path in stage.expected_outputs),
             "missing_outputs": "",
             "message": "command not executed",
-        }
+        }, metadata)
 
     with stage.log_path.open("w") as log_handle:
         log_handle.write(f"$ {command}\n\n")
@@ -2064,7 +2121,7 @@ def run_stage(root: Path, stage: Stage, dry_run: bool) -> dict[str, str]:
 
     missing_outputs = [path for path in stage.expected_outputs if not path.exists()]
     status = "pass" if result.returncode == 0 and not missing_outputs else "fail"
-    return {
+    return with_run_metadata({
         "stage": stage.name,
         "status": status,
         "return_code": str(result.returncode),
@@ -2073,7 +2130,7 @@ def run_stage(root: Path, stage: Stage, dry_run: bool) -> dict[str, str]:
         "expected_outputs": ";".join(rel_or_abs(root, path) for path in stage.expected_outputs),
         "missing_outputs": ";".join(rel_or_abs(root, path) for path in missing_outputs),
         "message": "ok" if status == "pass" else "stage failed or expected outputs are missing",
-    }
+    }, metadata)
 
 
 def select_stages(stages: list[Stage], requested: list[str]) -> list[Stage]:
@@ -2083,7 +2140,7 @@ def select_stages(stages: list[Stage], requested: list[str]) -> list[Stage]:
     return [stage for stage in stages if stage.name in requested_set]
 
 
-def refresh_goal_audit_after_report(root: Path, selected: list[Stage], report_rows: list[dict[str, str]], run_report: Path, dry_run: bool) -> None:
+def refresh_goal_audit_after_report(root: Path, selected: list[Stage], report_rows: list[dict[str, str]], run_report: Path, dry_run: bool, metadata: dict[str, str]) -> None:
     if dry_run or any(row.get("status") == "fail" for row in report_rows):
         return
     goal_stage = next((stage for stage in selected if stage.name == "stage_11_goal_completion_audit"), None)
@@ -2091,7 +2148,7 @@ def refresh_goal_audit_after_report(root: Path, selected: list[Stage], report_ro
         return
     # The goal audit consumes workflow_run_report.tsv, so refresh it once after
     # the final current-run report exists instead of reading a previous run.
-    row = run_stage(root, goal_stage, dry_run=False)
+    row = run_stage(root, goal_stage, dry_run=False, metadata=metadata)
     for index, existing in enumerate(report_rows):
         if existing.get("stage") == goal_stage.name:
             report_rows[index] = row
@@ -2104,18 +2161,20 @@ def main() -> int:
     config_path = resolve(root, args.config)
 
     try:
-        config = load_yaml(config_path)
+        config = load_workflow_config(config_path, root)
+        run_started_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+        metadata = workflow_run_metadata(config, root, config_path, run_started_at)
         stages, run_report = build_stages(config, root)
         selected = select_stages(stages, args.stages)
         report_rows = []
         for stage in selected:
-            row = run_stage(root, stage, args.dry_run)
+            row = run_stage(root, stage, args.dry_run, metadata)
             report_rows.append(row)
             if row["status"] == "fail":
                 break
         if not args.dry_run:
             write_tsv(run_report, REPORT_COLUMNS, report_rows)
-            refresh_goal_audit_after_report(root, selected, report_rows, run_report, args.dry_run)
+            refresh_goal_audit_after_report(root, selected, report_rows, run_report, args.dry_run, metadata)
             write_tsv(run_report, REPORT_COLUMNS, report_rows)
         failures = [row for row in report_rows if row["status"] == "fail"]
         if failures:
@@ -2125,7 +2184,7 @@ def main() -> int:
         if not args.dry_run:
             print(f"Run report: {rel_or_abs(root, run_report)}")
         return 0
-    except WorkflowError as exc:
+    except (WorkflowError, WorkflowConfigError) as exc:
         print(f"Workflow error: {exc}", file=sys.stderr)
         return 2
 
