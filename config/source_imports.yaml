@@ -86,3 +86,31 @@ imports:
     require_phage_keyword: false
     exclude_regex: "contaminant|withdrawn|suppressed"
     notes: Imported from a local Klebsiella host-genome catalog; review K/O/ST/AMR/virulence and raw_sequence_path links before enabling in source_catalog.yaml.
+
+  - import_id: phagehostlearn_2024_phages
+    enabled: false
+    input_path: data/metadata/source_exports/phagehostlearn_2024_phages.tsv
+    output_path: data/metadata/source_manifests/phagehostlearn_2024_phages.tsv
+    delimiter: auto
+    overwrite: true
+    source_label: PhageHostLearn_2024
+    record_type_default: phage
+    phage_lifestyle_default: NA
+    require_klebsiella: true
+    require_phage_keyword: true
+    exclude_regex: "plasmid|not a phage|non-phage"
+    notes: Imported from disabled PhageHostLearn benchmark phage source export; enable only after entity and sequence provenance review.
+
+  - import_id: phagehostlearn_2024_hosts
+    enabled: false
+    input_path: data/metadata/source_exports/phagehostlearn_2024_hosts.tsv
+    output_path: data/metadata/source_manifests/phagehostlearn_2024_hosts.tsv
+    delimiter: auto
+    overwrite: true
+    source_label: PhageHostLearn_2024_host_benchmark
+    record_type_default: host
+    phage_lifestyle_default: NA
+    require_klebsiella: true
+    require_phage_keyword: false
+    exclude_regex: "contaminant|withdrawn|suppressed"
+    notes: Imported from disabled PhageHostLearn benchmark host source export; enable only after host genome and K/O/ST provenance review.

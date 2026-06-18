@@ -153,3 +153,54 @@ queries:
     review_priority: primary
     rationale: Host genomes are required for K/O/ST/AMR/virulence and defense/counter-defense compatibility tests.
     notes: Prefer records with complete Kaptive/Kleborate and PADLOC/DefenseFinder outputs.
+
+  - query_id: phagehostlearn_2024_benchmark_phages
+    source_id: phagehostlearn_2024_phages
+    record_layer: benchmark_cultured_phages
+    target_database: Zenodo_PhageHostLearn_2024
+    acquisition_mode: reviewed_local_export_from_zenodo_archive
+    query_string: 'Zenodo 10.5281/zenodo.11061100 phages_genomes.zip FASTA members linked to phage_host_interactions.csv columns'
+    expected_export_path: data/metadata/source_exports/phagehostlearn_2024_phages.tsv
+    expected_columns:
+      - accession
+      - genome_id
+      - host_species
+      - host_strain
+      - country
+      - year
+      - genome_length
+      - gc_percent
+      - raw_sequence_path
+      - notes
+    identity_columns_required:
+      - genome_id
+    review_priority: benchmark_pairwise_assay
+    rationale: PhageHostLearn benchmark phage entities are required before the public interaction matrix can be imported as canonical tested phage-host assay rows.
+    notes: Keep disabled until source-ID maps and local sequence provenance are reviewed.
+
+  - query_id: phagehostlearn_2024_benchmark_hosts
+    source_id: phagehostlearn_2024_hosts
+    record_layer: benchmark_host_genomes
+    target_database: Zenodo_PhageHostLearn_2024
+    acquisition_mode: reviewed_local_export_from_zenodo_matrix_and_host_archive
+    query_string: 'Zenodo 10.5281/zenodo.11061100 phage_host_interactions.csv row IDs linked to klebsiella_genomes.zip host FASTA members'
+    expected_export_path: data/metadata/source_exports/phagehostlearn_2024_hosts.tsv
+    expected_columns:
+      - genome_id
+      - accession
+      - host_species
+      - host_strain
+      - country
+      - year
+      - K_type
+      - O_type
+      - ST
+      - AMR_markers
+      - virulence_markers
+      - raw_sequence_path
+      - notes
+    identity_columns_required:
+      - genome_id
+    review_priority: benchmark_pairwise_assay
+    rationale: PhageHostLearn benchmark host entities are required before public tested interaction rows can pass canonical host-ID validation.
+    notes: Keep disabled until host genome archive inventory, K/O/ST provenance, and source-ID maps are reviewed.

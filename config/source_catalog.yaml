@@ -83,3 +83,21 @@ sources:
     record_type_default: host
     phage_lifestyle_default: NA
     notes: Planned host-genome source for K/O/ST/AMR/virulence and defense annotations.
+
+  - source_id: phagehostlearn_2024_phages
+    path: data/metadata/source_manifests/phagehostlearn_2024_phages.tsv
+    enabled: false
+    required: false
+    source_label: PhageHostLearn_2024
+    record_type_default: phage
+    phage_lifestyle_default: NA
+    notes: Disabled benchmark phage source for pairwise assay matrix validation; enable only after source IDs, sequences, and mapping rows are reviewed.
+
+  - source_id: phagehostlearn_2024_hosts
+    path: data/metadata/source_manifests/phagehostlearn_2024_hosts.tsv
+    enabled: false
+    required: false
+    source_label: PhageHostLearn_2024_host_benchmark
+    record_type_default: host
+    phage_lifestyle_default: NA
+    notes: Disabled benchmark host source for pairwise assay matrix validation; enable only after host genomes and K/O/ST provenance are reviewed.
