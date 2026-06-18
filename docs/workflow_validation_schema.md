@@ -28,7 +28,7 @@ The validator also checks that the selected workflow config exists and contains 
 
 The documentation audit also requires the source catalog schema so dataset population can be reproduced before Stage 1 manifest validation.
 
-The required output schema audit includes `source_catalog_readiness.tsv` and `source_catalog_audit_report.tsv` so planned, disabled, populated, and invalid source manifests are visible in validation reports. It also requires `results/models/hypothesis_summary.tsv` so H1-H6 have a single audited manuscript-facing evidence summary. External-evidence normalizer self-tests for RBP and defense/counter-defense reviewed TSV handoffs are included so schema drift is caught before production evidence is configured. The schema audit also requires external-evidence acceptance `content_lint` columns so circular workflow outputs, keyword-inference anti-defense rows, or unresolved evidence IDs cannot silently become production evidence.
+The required output schema audit includes `source_catalog_readiness.tsv` and `source_catalog_audit_report.tsv` so planned, disabled, populated, and invalid source manifests are visible in validation reports. It also requires `results/models/hypothesis_summary.tsv` so H1-H6 have a single audited manuscript-facing evidence summary. Workflow-config, external-evidence, RBP, defense/counter-defense, sequence-acquisition, and phage-host assay self-tests are included so schema drift and profile-resolution regressions are caught before production evidence is configured. The schema audit also requires external-evidence acceptance `content_lint` columns so circular workflow outputs, keyword-inference anti-defense rows, or unresolved evidence IDs cannot silently become production evidence.
 
 ## Mock Fixture Boundary
 

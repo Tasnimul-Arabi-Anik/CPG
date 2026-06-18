@@ -88,6 +88,7 @@ STAGE_ORDER = [
     "stage_6_defense_counterdefense",
     "stage_7_models",
     "stage_8_figures",
+    "stage_9_workflow_config_self_test",
     "stage_9_source_export_validation_self_test",
     "stage_9_sequence_acquisition_manifest_self_test",
     "stage_9_external_evidence_acceptance_self_test",
@@ -495,6 +496,8 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     validation_hypotheses = out("validation", "hypotheses", "results/validation/hypothesis_coverage.tsv")
     validation_inventory = out("validation", "inventory", "results/validation/output_inventory.tsv")
     validation_report = out("validation", "report", "results/validation/workflow_validation_report.tsv")
+    workflow_config_self_test = out("validation", "workflow_config_self_test", "results/validation/workflow_config_self_test.tsv")
+    workflow_config_self_test_report = out("validation", "workflow_config_self_test_report", "results/validation/workflow_config_self_test_report.tsv")
     source_export_validation_self_test = out("validation", "source_export_validation_self_test", "results/validation/source_export_validation_self_test.tsv")
     source_export_validation_self_test_report = out("validation", "source_export_validation_self_test_report", "results/validation/source_export_validation_self_test_report.tsv")
     sequence_acquisition_manifest_self_test = out("validation", "sequence_acquisition_manifest_self_test", "results/validation/sequence_acquisition_manifest_self_test.tsv")
@@ -1831,6 +1834,19 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
             ],
             logs_dir / "07_generate_figure_sources.log",
             figure_outputs,
+        ),
+        Stage(
+            "stage_9_workflow_config_self_test",
+            [
+                python,
+                script("self_test_workflow_config.py"),
+                "--output",
+                workflow_config_self_test.as_posix(),
+                "--report-output",
+                workflow_config_self_test_report.as_posix(),
+            ],
+            logs_dir / "09_self_test_workflow_config.log",
+            [workflow_config_self_test, workflow_config_self_test_report],
         ),
         Stage(
             "stage_9_source_export_validation_self_test",
