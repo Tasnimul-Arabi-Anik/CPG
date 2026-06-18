@@ -24,8 +24,8 @@ One seed row can satisfy `seed_data_ready`; it cannot satisfy `analysis_ready`, 
 | --- | --- | --- |
 | `phages.tsv` or phage manifest | One phage genome | Atlas, dereplication, annotation, RBP/depolymerase and anti-defense evidence. |
 | `hosts.tsv` or host metadata | One host genome | K/O/ST/AMR/virulence and defense-system evidence. |
-| `data/metadata/phage_host_relationships.tsv` | One non-assay phage-host relationship | Provenance for isolation host, reported host, resident host, predicted host, or assay-panel membership. |
-| `data/metadata/phage_host_assays.tsv` | One tested phage-host pair per study/panel/assay | Response variable for receptor compatibility, host-range breadth, and productive-infection modeling. |
+| `results/<profile>/metadata/phage_host_relationships.tsv` | One non-assay phage-host relationship | Provenance for isolation host, reported host, resident host, predicted host, or assay-panel membership. |
+| `results/<profile>/metadata/phage_host_assays.tsv` | One tested phage-host pair per study/panel/assay | Response variable for receptor compatibility, host-range breadth, and productive-infection modeling. |
 
 ## Hypothesis Contracts
 
@@ -34,7 +34,7 @@ One seed row can satisfy `seed_data_ready`; it cannot satisfy `analysis_ready`, 
 | H1a | Phage or known positive phage-host association | K/O tropism among known positives | RBP/depolymerase modules, taxonomy, genome similarity, host K/O | Association proxy only until assay positives are curated. |
 | H1b | Tested phage-host pair | Adsorption, spot, plaque, EOP, or initial interaction outcome | RBP/depolymerase modules and host K/O/receptor features | Blocked until `phage_host_assays.tsv` contains tested positives and negatives. |
 | H2 | Prophage protein, module, or host genome | Prophage RBP/depolymerase candidate status and host K/O association | Prophage calls, RBP/depolymerase evidence, host K/O, structural/domain evidence | Exploratory until larger host/prophage cohort and production evidence are present. |
-| H3 | Phage with a tested host panel | Host-range breadth across tested hosts, K types, or lineages | RBP modularity, recombination/domain features, anti-defense burden | Blocked until tested denominators and breadth labels are curated. |
+| H3 | Phage with a tested host panel | Spot-test host-range breadth across tested hosts, with K-type/lineage breadth when host typing is available | RBP modularity, recombination/domain features, anti-defense burden | Seed profile has initial-interaction breadth labels; claims remain blocked until production RBP/counter-defense features and host typing are available. |
 | H4 | Tested phage-host pair, preferably receptor-compatible subset | Productive infection, plaque, EOP, or explicitly curated infection outcome | Receptor features, host defense systems, phage counter-defense features, study/panel covariates | Blocked until productive-infection labels exist; compatibility strings are not valid biological targets. |
 | H5 | Host genome or lineage | Prophage burden, defense-system burden, or lineage-associated repertoire | ST, AMR, virulence, species-complex member, prophage and defense annotations | Separate host-population analysis; not a phage infectivity claim. |
 | H6 | Phage genome, module, or ecological source stratum | Novel RBP/depolymerase candidate enrichment | Ecological source, phage cluster size, annotation depth, sequence completeness | Exploratory unless ecological source is separated from database provenance. |

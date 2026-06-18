@@ -86,3 +86,33 @@ imports:
     require_phage_keyword: false
     exclude_regex: "contaminant|withdrawn|suppressed"
     notes: Imported from a local Klebsiella host-genome catalog; review K/O/ST/AMR/virulence and raw_sequence_path links before enabling in source_catalog.yaml.
+
+  - import_id: phagehostlearn_2024_phages
+    enabled: true
+    input_path: data/metadata/source_exports/phagehostlearn_2024_phages.tsv
+    output_path: data/metadata/source_manifests/phagehostlearn_2024_phages.tsv
+    delimiter: auto
+    overwrite: true
+    source_label: PhageHostLearn_2024
+    record_type_default: phage
+    phage_lifestyle_default: NA
+    require_klebsiella: true
+    require_phage_keyword: true
+    required_note_review_statuses: [reviewed, accepted, approved]
+    exclude_regex: "plasmid|not a phage|non-phage"
+    notes: Imported reviewed source-identity rows from the PhageHostLearn benchmark phage export; spot-test matrix support only, not productive-infection evidence.
+
+  - import_id: phagehostlearn_2024_hosts
+    enabled: true
+    input_path: data/metadata/source_exports/phagehostlearn_2024_hosts.tsv
+    output_path: data/metadata/source_manifests/phagehostlearn_2024_hosts.tsv
+    delimiter: auto
+    overwrite: true
+    source_label: PhageHostLearn_2024_host_benchmark
+    record_type_default: host
+    phage_lifestyle_default: NA
+    require_klebsiella: true
+    require_phage_keyword: false
+    required_note_review_statuses: [reviewed, accepted, approved]
+    exclude_regex: "contaminant|withdrawn|suppressed"
+    notes: Imported reviewed source-identity rows from the PhageHostLearn benchmark host export; K/O/ST/AMR/virulence remain unreviewed unless separate evidence is supplied.

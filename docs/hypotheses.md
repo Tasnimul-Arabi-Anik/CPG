@@ -1,6 +1,6 @@
 # Hypothesis-to-Analysis Map
 
-This map separates metadata associations from tested phage-host outcomes. Host-range prediction, broad-host-range breadth, and productive-infection claims require curated rows in `data/metadata/phage_host_assays.tsv`. Isolation host, reported host, prophage resident host, and predicted host relationships are tracked separately in `data/metadata/phage_host_relationships.tsv` and are not infection labels.
+This map separates metadata associations from tested phage-host outcomes. Host-range prediction, broad-host-range breadth, and productive-infection claims require curated rows in `results/<profile>/metadata/phage_host_assays.tsv`. Isolation host, reported host, prophage resident host, and predicted host relationships are tracked separately in `results/<profile>/metadata/phage_host_relationships.tsv` and are not infection labels.
 
 ## H1a: RBP/Depolymerase Modules Predict K/O Tropism Among Known Positive Associations
 
@@ -29,7 +29,7 @@ Output:
 ## H1b: RBP/Depolymerase Modules Predict Pairwise Receptor Compatibility
 
 Input data:
-- `data/metadata/phage_host_assays.tsv` with tested positive and tested negative pairs;
+- `results/<profile>/metadata/phage_host_assays.tsv` with tested positive and tested negative pairs;
 - host K/O metadata;
 - RBP/depolymerase candidate modules.
 
@@ -79,7 +79,7 @@ Output:
 ## H3: Broad-Host-Range Phages Are Enriched for Modular RBPs and Counter-Defense Genes
 
 Input data:
-- explicit tested host panels from `data/metadata/phage_host_assays.tsv`;
+- explicit tested host panels from `results/<profile>/metadata/phage_host_assays.tsv`;
 - RBP domain architectures;
 - anti-defense candidate genes.
 
@@ -94,13 +94,14 @@ Primary test:
 - compare modularity and anti-defense burden between broad-range and narrow-range phages after adjusting for panel size and study/panel composition.
 
 Current readiness:
-- blocked until panel-based breadth labels exist. Co-occurrence between RBP candidates and anti-defense candidates is not a host-range test.
+- panel-based spot-test breadth labels are available from the reviewed PhageHostLearn subset in the seed profile; these represent initial-interaction breadth only.
+- biological H3 claims remain blocked until production RBP/depolymerase modularity and explicit counter-defense evidence are available for the assay phages.
 
 Alternative explanation:
 - broad host range may reflect laboratory testing depth rather than biology.
 
 Output:
-- future breadth-aware rows in `results/models/model_comparison.tsv`
+- `results/models/model_comparison.tsv` rows `spot_breadth_vs_rbp_candidates` and `spot_breadth_vs_counterdefense_candidates`;
 - Figure 3 or Figure 5.
 
 ## H4: Defense/Counter-Defense Improves Productive-Infection Prediction Among Receptor-Compatible Pairs

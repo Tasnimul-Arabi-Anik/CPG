@@ -1,0 +1,14 @@
+# Reviewed phage-host assay source imports.
+# Populate input_path exports with tested positive and tested negative pairs only after source review.
+imports:
+  - import_id: reviewed_klebsiella_phage_host_assays
+    enabled: true
+    input_path: data/metadata/assay_source_exports/reviewed_klebsiella_phage_host_assays.tsv
+    delimiter: tab
+    derive_relationships: true
+    study_id_default: reviewed_klebsiella_assay_source
+    panel_id_default: reviewed_panel
+    assay_type_default: spot
+    evidence_tier_default: supplementary_matrix
+    reference_default: reviewed_source_pending
+    outcome_tier_default: unknown

@@ -18,6 +18,8 @@ source_queries:
   imports_config: config/source_imports.mock.yaml
 source_imports:
   config: config/source_imports.mock.yaml
+assay_imports:
+  config: config/assay_imports.mock.yaml
 source_plan:
   catalog: config/source_catalog.mock.yaml
   imports_config: config/source_imports.mock.yaml

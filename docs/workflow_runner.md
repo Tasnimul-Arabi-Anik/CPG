@@ -56,6 +56,7 @@ python scripts/run_workflow.py --config config/workflow.yaml --stages stage_1_ma
 - `stage_0_source_export_validation` when `source_export_validation.enabled: true`
 - `stage_0_source_imports` when `source_imports.enabled: true`
 - `stage_0_source_manifest_drift` when `source_manifest_drift.enabled: true`
+- `stage_0_assay_matrix_normalization` when `assay_matrix_normalization.enabled: true`
 - `stage_0_source_plan` when `source_plan.enabled: true`
 - `stage_0_source_audit` when `source_audit.enabled: true`
 - `stage_0_source_curation_tasks` when `source_curation_tasks.enabled: true`
@@ -181,6 +182,8 @@ This writes populated test outputs under `results/mock/` and stage logs under `l
 
 The runner writes `results/qc/source_readiness_dashboard.tsv` through `stage_0_source_readiness_dashboard`. This table is the ranked source-curation dashboard that combines export validation, enablement dry-run status, and sample-support preflight blockers.
 
+The runner audits reviewed assay benchmark datasets through the generic `stage_0_assay_dataset_audit` stage. The current adapter is `scripts/audit_phagehostlearn_dataset.py`, which keeps PhageHostLearn-specific file, archive, mapping, parity, and metadata checks behind that generic workflow surface. The runner can then normalize reviewed host-by-phage assay matrices through `stage_0_assay_matrix_normalization` when `assay_matrix_normalization.enabled: true`. This stage is disabled in the base profile so clean-checkout runs do not regenerate reviewed PhageHostLearn rows implicitly; it should only be enabled after the dataset audit and source-to-canonical maps are reviewed.
+
 The runner writes `results/qc/source_curation_work_order.tsv` through `stage_0_source_curation_work_order`. This table converts the source readiness dashboard into concrete reviewed-row curation tasks with required fields, minimum rows, and validation commands.
 
 The runner writes `results/qc/source_work_order_packets/` through `stage_0_source_work_order_packets`. This directory contains one Markdown curation packet per source work order plus an index and manifest.
@@ -198,6 +201,12 @@ The runner writes `results/validation/workflow_config_self_test.tsv` through `st
 ## Source Export Validation Self-Test
 
 The runner writes `results/validation/source_export_validation_self_test.tsv` through `stage_9_source_export_validation_self_test`. This stage creates temporary reviewed-export examples and verifies that malformed year, GC, lifestyle, and identity fields are blocked before source import.
+
+## Phage-Host Assay Import
+
+The runner writes `results/metadata/phage_host_assays.tsv`, `results/metadata/phage_host_relationships.tsv`, and `results/qc/assay_import_report.tsv` through `stage_0_assay_imports`. These profile-local files are generated from reviewed assay source exports and remain header-only until tested interaction matrices are curated.
+
+The runner also writes `results/validation/phage_host_assay_import_self_test.tsv` through `stage_9_phage_host_assay_import_self_test`. This self-test verifies header-only imports, populated assay imports, derived tested-host relationships, malformed input blocking, path-collision rejection, and output preservation on failure.
 
 ## Phage-Host Assay Validation
 

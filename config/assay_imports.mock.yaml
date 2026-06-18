@@ -1,0 +1,13 @@
+# Mock assay import config used for offline CI.
+imports:
+  - import_id: mock_klebsiella_phage_host_assays
+    enabled: true
+    input_path: data/metadata/mock_assay_source_exports/mock_klebsiella_phage_host_assays.tsv
+    delimiter: tab
+    derive_relationships: true
+    study_id_default: mock_assay_study
+    panel_id_default: mock_panel
+    assay_type_default: spot
+    evidence_tier_default: supplementary_matrix
+    reference_default: mock_reference
+    outcome_tier_default: unknown

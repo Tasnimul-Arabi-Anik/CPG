@@ -307,6 +307,17 @@ A populated fixture-backed smoke test uses the same runner and writes under `res
 python scripts/run_workflow.py --config config/workflow.mock.yaml
 ```
 
+
+## Phage-Host Assay Source Import
+
+Tested phage-host outcomes are handled as a separate reviewed source layer, not as ordinary phage or host metadata. `scripts/import_phage_host_assays.py` reads `config/assay_imports.yaml`, normalizes reviewed assay source exports, and writes profile-local canonical tables under `results/<profile>/metadata/`. The same step can derive `tested_assay_host` relationship rows, but those relationships remain assay provenance rather than inferred infectivity labels.
+
+Header-only assay exports are valid for mock and seed plumbing, but they do not support H1/H3/H4 biological claims. Populated rows must explicitly distinguish `tested=true` negatives from untested pairs, identify the study/panel/assay type, and carry a source reference. The canonical imported tables are checked again by `scripts/validate_phage_host_assays.py` before model or readiness audits consume them.
+
+Reviewed host-by-phage matrices are normalized before import with `scripts/normalize_assay_matrix.py` and `config/assay_matrix_sources.yaml`. The PhageHostLearn 2024 Zenodo matrix has been normalized into a reviewed subset export for the seed workflow; the matrix-normalization stage remains disabled by default so clean-checkout runs do not require local Zenodo CSV files or regenerate reviewed artifacts implicitly. Matrix blanks are treated as untested cells, explicit `1/0` values become spot-test positive or tested-negative rows, and unresolved entity mappings are reported and skipped rather than silently entering the assay table. `scripts/create_assay_matrix_mapping_templates.py` extracts matrix source IDs into pending review templates; pending mappings are ignored until a reviewer marks them reviewed. `scripts/create_phagehostlearn_source_exports.py` creates benchmark phage and host source exports with deterministic canonical IDs, and `config/source_imports.yaml` uses `required_note_review_statuses` so only reviewed source-identity rows enter source manifests. The current seed path imports reviewed PhageHostLearn spot-test rows as initial-interaction evidence only; it does not provide productive-infection evidence for H4.
+
+`data/metadata/external/phagehostlearn/phagehostlearn_file_manifest.tsv` records the expected local Zenodo files used by the benchmark path, including direct retrieval URLs, advisory commands, byte counts, MD5 values, and SHA-256 values when local review has been completed. The generic workflow stage `stage_0_assay_dataset_audit` currently calls the PhageHostLearn adapter `scripts/audit_phagehostlearn_dataset.py` for file integrity, matrix ID coverage, archive membership, canonical ID mappings, assay/export parity, optional RBPbase/Locibase metadata availability, assay-import readiness, and model-feature readiness. This audit deliberately separates identity readiness, assay readiness, feature readiness, and model readiness: missing K/O/ST, RBPbase, Locibase, defense, or counter-defense evidence must not block preservation of observed tested assay outcomes. Schema details are in `docs/phagehostlearn_dataset_audit_schema.md`.
+
 ## Stage 1: Dataset Curation
 
 Input records are listed in `config/samples.tsv`. The manifest builder validates required columns, unique genome identifiers, record types, numeric genome length, GC percentage, and optional local raw-sequence paths.
@@ -553,7 +564,7 @@ Optional PADLOC/DefenseFinder-style and phage anti-defense schemas are documente
 
 ## Stage 7: Feature-Set Model Comparison
 
-The model comparison script consumes phage clusters, RBP/depolymerase candidates, phage-host links, and compatibility features. It writes transparent leave-one-out categorical baselines for K/O association proxies plus group summaries for prophage RBP reservoirs, host background defense burden, and exploratory novelty context. H3 and H4 are written as explicit blocked rows until assay-derived host-range breadth and productive-infection outcomes are curated.
+The model comparison script consumes phage clusters, RBP/depolymerase candidates, phage-host links, compatibility features, and canonical phage-host assay rows when available. It writes transparent leave-one-out categorical baselines for K/O association proxies plus group summaries for prophage RBP reservoirs, host background defense burden, exploratory novelty context, and assay-derived spot-test breadth. H3 uses tested-host denominators and positive spot-test counts to derive phage-level `spot_host_range_breadth_bin` labels; these are initial-interaction labels only. H4 remains explicitly blocked until productive-infection, plaque, EOP, or propagation outcomes are curated.
 
 Implemented command:
 
@@ -564,6 +575,7 @@ python scripts/06_compare_feature_models.py \
   --rbp-candidates results/rbp_depolymerase/candidates.tsv \
   --phage-host-links results/host_features/phage_host_links.tsv \
   --compatibility-features results/defense_systems/compatibility_features.tsv \
+  --phage-host-assays results/metadata/phage_host_assays.tsv \
   --model-comparison-output results/models/model_comparison.tsv \
   --feature-importance-output results/models/feature_importance.tsv \
   --prediction-errors-output results/models/prediction_errors.tsv \
@@ -571,7 +583,7 @@ python scripts/06_compare_feature_models.py \
   --report-output results/models/model_report.tsv
 ```
 
-The current model layer is a reproducible scaffold. It also writes `results/models/hypothesis_summary.tsv`, a one-row-per-hypothesis evidence table that links H1-H6 to model rows, metrics, claim status, and interpretation guardrails. It does not claim true host-range prediction without experimental infectivity labels. `compatibility_feature_status` and `matched_counterdefense_status` are no longer modeled as H4 targets because they are derived from receptor/defense feature availability rather than observed productive-infection outcomes.
+The current model layer is a reproducible scaffold. It also writes `results/models/hypothesis_summary.tsv`, a one-row-per-hypothesis evidence table that links H1-H6 to model rows, metrics, claim status, and interpretation guardrails. It does not claim productive host-range prediction from spot-test labels. `compatibility_feature_status` and `matched_counterdefense_status` are no longer modeled as H4 targets because they are derived from receptor/defense feature availability rather than observed productive-infection outcomes.
 
 ## Stage 8: Figure Source and Draft SVG Generation
 
