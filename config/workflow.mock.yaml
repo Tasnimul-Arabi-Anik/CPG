@@ -177,6 +177,7 @@ outputs:
     kaptive: results/mock/host_features/kaptive_results.tsv
     kleborate: results/mock/host_features/kleborate_results.tsv
     phage_host_links: results/mock/host_features/phage_host_links.tsv
+    phage_host_relationships: results/mock/host_features/phage_host_relationships.tsv
     report: results/mock/host_features/host_feature_report.tsv
   defense_systems:
     host_defense: results/mock/defense_systems/host_defense_systems.tsv

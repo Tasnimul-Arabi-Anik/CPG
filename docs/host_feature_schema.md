@@ -1,6 +1,6 @@
 # Host Feature Integration Schema
 
-Stage 5 integrates Klebsiella host metadata from the project manifest with optional Kleborate- and Kaptive-style outputs. It preserves missingness: phages without host genomes are retained in `phage_host_links.tsv` and marked as metadata-only or unresolved rather than discarded.
+Stage 5 integrates Klebsiella host metadata from the project manifest with optional Kleborate- and Kaptive-style outputs. It now writes explicit non-assay phage-host relationships to `phage_host_relationships.tsv`. The older `phage_host_links.tsv` output is retained only as a deprecated compatibility table for downstream scaffold stages.
 
 ## Inputs
 
@@ -42,9 +42,29 @@ Normalized Kaptive-style K/O calls.
 
 Normalized Kleborate-style species, ST, AMR, and virulence calls.
 
+### `results/host_features/phage_host_relationships.tsv`
+
+One row per non-assay phage-host relationship inferred from reviewed manifest metadata. Important columns:
+
+| Column | Description |
+| --- | --- |
+| `relationship_id` | Stable relationship row ID. |
+| `phage_id` | Phage, prophage, or viral-contig genome ID. |
+| `host_id` | Linked host genome ID or stable metadata-only host placeholder when available. |
+| `relationship_type` | Controlled relationship type: `isolation_host`, `reported_host`, `prophage_resident_host`, `predicted_host`, or `tested_assay_host`. |
+| `relationship_status` | `reviewed`, `inferred`, or `unresolved` for generated Stage 5 rows. |
+| `relationship_evidence` | The resolution rule, such as `source_matches_host_genome_id`, `host_species_strain_exact_match`, or `metadata_only_host_no_genome`. |
+| `source_reference` | Manifest source, accession, or genome ID used as relationship provenance. |
+| `confidence` | Coarse confidence level for the metadata relationship. |
+| `notes` | Provenance and explicit warning that the row is not an infectivity label. |
+
+Relationship rows are not assay outcomes. Isolation host, reported host, prophage resident host, and predicted host relationships must not be used as susceptible or resistant labels unless a matching row exists in `data/metadata/phage_host_assays.tsv`.
+
 ### `results/host_features/phage_host_links.tsv`
 
-One row per phage-like record. Link statuses include:
+Deprecated compatibility output retained for current downstream scaffold stages. One row is written per phage-like record, with K/O/ST fields copied from the linked host when available. The `notes` column marks each row as a non-assay relationship and not an infectivity label.
+
+Link statuses include:
 
 - `source_matches_host_genome_id`: the phage/prophage `source` field matches a host genome ID.
 - `host_species_strain_exact_match`: host species and strain match one manifest host record.

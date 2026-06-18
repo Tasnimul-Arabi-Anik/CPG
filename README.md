@@ -504,6 +504,7 @@ python scripts/04_integrate_host_features.py \
   --kaptive-output results/host_features/kaptive_results.tsv \
   --kleborate-output results/host_features/kleborate_results.tsv \
   --phage-host-links-output results/host_features/phage_host_links.tsv \
+  --phage-host-relationships-output results/host_features/phage_host_relationships.tsv \
   --report-output results/host_features/host_feature_report.tsv
 
 python scripts/05_integrate_defense_counterdefense.py \
@@ -694,6 +695,7 @@ snakemake --cores 1
 - results/host_features/host_metadata.tsv
 - results/host_features/kaptive_results.tsv
 - results/host_features/kleborate_results.tsv
+- results/host_features/phage_host_relationships.tsv
 - results/host_features/phage_host_links.tsv
 - results/host_features/host_feature_report.tsv
 - results/defense_systems/host_defense_systems.tsv

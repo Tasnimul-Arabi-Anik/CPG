@@ -474,7 +474,7 @@ Optional domain and structural evidence schemas are documented in `docs/rbp_depo
 
 ## Stage 5: Host Feature Integration
 
-The host feature script consumes the Stage 1 manifest, Stage 2 phage clusters, and optional Kleborate/Kaptive-style tables. It writes normalized host metadata and phage-host links while preserving records without linked host genomes as metadata-only or unresolved links.
+The host feature script consumes the Stage 1 manifest, Stage 2 phage clusters, and optional Kleborate/Kaptive-style tables. It writes normalized host metadata plus explicit non-assay phage-host relationships. The older phage-host link table is retained as a deprecated compatibility output for downstream scaffold stages and is not an infectivity label.
 
 Implemented command:
 
@@ -486,6 +486,7 @@ python scripts/04_integrate_host_features.py \
   --kaptive-output results/host_features/kaptive_results.tsv \
   --kleborate-output results/host_features/kleborate_results.tsv \
   --phage-host-links-output results/host_features/phage_host_links.tsv \
+  --phage-host-relationships-output results/host_features/phage_host_relationships.tsv \
   --report-output results/host_features/host_feature_report.tsv
 ```
 

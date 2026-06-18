@@ -404,6 +404,7 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     kaptive = out("host_features", "kaptive", "results/host_features/kaptive_results.tsv")
     kleborate = out("host_features", "kleborate", "results/host_features/kleborate_results.tsv")
     phage_host_links = out("host_features", "phage_host_links", "results/host_features/phage_host_links.tsv")
+    phage_host_relationships = out("host_features", "phage_host_relationships", "results/host_features/phage_host_relationships.tsv")
     host_report = out("host_features", "report", "results/host_features/host_feature_report.tsv")
     host_defense_handoff_enabled = nested_get(config, ("host_defense_handoff", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
     host_defense_handoff_manifest = configured_path(config, root, ("host_defense_handoff", "manifest"), "results/qc/host_defense_run_handoff.tsv")
@@ -1589,11 +1590,13 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
                 kleborate.as_posix(),
                 "--phage-host-links-output",
                 phage_host_links.as_posix(),
+                "--phage-host-relationships-output",
+                phage_host_relationships.as_posix(),
                 "--report-output",
                 host_report.as_posix(),
             ],
             logs_dir / "04_integrate_host_features.log",
-            [host_metadata, kaptive, kleborate, phage_host_links, host_report],
+            [host_metadata, kaptive, kleborate, phage_host_links, phage_host_relationships, host_report],
         ),
     ])
 
