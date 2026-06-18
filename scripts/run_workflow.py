@@ -305,6 +305,7 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     phagehostlearn_external_files_validation = configured_path(config, root, ("phagehostlearn_external_files", "validation"), "results/qc/phagehostlearn_2024_external_files.tsv")
     phagehostlearn_external_files_report = configured_path(config, root, ("phagehostlearn_external_files", "report"), "results/qc/phagehostlearn_2024_external_files_report.tsv")
     phagehostlearn_external_files_require_present = nested_get(config, ("phagehostlearn_external_files", "require_present"), "false").strip().lower() in {"true", "1", "yes", "on"}
+    phagehostlearn_external_files_require_sha256 = nested_get(config, ("phagehostlearn_external_files", "require_sha256"), "false").strip().lower() in {"true", "1", "yes", "on"}
     phagehostlearn_metadata_support_enabled = nested_get(config, ("phagehostlearn_metadata_support", "enabled"), "false").strip().lower() in {"true", "1", "yes", "on"}
     phagehostlearn_metadata_matrix = configured_path(config, root, ("phagehostlearn_metadata_support", "matrix"), "data/metadata/external/phagehostlearn/phage_host_interactions.csv")
     phagehostlearn_metadata_rbpbase = configured_path(config, root, ("phagehostlearn_metadata_support", "rbpbase"), "data/metadata/external/phagehostlearn/RBPbase.csv")
@@ -780,6 +781,8 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
         ]
         if phagehostlearn_external_files_require_present:
             command.append("--require-present")
+        if phagehostlearn_external_files_require_sha256:
+            command.append("--require-sha256")
         stages.append(
             Stage(
                 "stage_0_phagehostlearn_external_files",

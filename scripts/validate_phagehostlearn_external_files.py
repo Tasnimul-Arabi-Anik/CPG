@@ -56,6 +56,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--report-output", required=True)
     parser.add_argument("--root", default=".")
     parser.add_argument("--require-present", action="store_true", help="Treat missing local files as errors instead of warnings.")
+    parser.add_argument("--require-sha256", action="store_true", help="Treat missing expected_sha256 values as errors.")
     return parser.parse_args()
 
 
@@ -124,8 +125,9 @@ def result(row: dict[str, str], root: Path, status: str, severity: str, message:
     }
 
 
-def validate_row(row: dict[str, str], root: Path, seen_ids: set[str], seen_paths: set[str], require_present: bool) -> dict[str, str]:
-    missing = [column for column in MANIFEST_COLUMNS if is_missing(row.get(column, ""))]
+def validate_row(row: dict[str, str], root: Path, seen_ids: set[str], seen_paths: set[str], require_present: bool, require_sha256: bool) -> dict[str, str]:
+    required_columns = [column for column in MANIFEST_COLUMNS if column != "expected_sha256"]
+    missing = [column for column in required_columns if is_missing(row.get(column, ""))]
     if missing:
         return result(row, root, "invalid_missing_required", "error", "Missing required fields: " + ";".join(missing), False)
     file_id = row["file_id"]
@@ -143,8 +145,11 @@ def validate_row(row: dict[str, str], root: Path, seen_ids: set[str], seen_paths
         return result(row, root, "invalid_expected_size", "error", "expected_size_bytes must be an integer", expected_path.exists())
     if not HEX32.match(row["expected_md5"]):
         return result(row, root, "invalid_expected_md5", "error", "expected_md5 must be a 32-character hex digest", expected_path.exists())
-    if not HEX64.match(row["expected_sha256"]):
-        return result(row, root, "invalid_expected_sha256", "error", "expected_sha256 must be a 64-character hex digest", expected_path.exists())
+    expected_sha256 = row.get("expected_sha256", "")
+    if is_missing(expected_sha256) and require_sha256:
+        return result(row, root, "missing_expected_sha256", "error", "expected_sha256 is required by this validation mode", expected_path.exists())
+    if not is_missing(expected_sha256) and not HEX64.match(expected_sha256):
+        return result(row, root, "invalid_expected_sha256", "error", "expected_sha256 must be a 64-character hex digest or NA pending local review", expected_path.exists())
     if not expected_path.exists():
         severity = "error" if require_present else "warning"
         return result(row, root, "local_file_missing", severity, "Local file is not present; retrieve it with retrieval_command before benchmark review.", False)
@@ -155,19 +160,21 @@ def validate_row(row: dict[str, str], root: Path, seen_ids: set[str], seen_paths
         return result(row, root, "size_mismatch", "error", "Observed file size does not match expected_size_bytes.", True, observed_size, observed_md5, observed_sha256)
     if observed_md5.lower() != row["expected_md5"].lower():
         return result(row, root, "md5_mismatch", "error", "Observed MD5 does not match expected_md5.", True, observed_size, observed_md5, observed_sha256)
-    if observed_sha256.lower() != row["expected_sha256"].lower():
+    if is_missing(expected_sha256):
+        return result(row, root, "sha256_pending_local_review", "warning", "Local file exists and matches expected size and MD5; expected_sha256 is pending local review.", True, observed_size, observed_md5, observed_sha256)
+    if observed_sha256.lower() != expected_sha256.lower():
         return result(row, root, "sha256_mismatch", "error", "Observed SHA-256 does not match expected_sha256.", True, observed_size, observed_md5, observed_sha256)
     return result(row, root, "checksum_verified", "info", "Local file exists and matches expected size, MD5, and SHA-256.", True, observed_size, observed_md5, observed_sha256)
 
 
-def validate_manifest(path: Path, root: Path, require_present: bool) -> tuple[list[dict[str, str]], list[dict[str, str]], int]:
+def validate_manifest(path: Path, root: Path, require_present: bool, require_sha256: bool = False) -> tuple[list[dict[str, str]], list[dict[str, str]], int]:
     fields, rows = read_tsv(path)
     missing_columns = [column for column in MANIFEST_COLUMNS if column not in fields]
     if missing_columns:
         raise PhageHostLearnFileValidationError("file manifest missing columns: " + ";".join(missing_columns))
     seen_ids: set[str] = set()
     seen_paths: set[str] = set()
-    validation = [validate_row(row, root, seen_ids, seen_paths, require_present) for row in rows]
+    validation = [validate_row(row, root, seen_ids, seen_paths, require_present, require_sha256) for row in rows]
     counts: dict[str, int] = {}
     for row in validation:
         counts[row["status"]] = counts.get(row["status"], 0) + 1
@@ -185,7 +192,7 @@ def main() -> int:
     root = Path(args.root).resolve()
     manifest = resolve(root, args.manifest)
     try:
-        validation, report, errors = validate_manifest(manifest, root, args.require_present)
+        validation, report, errors = validate_manifest(manifest, root, args.require_present, args.require_sha256)
     except PhageHostLearnFileValidationError as exc:
         validation = []
         report = [{"severity": "error", "item": "phagehostlearn_external_files", "message": str(exc)}]

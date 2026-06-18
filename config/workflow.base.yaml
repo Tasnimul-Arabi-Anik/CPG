@@ -426,6 +426,7 @@ phagehostlearn_external_files:
   validation: '{results_dir}/qc/phagehostlearn_2024_external_files.tsv'
   report: '{results_dir}/qc/phagehostlearn_2024_external_files_report.tsv'
   require_present: false
+  require_sha256: false
 phagehostlearn_metadata_support:
   enabled: true
   matrix: data/metadata/external/phagehostlearn/phage_host_interactions.csv

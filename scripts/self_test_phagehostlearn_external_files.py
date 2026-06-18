@@ -60,7 +60,7 @@ def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def manifest_row(file_id: str, expected_path: str, data: bytes | None = None, bad_md5: bool = False) -> dict[str, str]:
+def manifest_row(file_id: str, expected_path: str, data: bytes | None = None, bad_md5: bool = False, missing_sha256: bool = False) -> dict[str, str]:
     payload = data if data is not None else b"fixture"
     return {
         "file_id": file_id,
@@ -72,18 +72,18 @@ def manifest_row(file_id: str, expected_path: str, data: bytes | None = None, ba
         "expected_path": expected_path,
         "expected_size_bytes": str(len(payload)),
         "expected_md5": "0" * 32 if bad_md5 else md5(payload),
-        "expected_sha256": sha256(payload),
+        "expected_sha256": "NA" if missing_sha256 else sha256(payload),
         "required_for": "fixture",
         "notes": "fixture",
     }
 
 
-def run_validation(root: Path, rows: list[dict[str, str]], require_present: bool = False) -> tuple[int, list[dict[str, str]]]:
+def run_validation(root: Path, rows: list[dict[str, str]], require_present: bool = False, require_sha256: bool = False) -> tuple[int, list[dict[str, str]]]:
     manifest = root / "manifest.tsv"
     validation = root / "validation.tsv"
     report = root / "report.tsv"
     write_tsv(manifest, MANIFEST_COLUMNS, rows)
-    validation_rows, report_rows, errors = validator.validate_manifest(manifest, root.resolve(), require_present)
+    validation_rows, report_rows, errors = validator.validate_manifest(manifest, root.resolve(), require_present, require_sha256)
     write_tsv(validation, validator.VALIDATION_COLUMNS, validation_rows)
     write_tsv(report, validator.REPORT_COLUMNS, report_rows)
     return (1 if errors else 0), validation_rows
@@ -110,6 +110,14 @@ def run_tests() -> list[dict[str, str]]:
 
         rc, rows = run_validation(root, [manifest_row("badmd5", "data/metadata/external/phagehostlearn/fixture.csv", payload, bad_md5=True)])
         tests.append(result("md5_mismatch", "bad MD5 is blocking", "md5_mismatch", rows[0]["status"]))
+
+        rc, rows = run_validation(root, [manifest_row("nosha", "data/metadata/external/phagehostlearn/fixture.csv", payload, missing_sha256=True)])
+        observed = rows[0]["status"] + ":" + rows[0]["severity"]
+        tests.append(result("sha256_pending", "missing expected SHA-256 is warning after size and MD5 pass", "sha256_pending_local_review:warning", observed))
+
+        rc, rows = run_validation(root, [manifest_row("nosha", "data/metadata/external/phagehostlearn/fixture.csv", payload, missing_sha256=True)], require_sha256=True)
+        observed = rows[0]["status"] + ":" + rows[0]["severity"]
+        tests.append(result("sha256_required", "missing expected SHA-256 is blocking when required", "missing_expected_sha256:error", observed))
 
         rc, rows = run_validation(root, [manifest_row("badpath", "data/raw/fixture.csv", payload)])
         tests.append(result("invalid_path", "expected path must remain under PhageHostLearn metadata directory", "invalid_expected_path", rows[0]["status"]))
