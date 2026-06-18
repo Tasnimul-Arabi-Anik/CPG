@@ -1,0 +1,31 @@
+extends: workflow.base.yaml
+paths:
+  results_dir: results/production
+  logs_dir: logs/production
+profile:
+  name: production
+  description: Sequence-backed production workflow. Configure accepted production evidence before running for manuscript analyses.
+  evidence_class: production
+  requires_local_sequences: true
+  requires_sequence_checksums: true
+  requires_production_external_evidence: true
+  allows_biological_claims: false
+  results_directory: results/production
+  claim_scope: production_evidence_required
+  production_evidence_targets:
+    pairwise_similarity: data/metadata/production_evidence/phage_genome_similarity.tsv
+    annotation_input: data/metadata/production_evidence/pharokka_phrogs_annotations.tsv
+    domain_evidence: data/metadata/production_evidence/rbp_domain_evidence.tsv
+    structural_evidence: data/metadata/production_evidence/rbp_structural_evidence.tsv
+    kleborate_input: data/metadata/production_evidence/kleborate_host_features.tsv
+    kaptive_input: data/metadata/production_evidence/kaptive_ko_typing.tsv
+    host_defense_input: data/metadata/production_evidence/host_defense_systems.tsv
+    phage_antidefense_input: data/metadata/production_evidence/phage_antidefense_candidates.tsv
+inputs:
+  pairwise_similarity: ''
+  annotation_input: ''
+  kleborate_input: ''
+  kaptive_input: ''
+outputs:
+  validation:
+    workflow_config: config/workflow.production.yaml

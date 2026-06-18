@@ -1,0 +1,16 @@
+extends: workflow.base.yaml
+paths:
+  results_dir: results/seed
+  logs_dir: logs/seed
+profile:
+  name: seed
+  description: Tracked seed metadata plus bridge evidence; validates real workflow paths but does not support biological claims.
+  evidence_class: reviewed_seed_bridge
+  requires_local_sequences: false
+  requires_sequence_checksums: false
+  requires_production_external_evidence: false
+  allows_biological_claims: false
+  results_directory: results/seed
+  claim_scope: workflow_validation_only
+sequence_acquisition_manifest:
+  manifest: data/metadata/seed_sequence_acquisition_manifest.tsv

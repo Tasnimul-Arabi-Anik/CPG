@@ -10,6 +10,8 @@ import shutil
 from pathlib import Path
 from typing import Iterable
 
+from workflow_config import WorkflowConfigError, load_workflow_config, resolved_config_sha256
+
 
 REPORT_COLUMNS = ["severity", "item", "status", "message"]
 SCHEMA_COLUMNS = [
@@ -35,6 +37,8 @@ HYPOTHESIS_COLUMNS = [
 INVENTORY_COLUMNS = ["path", "exists", "size_bytes", "row_count", "status", "notes"]
 
 REQUIRED_OUTPUTS = [
+    ("stage_0_profile_requirements", "results/validation/workflow_profile_requirements.tsv", ["requirement_id", "workflow_profile", "evidence_class", "status", "severity"]),
+    ("stage_0_profile_requirements_report", "results/validation/workflow_profile_requirements_report.tsv", ["severity", "item", "message"]),
     ("stage_0_tool_availability", "results/qc/tool_availability.tsv", ["tool_id", "command", "required_for_current_workflow", "availability_status"]),
     ("stage_0_tool_audit_report", "results/qc/tool_audit_report.tsv", ["severity", "item", "message"]),
     ("stage_0_source_query_plan", "results/qc/source_query_plan.tsv", ["query_id", "source_id", "target_database", "query_string", "expected_export_path", "query_status", "next_action"]),
@@ -175,6 +179,7 @@ REQUIRED_DOCS = [
     "docs/genome_sequence_qc_schema.md",
     "docs/sequence_acquisition_schema.md",
     "docs/sequence_fetch_manifest_schema.md",
+    "docs/sequence_acquisition_manifest_schema.md",
     "docs/external_evidence_plan_schema.md",
     "docs/external_evidence_template_schema.md",
     "docs/external_evidence_run_packet_schema.md",
@@ -228,6 +233,7 @@ REQUIRED_DOCS = [
     "docs/modeling_schema.md",
     "docs/figure_generation_schema.md",
     "docs/workflow_runner.md",
+    "docs/workflow_profile_requirements_schema.md",
     "docs/reviewer_handoff.md",
     "docs/study_readiness_schema.md",
     "docs/readiness_action_plan_schema.md",
@@ -240,6 +246,8 @@ REQUIRED_DOCS = [
 
 REQUIRED_SCRIPTS = [
     "scripts/run_workflow.py",
+    "scripts/workflow_config.py",
+    "scripts/validate_workflow_profile_requirements.py",
     "scripts/audit_tool_availability.py",
     "scripts/plan_source_queries.py",
     "scripts/create_source_query_commands.py",
@@ -254,6 +262,7 @@ REQUIRED_SCRIPTS = [
     "scripts/self_test_rbp_external_evidence_normalization.py",
     "scripts/self_test_defense_external_evidence_normalization.py",
     "scripts/import_source_manifests.py",
+    "scripts/audit_source_manifest_drift.py",
     "scripts/plan_source_acquisition.py",
     "scripts/build_samples_from_sources.py",
     "scripts/audit_source_catalog.py",
@@ -283,6 +292,8 @@ REQUIRED_SCRIPTS = [
     "scripts/plan_sequence_acquisition.py",
     "scripts/create_sequence_fetch_manifest.py",
     "scripts/create_sequence_fetch_review_packet.py",
+    "scripts/validate_sequence_acquisition_manifest.py",
+    "scripts/self_test_sequence_acquisition_manifest.py",
     "scripts/plan_external_evidence.py",
     "scripts/create_external_evidence_templates.py",
     "scripts/create_external_evidence_run_packets.py",
@@ -317,6 +328,10 @@ REQUIRED_CONFIGS = [
     "config/thresholds.yaml",
     "config/tools.yaml",
     "config/workflow.yaml",
+    "config/workflow.base.yaml",
+    "config/workflow.mock.yaml",
+    "config/workflow.seed.yaml",
+    "config/workflow.production.yaml",
     "config/source_catalog.yaml",
     "config/source_catalog.mock.yaml",
     "config/source_imports.yaml",
@@ -325,6 +340,9 @@ REQUIRED_CONFIGS = [
     "config/source_queries.mock.yaml",
     "data/metadata/phage_host_assays.tsv",
     "data/metadata/phage_host_relationships.tsv",
+    "data/metadata/sequence_acquisition_manifest.tsv",
+    "data/metadata/seed_sequence_acquisition_manifest.tsv",
+    "data/metadata/mock_sequence_acquisition_manifest.tsv",
 ]
 
 REQUIRED_FIGURES = [
@@ -421,6 +439,24 @@ def mock_fixture_references(config_text: str) -> list[str]:
         values = [line.strip() for line in config_text.splitlines()]
     refs: list[str] = []
     for value in values:
+        normalized = value.replace("\\", "/")
+        lowered = normalized.lower()
+        if (
+            "/mock" in lowered
+            or "mock_" in lowered
+            or lowered.startswith("results/mock")
+            or lowered.startswith("data/metadata/mock")
+            or lowered.startswith("data/raw/mock")
+            or lowered.endswith(".mock.yaml")
+        ):
+            if normalized not in refs:
+                refs.append(normalized)
+    return refs
+
+
+def mock_fixture_references_from_config(config: dict) -> list[str]:
+    refs: list[str] = []
+    for value in flatten_config_values(config):
         normalized = value.replace("\\", "/")
         lowered = normalized.lower()
         if (
@@ -542,24 +578,45 @@ def validate_configs(root: Path, report: list[dict[str, str]], workflow_config: 
 
     snakefile = root / "Snakefile"
     snake_text = snakefile.read_text(encoding="utf-8")
-    if "scripts/run_workflow.py" not in snake_text or "WORKFLOW_CONFIG" not in snake_text:
-        add_report(report, "error", "snakefile", "fail", "Snakefile must delegate to scripts/run_workflow.py with a workflow config.")
+    if "scripts/run_workflow.py" not in snake_text or "load_workflow_config" not in snake_text:
+        add_report(report, "error", "snakefile", "fail", "Snakefile must delegate to scripts/run_workflow.py and use the shared workflow config resolver.")
     else:
-        add_report(report, "info", "snakefile", "pass", "Snakefile delegates to the config-driven direct workflow runner.")
+        add_report(report, "info", "snakefile", "pass", "Snakefile delegates to the config-driven direct workflow runner and shared config resolver.")
 
     if not workflow_config.exists():
         add_report(report, "error", "workflow_config", "fail", f"Workflow config does not exist: {display_path(root, workflow_config)}")
         return
-    text = workflow_config.read_text(encoding="utf-8")
-    required_sections = ["execution:", "inputs:", "outputs:", "logs:"]
-    missing_sections = [section for section in required_sections if section not in text]
-    if missing_sections:
-        add_report(report, "error", "workflow_config", "fail", f"{display_path(root, workflow_config)} missing sections: " + ";".join(missing_sections))
-    else:
-        add_report(report, "info", "workflow_config", "pass", f"Workflow config {display_path(root, workflow_config)} exists with required top-level sections.")
+    try:
+        resolved = load_workflow_config(workflow_config, root)
+    except WorkflowConfigError as exc:
+        add_report(report, "error", "workflow_config", "fail", f"Workflow config resolution failed: {exc}")
+        return
 
-    mock_refs = mock_fixture_references(text)
-    is_mock_config = workflow_config.name.endswith(".mock.yaml") or "/mock" in display_path(root, workflow_config).lower()
+    required_sections = ["execution", "inputs", "outputs", "logs"]
+    missing_sections = [section for section in required_sections if section not in resolved]
+    if missing_sections:
+        add_report(report, "error", "workflow_config", "fail", f"Resolved {display_path(root, workflow_config)} missing sections: " + ";".join(missing_sections))
+    else:
+        profile = resolved.get("profile", {}) if isinstance(resolved.get("profile", {}), dict) else {}
+        profile_name = profile.get("name", "default")
+        evidence_class = profile.get("evidence_class", "unspecified")
+        add_report(
+            report,
+            "info",
+            "workflow_config",
+            "pass",
+            f"Workflow config {display_path(root, workflow_config)} resolves with required top-level sections; profile={profile_name}; evidence_class={evidence_class}; sha256={resolved_config_sha256(resolved)}.",
+        )
+
+    raw_text = workflow_config.read_text(encoding="utf-8")
+    if workflow_config.name not in {"workflow.base.yaml"} and "extends:" not in raw_text:
+        add_report(report, "warning", "workflow_config_inheritance", "warn", f"{display_path(root, workflow_config)} does not declare extends; profile configs should inherit from workflow.base.yaml.")
+    else:
+        add_report(report, "info", "workflow_config_inheritance", "pass", f"{display_path(root, workflow_config)} uses shared workflow config inheritance or is the base config.")
+
+    mock_refs = mock_fixture_references_from_config(resolved)
+    profile = resolved.get("profile", {}) if isinstance(resolved.get("profile", {}), dict) else {}
+    is_mock_config = profile.get("name") == "mock" or workflow_config.name.endswith(".mock.yaml") or "/mock" in display_path(root, workflow_config).lower()
     if is_mock_config:
         add_report(report, "info", "mock_fixture_boundary", "pass", f"Mock workflow config allows fixture references; fixture_refs={len(mock_refs)}.")
     elif mock_refs:

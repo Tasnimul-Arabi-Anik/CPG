@@ -176,7 +176,7 @@ def write_tsv(path: Path, columns: Iterable[str], rows: Iterable[dict[str, str]]
     path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = list(columns)
     with path.open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames, delimiter="\t")
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, delimiter="\t", lineterminator="\n")
         writer.writeheader()
         for row in rows:
             writer.writerow({column: row.get(column, "") for column in fieldnames})

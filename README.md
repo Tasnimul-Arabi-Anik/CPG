@@ -30,6 +30,8 @@ For another AI or collaborator reviewing the repository, start with `docs/review
 
 ## Quick Start
 
+Workflow profiles are resolved through `scripts/workflow_config.py`: `config/workflow.base.yaml` holds shared stage wiring, `config/workflow.mock.yaml`, `config/workflow.seed.yaml`, and `config/workflow.production.yaml` are thin overlays, and `config/workflow.yaml` is the seed-profile alias. Production profile execution fails closed until reviewed production evidence inputs and explicit tested phage-host assay outcomes are configured.
+
 Create the environment:
 
 ```bash
@@ -407,6 +409,18 @@ Run the populated smoke-test workflow with bundled fixtures:
 python scripts/run_workflow.py --config config/workflow.mock.yaml
 ```
 
+Run the seed real-data profile, which writes to `results/seed/` and keeps biological claims blocked:
+
+```bash
+python scripts/run_workflow.py --config config/workflow.seed.yaml
+```
+
+Inspect the production profile without requiring production evidence files yet:
+
+```bash
+python scripts/run_workflow.py --config config/workflow.production.yaml --dry-run
+```
+
 Run the implemented stages directly:
 
 ```bash
@@ -436,6 +450,26 @@ python scripts/create_sequence_fetch_manifest.py \
   --manifest-output results/qc/sequence_fetch_manifest.tsv \
   --commands-output results/qc/sequence_fetch_commands.sh \
   --report-output results/qc/sequence_fetch_report.tsv \
+  --root .
+```
+
+Validate reviewed raw FASTA acquisition checksums without tracking raw files:
+
+```bash
+python scripts/validate_sequence_acquisition_manifest.py \
+  --manifest data/metadata/sequence_acquisition_manifest.tsv \
+  --validation-output results/validation/sequence_acquisition_manifest_validation.tsv \
+  --report-output results/validation/sequence_acquisition_manifest_validation_report.tsv \
+  --root .
+```
+
+Audit source-manifest drift from authoritative source exports:
+
+```bash
+python scripts/audit_source_manifest_drift.py \
+  --config config/source_imports.yaml \
+  --drift-output results/qc/source_manifest_drift.tsv \
+  --report-output results/qc/source_manifest_drift_report.tsv \
   --root .
 ```
 
@@ -764,6 +798,8 @@ snakemake --cores 1
 - docs/figure_generation_schema.md
 - docs/workflow_validation_schema.md
 - docs/workflow_runner.md
+- docs/sequence_acquisition_manifest_schema.md
+- docs/source_manifest_drift_schema.md
 - docs/study_readiness_schema.md
 - docs/readiness_action_plan_schema.md
 - docs/goal_completion_audit_schema.md
@@ -774,4 +810,4 @@ snakemake --cores 1
 
 ## Current Status
 
-The repository currently implements Stage 1 metadata validation, source/sequence/external-evidence planning, source export starter-kit generation, minimum source curation prioritization, priority source preflight, priority collection packets, source enablement planning, source enablement dry-run auditing, source readiness dashboarding, source curation work-order generation, source work-order packet rendering, source work-order acceptance checks, post-acceptance source transition planning, and source overlap auditing, Stage 2 dereplication/similarity schemas, Stage 3 annotation/pangenome table construction, Stage 4 RBP/depolymerase candidate prioritization, Stage 5 host-feature integration, Stage 6 defense/counter-defense feature integration, Stage 7 model-comparison scaffolding, Stage 8 figure source/draft SVG generation, Stage 9 workflow validation/audit reporting, and a direct config-driven workflow runner for environments without Snakemake. The study readiness audit now reports source, sample-support, sequence, and evidence acquisition status before downstream biological outputs. The readiness action plan prioritizes the highest-ranked missing source exports from the minimum source curation plan before downstream sequence and evidence steps.
+The repository currently implements Stage 1 metadata validation, source/sequence/external-evidence planning, checksum-backed raw acquisition manifests, source-manifest drift auditing, source export starter-kit generation, minimum source curation prioritization, priority source preflight, priority collection packets, source enablement planning, source enablement dry-run auditing, source readiness dashboarding, source curation work-order generation, source work-order packet rendering, source work-order acceptance checks, post-acceptance source transition planning, and source overlap auditing, Stage 2 dereplication/similarity schemas, Stage 3 annotation/pangenome table construction, Stage 4 RBP/depolymerase candidate prioritization, Stage 5 host-feature integration, Stage 6 defense/counter-defense feature integration, Stage 7 model-comparison scaffolding, Stage 8 figure source/draft SVG generation, Stage 9 workflow validation/audit reporting, and a direct config-driven workflow runner for environments without Snakemake. The study readiness audit now reports source, sample-support, sequence, and evidence acquisition status before downstream biological outputs. The readiness action plan prioritizes the highest-ranked missing source exports from the minimum source curation plan before downstream sequence and evidence steps.
