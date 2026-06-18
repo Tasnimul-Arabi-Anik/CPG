@@ -19,6 +19,8 @@ Default outputs:
 | `observed_blocking` | Observed blocking flag. |
 | `expected_lint_contains` | Expected substring in provenance lint, or `NA`. |
 | `observed_provenance_lint` | Observed provenance lint string. |
+| `expected_content_lint_contains` | Expected substring in content lint, or `NA`. |
+| `observed_content_lint` | Observed content lint string. |
 | `status` | `pass` or `fail`. |
 | `notes` | Failure notes or `NA`. |
 
@@ -37,6 +39,8 @@ The self-test covers:
 - configured evidence accepted with complete provenance;
 - configured evidence accepted with provenance lint;
 - schema-invalid configured evidence remaining blocking;
-- missing production tool/input remaining blocking.
+- missing production tool/input remaining blocking;
+- keyword-inference anti-defense rows rejected as production evidence;
+- workflow-generated result paths rejected as production external-evidence inputs.
 
 This self-test validates the acceptance gate logic only. It does not validate real external evidence or support biological claims.

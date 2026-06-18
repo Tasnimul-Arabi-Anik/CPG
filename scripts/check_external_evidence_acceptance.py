@@ -24,12 +24,24 @@ ACCEPTANCE_COLUMNS = [
     "rows_with_evidence_source",
     "rows_with_notes",
     "provenance_lint",
+    "content_lint",
     "acceptance_status",
     "blocking_issue",
     "next_action",
 ]
 REPORT_COLUMNS = ["severity", "item", "message"]
 MISSING = {"", "NA", "N/A", "na", "n/a", "None", "none", "-"}
+GENERATED_RESULT_PREFIXES = (
+    "results/annotations/",
+    "results/clusters/",
+    "results/defense_systems/",
+    "results/figures/",
+    "results/host_features/",
+    "results/models/",
+    "results/qc/",
+    "results/rbp_depolymerase/",
+    "results/validation/",
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -109,13 +121,32 @@ def provenance_counts(path: Path) -> tuple[int, int, str]:
     return source_count, notes_count, ";".join(lint) if lint else "NA"
 
 
-def classify(row: dict[str, str], source_count: int, notes_count: int, lint: str) -> tuple[str, str, str]:
+def content_lint(root: Path, evidence_id: str, configured_path: Path) -> str:
+    lint: list[str] = []
+    configured_display = display_path(root, configured_path).replace("\\", "/")
+    if any(configured_display.startswith(prefix) for prefix in GENERATED_RESULT_PREFIXES):
+        lint.append("configured_path_is_workflow_generated_output")
+    fieldnames, rows = read_tsv(configured_path)
+    if evidence_id == "phage_antidefense_candidates" and "evidence_type" in fieldnames:
+        inferred_rows = [row for row in rows if row.get("evidence_type") == "annotation_keyword_inference"]
+        if inferred_rows:
+            lint.append(f"annotation_keyword_inference_rows={len(inferred_rows)}")
+    return ";".join(lint) if lint else "NA"
+
+
+def classify(row: dict[str, str], source_count: int, notes_count: int, provenance_lint: str, evidence_content_lint: str) -> tuple[str, str, str]:
     status = row.get("evidence_status", "")
     schema = row.get("configured_input_schema_status", "")
     rows = row.get("configured_input_rows", "0")
     blocking_for_manuscript = row.get("blocking_for_manuscript", "false") == "true"
     if status == "provided_input_ready" and schema == "pass" and rows not in {"", "0"}:
-        if lint == "NA":
+        if evidence_content_lint != "NA":
+            return (
+                "content_rejected",
+                "true",
+                "Fix content lint before accepting this TSV as production external evidence.",
+            )
+        if provenance_lint == "NA":
             return "accepted", "false", "No action required; provenance fields are populated."
         return (
             "accepted_with_provenance_lint",
@@ -149,7 +180,8 @@ def check_acceptance(root: Path, evidence_plan: Path) -> tuple[list[dict[str, st
         configured_path = resolve(root, configured_path_text) if configured_path_text else Path("")
         has_configured_file = bool(configured_path_text and configured_path.exists() and configured_path.is_file())
         source_count, notes_count, lint = provenance_counts(configured_path) if has_configured_file else (0, 0, "NA")
-        acceptance_status, blocking_issue, next_action = classify(row, source_count, notes_count, lint)
+        evidence_content_lint = content_lint(root, row.get("evidence_id", ""), configured_path) if has_configured_file else "NA"
+        acceptance_status, blocking_issue, next_action = classify(row, source_count, notes_count, lint, evidence_content_lint)
         acceptance.append(
             {
                 "evidence_id": row.get("evidence_id", ""),
@@ -166,6 +198,7 @@ def check_acceptance(root: Path, evidence_plan: Path) -> tuple[list[dict[str, st
                 "rows_with_evidence_source": str(source_count),
                 "rows_with_notes": str(notes_count),
                 "provenance_lint": lint,
+                "content_lint": evidence_content_lint,
                 "acceptance_status": acceptance_status,
                 "blocking_issue": blocking_issue,
                 "next_action": next_action,
@@ -177,11 +210,12 @@ def check_acceptance(root: Path, evidence_plan: Path) -> tuple[list[dict[str, st
         counts[row["acceptance_status"]] = counts.get(row["acceptance_status"], 0) + 1
     blocking = sum(1 for row in acceptance if row["blocking_issue"] == "true")
     provenance_lint = sum(1 for row in acceptance if row["provenance_lint"] != "NA")
+    content_lint_count = sum(1 for row in acceptance if row["content_lint"] != "NA")
     report = [
         {
             "severity": "warning" if blocking else "info",
             "item": "external_evidence_acceptance",
-            "message": f"evidence={len(acceptance)}; blocking={blocking}; provenance_lint={provenance_lint}; statuses="
+            "message": f"evidence={len(acceptance)}; blocking={blocking}; provenance_lint={provenance_lint}; content_lint={content_lint_count}; statuses="
             + ";".join(f"{key}:{value}" for key, value in sorted(counts.items())),
         }
     ]

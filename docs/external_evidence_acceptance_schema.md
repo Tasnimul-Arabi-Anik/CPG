@@ -1,6 +1,6 @@
 # External Evidence Acceptance Schema
 
-`scripts/check_external_evidence_acceptance.py` checks the current external evidence plan and reports whether configured TSVs are ready for workflow use, still missing, schema-invalid, or accepted with provenance lint.
+`scripts/check_external_evidence_acceptance.py` checks the current external evidence plan and reports whether configured TSVs are ready for workflow use, still missing, schema-invalid, accepted with provenance lint, or rejected by evidence-specific content checks.
 
 Default outputs:
 
@@ -27,6 +27,7 @@ This is an operational acceptance check. It does not prove biological claims and
 | `rows_with_evidence_source` | Rows with `evidence_source`, `tool`, or `evidence` populated. |
 | `rows_with_notes` | Rows with `notes` populated. |
 | `provenance_lint` | Missing provenance columns or missing populated provenance values. |
+| `content_lint` | Evidence-specific content problems, such as workflow-generated result paths or keyword-inference anti-defense rows configured as production evidence. |
 | `acceptance_status` | Operational status for this evidence layer. |
 | `blocking_issue` | Whether this layer currently blocks production evidence readiness. |
 | `next_action` | Concrete next action. |
@@ -37,6 +38,7 @@ This is an operational acceptance check. It does not prove biological claims and
 | --- | --- |
 | `accepted` | Configured TSV exists, has rows, passes schema checks, and has populated provenance fields. |
 | `accepted_with_provenance_lint` | Configured TSV is usable by the workflow but provenance fields should be reviewed before manuscript use. |
+| `content_rejected` | Configured TSV has rows and passes minimum schema checks, but content lint prevents accepting it as production external evidence. |
 | `schema_invalid` | Configured TSV has rows but fails the minimum schema check. |
 | `configured_empty` | Configured TSV exists but has no data rows. |
 | `configured_missing` | Workflow points to a missing TSV path. |
@@ -48,4 +50,4 @@ This is an operational acceptance check. It does not prove biological claims and
 
 ## Interpretation
 
-Rows with `accepted` or `accepted_with_provenance_lint` can be consumed by workflow stages, but only the full study-readiness, hypothesis-coverage, traceability, and claim-support audits determine whether a manuscript claim can be strengthened.
+Rows with `accepted` or `accepted_with_provenance_lint` can be consumed by workflow stages, but only the full study-readiness, hypothesis-coverage, traceability, and claim-support audits determine whether a manuscript claim can be strengthened. Rows marked `content_rejected` must not be configured as accepted production evidence; this currently guards against circular workflow-generated outputs and keyword-only anti-defense inference.

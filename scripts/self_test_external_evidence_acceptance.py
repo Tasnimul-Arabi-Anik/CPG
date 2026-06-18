@@ -21,6 +21,8 @@ TEST_COLUMNS = [
     "observed_blocking",
     "expected_lint_contains",
     "observed_provenance_lint",
+    "expected_content_lint_contains",
+    "observed_content_lint",
     "status",
     "notes",
 ]
@@ -99,20 +101,26 @@ def check_case(
     expected_acceptance_status: str,
     expected_blocking: str,
     expected_lint_contains: str = "",
+    expected_content_lint_contains: str = "",
+    evidence_id: str | None = None,
+    evidence_subpath: str | None = None,
 ) -> dict[str, str]:
     evidence_path: Path | None = None
     if evidence_body is not None:
-        evidence_path = tmpdir / f"{test_id}.tsv"
+        evidence_path = tmpdir / (evidence_subpath or f"{test_id}.tsv")
         write_text(evidence_path, evidence_body)
     plan_path = tmpdir / f"{test_id}_plan.tsv"
-    write_tsv(plan_path, PLAN_COLUMNS, [plan_row(tmpdir, test_id, evidence_path, evidence_status, schema_status, configured_rows)])
+    plan_evidence_id = evidence_id or test_id
+    write_tsv(plan_path, PLAN_COLUMNS, [plan_row(tmpdir, plan_evidence_id, evidence_path, evidence_status, schema_status, configured_rows)])
     rows, _ = acceptance.check_acceptance(tmpdir, plan_path)
     observed = rows[0] if rows else {}
     observed_lint = observed.get("provenance_lint", "")
+    observed_content_lint = observed.get("content_lint", "")
     status_ok = observed.get("acceptance_status") == expected_acceptance_status
     blocking_ok = observed.get("blocking_issue") == expected_blocking
     lint_ok = True if not expected_lint_contains else expected_lint_contains in observed_lint
-    passed = status_ok and blocking_ok and lint_ok
+    content_lint_ok = True if not expected_content_lint_contains else expected_content_lint_contains in observed_content_lint
+    passed = status_ok and blocking_ok and lint_ok and content_lint_ok
     notes = []
     if not status_ok:
         notes.append("status_mismatch")
@@ -120,6 +128,8 @@ def check_case(
         notes.append("blocking_mismatch")
     if not lint_ok:
         notes.append("lint_mismatch")
+    if not content_lint_ok:
+        notes.append("content_lint_mismatch")
     return {
         "test_id": test_id,
         "scenario": scenario,
@@ -129,6 +139,8 @@ def check_case(
         "observed_blocking": observed.get("blocking_issue", ""),
         "expected_lint_contains": expected_lint_contains or "NA",
         "observed_provenance_lint": observed_lint or "NA",
+        "expected_content_lint_contains": expected_content_lint_contains or "NA",
+        "observed_content_lint": observed_content_lint or "NA",
         "status": "pass" if passed else "fail",
         "notes": ";".join(notes) if notes else "NA",
     }
@@ -182,6 +194,33 @@ def run_tests() -> list[dict[str, str]]:
                 "0",
                 "missing_tool_or_input",
                 "true",
+            ),
+            check_case(
+                tmpdir,
+                "reject_keyword_inference_antidefense",
+                "keyword-inference anti-defense rows are not accepted as production evidence",
+                "antidefense_class\tphage_genome_id\tevidence_type\tevidence_source\tnotes\nanti_restriction\tphage_1\tannotation_keyword_inference\tstage6\trequires validation\n",
+                "provided_input_ready",
+                "pass",
+                "1",
+                "content_rejected",
+                "true",
+                expected_content_lint_contains="annotation_keyword_inference_rows=1",
+                evidence_id="phage_antidefense_candidates",
+            ),
+            check_case(
+                tmpdir,
+                "reject_workflow_generated_results_path",
+                "workflow-generated result TSVs cannot be reconfigured as external production evidence",
+                "genome_id\tevidence_source\tnotes\nphage_1\tstage_output\tgenerated result path\n",
+                "provided_input_ready",
+                "pass",
+                "1",
+                "content_rejected",
+                "true",
+                expected_content_lint_contains="configured_path_is_workflow_generated_output",
+                evidence_id="pairwise_similarity",
+                evidence_subpath="results/defense_systems/phage_antidefense_candidates.tsv",
             ),
         ]
 
