@@ -94,6 +94,7 @@ python scripts/run_workflow.py --config config/workflow.yaml --stages stage_1_ma
 - `stage_6_defense_counterdefense`
 - `stage_7_models`
 - `stage_8_figures`
+- `stage_9_workflow_config_self_test`
 - `stage_9_source_export_validation_self_test`
 - `stage_9_sequence_acquisition_manifest_self_test`
 - `stage_9_external_evidence_acceptance_self_test`
@@ -190,10 +191,13 @@ The runner writes `results/qc/source_work_order_acceptance.tsv` through `stage_0
 
 The runner writes `results/qc/source_post_acceptance_plan.tsv` through `stage_0_source_post_acceptance`. This table records the next command after source work-order acceptance, such as import enablement or sample-support reruns.
 
+## Workflow Config Self-Test
+
+The runner writes `results/validation/workflow_config_self_test.tsv` through `stage_9_workflow_config_self_test`. This stage verifies profile inheritance, placeholder substitution, alias resolution, resolved-config checksum generation, and blocking errors for unknown placeholders or circular `extends` chains.
+
 ## Source Export Validation Self-Test
 
 The runner writes `results/validation/source_export_validation_self_test.tsv` through `stage_9_source_export_validation_self_test`. This stage creates temporary reviewed-export examples and verifies that malformed year, GC, lifestyle, and identity fields are blocked before source import.
-
 
 ## Phage-Host Assay Validation
 

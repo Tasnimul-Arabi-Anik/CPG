@@ -203,6 +203,8 @@ outputs:
     hypotheses: '{results_dir}/validation/hypothesis_coverage.tsv'
     inventory: '{results_dir}/validation/output_inventory.tsv'
     report: '{results_dir}/validation/workflow_validation_report.tsv'
+    workflow_config_self_test: '{results_dir}/validation/workflow_config_self_test.tsv'
+    workflow_config_self_test_report: '{results_dir}/validation/workflow_config_self_test_report.tsv'
     source_export_validation_self_test: '{results_dir}/validation/source_export_validation_self_test.tsv'
     source_export_validation_self_test_report: '{results_dir}/validation/source_export_validation_self_test_report.tsv'
     external_evidence_acceptance_self_test: '{results_dir}/validation/external_evidence_acceptance_self_test.tsv'

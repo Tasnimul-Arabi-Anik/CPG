@@ -9,7 +9,7 @@ on:
 
 jobs:
   scaffold-validation:
-    name: Scaffold validation
+    name: Scaffold, profile, and seed validation
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -28,20 +28,50 @@ jobs:
       - name: Compile workflow scripts
         run: python -m py_compile scripts/*.py
 
-      - name: Run source export validator self-test
-        run: >-
-          python scripts/self_test_source_export_validation.py
-          --output results/validation/source_export_validation_self_test.tsv
-          --report-output results/validation/source_export_validation_self_test_report.tsv
-
-      - name: Run source work-order acceptance self-test
-        run: >-
-          python scripts/self_test_source_work_order_acceptance.py
-          --output results/validation/source_work_order_acceptance_self_test.tsv
-          --report-output results/validation/source_work_order_acceptance_self_test_report.tsv
+      - name: Run validator self-tests
+        run: |
+          python scripts/self_test_workflow_config.py \
+            --output results/validation/workflow_config_self_test.tsv \
+            --report-output results/validation/workflow_config_self_test_report.tsv
+          python scripts/self_test_source_export_validation.py \
+            --output results/validation/source_export_validation_self_test.tsv \
+            --report-output results/validation/source_export_validation_self_test_report.tsv
+          python scripts/self_test_source_work_order_acceptance.py \
+            --output results/validation/source_work_order_acceptance_self_test.tsv \
+            --report-output results/validation/source_work_order_acceptance_self_test_report.tsv
+          python scripts/self_test_sequence_acquisition_manifest.py \
+            --output results/validation/sequence_acquisition_manifest_self_test.tsv \
+            --report-output results/validation/sequence_acquisition_manifest_self_test_report.tsv
+          python scripts/self_test_external_evidence_acceptance.py \
+            --output results/validation/external_evidence_acceptance_self_test.tsv \
+            --report-output results/validation/external_evidence_acceptance_self_test_report.tsv
+          python scripts/self_test_rbp_external_evidence_normalization.py \
+            --output results/validation/rbp_external_evidence_normalization_self_test.tsv \
+            --report-output results/validation/rbp_external_evidence_normalization_self_test_report.tsv
+          python scripts/self_test_defense_external_evidence_normalization.py \
+            --output results/validation/defense_external_evidence_normalization_self_test.tsv \
+            --report-output results/validation/defense_external_evidence_normalization_self_test_report.tsv
+          python scripts/self_test_phage_host_assay_validation.py \
+            --output results/validation/phage_host_assay_validation_self_test.tsv \
+            --report-output results/validation/phage_host_assay_validation_self_test_report.tsv
 
       - name: Run mock workflow
         run: python scripts/run_workflow.py --config config/workflow.mock.yaml
+
+      - name: Run seed metadata-only workflow
+        run: python scripts/run_workflow.py --config config/workflow.seed.yaml
+
+      - name: Run production profile dry run
+        run: python scripts/run_workflow.py --config config/workflow.production.yaml --dry-run
+
+      - name: Verify production profile fails closed without production evidence
+        run: |
+          if python scripts/run_workflow.py --config config/workflow.production.yaml --stages stage_0_profile_requirements; then
+            echo "Production profile unexpectedly passed without required production evidence."
+            exit 1
+          else
+            echo "Production profile correctly failed closed before production evidence and assay outcomes are available."
+          fi
 
       - name: Upload validation artifacts
         if: always()
@@ -49,8 +79,11 @@ jobs:
         with:
           name: validation-artifacts
           path: |
+            results/validation/
             results/mock/validation/
-            results/validation/source_export_validation_self_test*.tsv
-            results/validation/source_work_order_acceptance_self_test*.tsv
+            results/seed/validation/
+            results/production/validation/
+            results/mock/qc/source_manifest_drift*.tsv
+            results/seed/qc/source_manifest_drift*.tsv
             logs/
           if-no-files-found: warn
