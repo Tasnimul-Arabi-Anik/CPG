@@ -6,7 +6,7 @@ Structural pangenomics reveals receptor-binding and counter-defense modules shap
 
 ## Study Motivation
 
-Klebsiella phage host range is often discussed through capsule recognition, but receptor binding alone may not explain infection success. This study tests whether host-range prediction improves when receptor-binding/depolymerase modules are analyzed together with bacterial defense systems and phage counter-defense genes.
+Klebsiella phage host range is often discussed through capsule recognition, but receptor binding alone may not explain infection success. This study tests whether host-range prediction improves when receptor-binding/depolymerase modules are analyzed together with bacterial defense systems and phage counter-defense genes. Pairwise host-range and productive-infection claims require explicit tested phage-host assay outcomes, including tested negatives; metadata host links alone are not response variables.
 
 ## Central Hypothesis
 
@@ -36,13 +36,13 @@ Test whether host defense systems and phage anti-defense genes explain host-rang
 
 ## Primary Hypotheses
 
-H1. RBP/depolymerase modules predict host K/O association better than phage taxonomy.
+H1. RBP/depolymerase modules predict K/O tropism among known positives and, once assay matrices are curated, pairwise receptor compatibility better than phage taxonomy.
 
 H2. Prophages contain an under-sampled reservoir of Klebsiella capsule-recognition proteins.
 
 H3. Broad-host-range phages are enriched for modular RBPs and counter-defense genes.
 
-H4. A combined receptor + defense/counter-defense model predicts host compatibility better than receptor features alone.
+H4. Among receptor-compatible or initial-interaction-positive tested pairs, defense/counter-defense features improve productive-infection prediction beyond receptor features alone.
 
 H5. Clinically relevant Klebsiella lineages differ in prophage content, defense-system burden, and predicted phage susceptibility.
 
@@ -52,12 +52,12 @@ H6. Novel RBP/depolymerase candidates are enriched in under-sampled sources or s
 
 The computational study is ready for manuscript drafting when:
 
-- all data inputs are listed in config/samples.tsv;
+- all data inputs are listed in config/samples.tsv and assay outcome inputs are tracked in data/metadata/phage_host_assays.tsv when host-range claims are made;
 - all scripts run from a clean checkout;
 - all parameters are in config files;
 - all major outputs are in results/;
 - all major figures have source data;
 - docs/methods.md describes the pipeline;
-- docs/hypotheses.md maps each hypothesis to a specific test;
+- docs/hypotheses.md maps each hypothesis to a specific test and marks assay-dependent hypotheses blocked until valid outcomes exist;
 - docs/limitations.md separates computational predictions from experimentally validated conclusions.
 - docs/claim_ledger.md records supported claims, data-dependent claims, and remaining speculative claims.

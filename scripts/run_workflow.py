@@ -80,6 +80,8 @@ STAGE_ORDER = [
     "stage_9_external_evidence_acceptance_self_test",
     "stage_9_rbp_external_evidence_normalization_self_test",
     "stage_9_defense_external_evidence_normalization_self_test",
+    "stage_9_phage_host_assay_validation_self_test",
+    "stage_9_phage_host_assay_validation",
     "stage_9_validation",
     "stage_10_study_readiness",
     "stage_10_readiness_actions",
@@ -208,6 +210,8 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     configured_samples = inp("samples", "config/samples.tsv")
     thresholds = inp("thresholds", "config/thresholds.yaml")
     tools_config = inp("tools", "config/tools.yaml")
+    phage_host_assays_input = inp("phage_host_assays", "data/metadata/phage_host_assays.tsv")
+    phage_host_relationships_input = inp("phage_host_relationships", "data/metadata/phage_host_relationships.tsv")
     tool_audit_enabled = nested_get(config, ("tool_audit", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
     tool_availability = configured_path(config, root, ("tool_audit", "availability"), "results/qc/tool_availability.tsv")
     tool_audit_report = configured_path(config, root, ("tool_audit", "report"), "results/qc/tool_audit_report.tsv")
@@ -452,6 +456,11 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     rbp_external_evidence_normalization_self_test_report = out("validation", "rbp_external_evidence_normalization_self_test_report", "results/validation/rbp_external_evidence_normalization_self_test_report.tsv")
     defense_external_evidence_normalization_self_test = out("validation", "defense_external_evidence_normalization_self_test", "results/validation/defense_external_evidence_normalization_self_test.tsv")
     defense_external_evidence_normalization_self_test_report = out("validation", "defense_external_evidence_normalization_self_test_report", "results/validation/defense_external_evidence_normalization_self_test_report.tsv")
+    phage_host_assay_validation_self_test = out("validation", "phage_host_assay_validation_self_test", "results/validation/phage_host_assay_validation_self_test.tsv")
+    phage_host_assay_validation_self_test_report = out("validation", "phage_host_assay_validation_self_test_report", "results/validation/phage_host_assay_validation_self_test_report.tsv")
+    phage_host_assay_validation = out("validation", "phage_host_assay_validation", "results/validation/phage_host_assay_validation.tsv")
+    phage_host_relationship_validation = out("validation", "phage_host_relationship_validation", "results/validation/phage_host_relationship_validation.tsv")
+    phage_host_assay_validation_report = out("validation", "phage_host_assay_validation_report", "results/validation/phage_host_assay_validation_report.tsv")
     study_readiness = out("validation", "study_readiness", "results/validation/study_readiness.tsv")
     study_readiness_report = out("validation", "study_readiness_report", "results/validation/study_readiness_report.tsv")
     readiness_action_plan = out("validation", "readiness_action_plan", "results/validation/readiness_action_plan.tsv")
@@ -1760,6 +1769,44 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
             ],
             logs_dir / "09_self_test_defense_external_evidence_normalization.log",
             [defense_external_evidence_normalization_self_test, defense_external_evidence_normalization_self_test_report],
+        ),
+        Stage(
+            "stage_9_phage_host_assay_validation_self_test",
+            [
+                python,
+                script("self_test_phage_host_assay_validation.py"),
+                "--output",
+                phage_host_assay_validation_self_test.as_posix(),
+                "--report-output",
+                phage_host_assay_validation_self_test_report.as_posix(),
+            ],
+            logs_dir / "09_self_test_phage_host_assay_validation.log",
+            [phage_host_assay_validation_self_test, phage_host_assay_validation_self_test_report],
+        ),
+        Stage(
+            "stage_9_phage_host_assay_validation",
+            [
+                python,
+                script("validate_phage_host_assays.py"),
+                "--assays",
+                phage_host_assays_input.as_posix(),
+                "--relationships",
+                phage_host_relationships_input.as_posix(),
+                "--phage-manifest",
+                manifest.as_posix(),
+                "--host-metadata",
+                host_metadata.as_posix(),
+                "--assay-validation-output",
+                phage_host_assay_validation.as_posix(),
+                "--relationship-validation-output",
+                phage_host_relationship_validation.as_posix(),
+                "--report-output",
+                phage_host_assay_validation_report.as_posix(),
+                "--root",
+                root.as_posix(),
+            ],
+            logs_dir / "09_validate_phage_host_assays.log",
+            [phage_host_assay_validation, phage_host_relationship_validation, phage_host_assay_validation_report],
         ),
         Stage(
             "stage_9_validation",

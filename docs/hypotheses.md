@@ -1,44 +1,69 @@
 # Hypothesis-to-Analysis Map
 
-## H1: RBP/Depolymerase Modules Predict K/O Association Better Than Taxonomy
+This map separates metadata associations from tested phage-host outcomes. Host-range prediction, broad-host-range breadth, and productive-infection claims require curated rows in `data/metadata/phage_host_assays.tsv`. Isolation host, reported host, prophage resident host, and predicted host relationships are tracked separately in `data/metadata/phage_host_relationships.tsv` and are not infection labels.
+
+## H1a: RBP/Depolymerase Modules Predict K/O Tropism Among Known Positive Associations
 
 Input data:
 - dereplicated phage clusters;
 - RBP/depolymerase candidate modules;
+- curated positive host associations or assay-positive phage-host rows;
 - host K/O metadata.
 
 Required features:
 - phage taxonomy or genome-similarity cluster;
 - RBP/depolymerase gene cluster or domain architecture;
-- host K type and O type.
+- host K type and O type;
+- evidence tier distinguishing assay-positive, reported-host, and metadata-only links.
 
 Primary test:
-- compare predictive models using taxonomy-only, whole-genome similarity, RBP/depolymerase modules, and combined features.
+- compare taxonomy-only, genome-similarity, RBP/depolymerase, and combined feature sets for K/O tropism among curated positive associations.
 
-Expected result:
-- RBP/depolymerase module features outperform taxonomy-only features for K/O association.
-
-Alternative explanation:
-- host metadata may be biased toward well-studied capsule types or clinical lineages.
+Current readiness:
+- association proxy only until assay-positive rows are curated.
 
 Output:
 - `results/models/model_comparison.tsv`
 - Figure 4 or Figure 5.
+
+## H1b: RBP/Depolymerase Modules Predict Pairwise Receptor Compatibility
+
+Input data:
+- `data/metadata/phage_host_assays.tsv` with tested positive and tested negative pairs;
+- host K/O metadata;
+- RBP/depolymerase candidate modules.
+
+Required features:
+- explicit `tested=true` pairwise rows;
+- adsorption, spot, plaque, EOP, or other initial-interaction outcome labels;
+- phage taxonomy, genome similarity, and RBP/depolymerase features;
+- host K/O or other receptor features.
+
+Primary test:
+- compare receptor-feature models against taxonomy and genome-similarity baselines under grouped train/test splits.
+
+Current readiness:
+- blocked until tested phage-host assay rows are populated.
+
+Output:
+- future pairwise model rows in `results/models/model_comparison.tsv`.
 
 ## H2: Prophages Are an Under-Sampled Reservoir of Capsule-Recognition Proteins
 
 Input data:
 - prophage sequences from Klebsiella host genomes;
 - host K/O calls;
-- RBP/depolymerase candidate annotations.
+- RBP/depolymerase candidate annotations;
+- domain or structure-informed evidence when available.
 
 Required features:
-- prophage-host linkage;
+- prophage-host resident relationship;
 - candidate RBP/depolymerase evidence;
-- K/O calls.
+- K/O calls;
+- controls for prophage length, protein count, genome completeness, and annotation depth when the cohort is large enough.
 
 Primary test:
-- enrichment or association between prophage RBP modules and host K/O types.
+- association between prophage RBP modules and host K/O types, with novelty prioritization for candidates missed by sequence-only annotation.
 
 Expected result:
 - prophage-derived candidates include modules absent from cultured phage catalogs.
@@ -54,53 +79,58 @@ Output:
 ## H3: Broad-Host-Range Phages Are Enriched for Modular RBPs and Counter-Defense Genes
 
 Input data:
-- phage host-range metadata where available;
+- explicit tested host panels from `data/metadata/phage_host_assays.tsv`;
 - RBP domain architectures;
 - anti-defense candidate genes.
 
 Required features:
-- host-range breadth estimate;
+- tested-host denominator for each phage;
+- susceptible-host numerator for each phage;
+- breadth across hosts, K types, and lineages;
 - RBP modularity metrics;
 - anti-defense gene counts or categories.
 
 Primary test:
-- compare modularity and anti-defense burden between broad-range and narrow-range phages.
+- compare modularity and anti-defense burden between broad-range and narrow-range phages after adjusting for panel size and study/panel composition.
 
-Expected result:
-- broad-range phages show more modular RBPs and/or more counter-defense genes.
+Current readiness:
+- blocked until panel-based breadth labels exist. Co-occurrence between RBP candidates and anti-defense candidates is not a host-range test.
 
 Alternative explanation:
 - broad host range may reflect laboratory testing depth rather than biology.
 
 Output:
-- `results/models/feature_importance.tsv`
-- `results/models/model_comparison.tsv` (`rbp_modules_vs_counterdefense` summary)
+- future breadth-aware rows in `results/models/model_comparison.tsv`
 - Figure 3 or Figure 5.
 
-## H4: Receptor Plus Defense/Counter-Defense Models Improve Compatibility Prediction
+## H4: Defense/Counter-Defense Improves Productive-Infection Prediction Among Receptor-Compatible Pairs
 
 Input data:
-- RBP/depolymerase features;
-- host K/O features;
+- tested phage-host assay outcomes;
+- receptor compatibility features;
 - host defense-system features;
-- phage anti-defense features.
+- phage counter-defense features.
 
 Required features:
-- receptor compatibility indicators;
-- defense-system burden or categories;
-- phage counter-defense candidates.
+- receptor compatibility or initial-interaction labels;
+- productive-infection, plaque, EOP, or explicitly curated infection labels;
+- host defense-system burden or categories;
+- phage counter-defense candidates with evidence tiers.
 
 Primary test:
-- compare receptor-only models with receptor plus defense/counter-defense models.
+- compare receptor-only, defense-only, counter-defense-only, receptor-plus-defense, and receptor-plus-defense/counter-defense models against observed assay outcomes.
+
+Current readiness:
+- blocked until productive-infection labels exist. `compatibility_feature_status` and `matched_counterdefense_status` are not biological outcomes because they are constructed from the same features being modeled.
 
 Expected result:
-- combined models explain host-range gaps better than receptor features alone.
+- defense/counter-defense features may explain some receptor-compatible failures, but a robust null result is allowed.
 
 Alternative explanation:
-- missing adsorption or infection assay data may limit validation.
+- adsorption-related factors may dominate; defense-system annotations may be incomplete or condition-specific.
 
 Output:
-- `results/models/model_comparison.tsv`
+- future leakage-safe pairwise model rows in `results/models/model_comparison.tsv`
 - Figure 5.
 
 ## H5: Clinically Important Klebsiella Lineages Have Distinct Prophage and Defense Repertoires
@@ -113,13 +143,14 @@ Input data:
 Required features:
 - ST and clinical marker categories;
 - prophage counts and module classes;
-- defense-system categories.
+- defense-system categories;
+- sampling source and genome-quality covariates when available.
 
 Primary test:
 - lineage-level association tests between host background, prophage content, and defense burden.
 
-Expected result:
-- high-risk lineages differ in prophage and defense-system profiles.
+Current readiness:
+- separate host-population analysis; not a phage infectivity claim.
 
 Alternative explanation:
 - public genome collections may overrepresent outbreaks or specific surveillance projects.
@@ -130,24 +161,24 @@ Output:
 - `results/models/model_comparison.tsv` (`st_vs_defense_status` summary)
 - Figure 6.
 
-
-## H6: Novel RBP Candidates Are Enriched in Under-Sampled Sources or Singleton Clusters
+## H6: Novel RBP Candidates Are Enriched in Under-Sampled Ecological Sources or Singleton Clusters
 
 Input data:
-- phage source metadata from the manifest;
+- ecological source metadata from curated sources;
 - dereplicated species-like cluster assignments;
 - RBP/depolymerase novelty tiers.
 
 Required features:
-- source or source-group metadata;
+- ecological source, not only database provenance;
 - singleton versus multi-genome species-like cluster status;
-- RBP/depolymerase novelty status.
+- RBP/depolymerase novelty status;
+- controls for sequence completeness, annotation depth, genome size, protein count, and sampling effort.
 
 Primary test:
-- group-rate summaries comparing source strata and species-like cluster size bins against RBP/depolymerase novelty status.
+- group-rate summaries comparing ecological source strata and species-like cluster size bins against RBP/depolymerase novelty status.
 
-Expected result:
-- under-sampled or singleton-cluster phages are enriched for tier 1 or tier 2 RBP/depolymerase candidates.
+Current readiness:
+- exploratory until ecological source is normalized separately from database source.
 
 Alternative explanation:
 - apparent source enrichment may reflect metadata bias or uneven annotation depth rather than true ecological enrichment.
@@ -159,4 +190,4 @@ Output:
 
 ## Source Unlock Planning
 
-`results/qc/hypothesis_source_unlock_plan.tsv` maps H1-H6 to the reviewed source exports required for a minimum real-data test. `results/qc/hypothesis_source_unlock_matrix.tsv` records the source-by-hypothesis curation state. These files are planning aids; biological claims still require populated downstream outputs and validation.
+`results/qc/hypothesis_source_unlock_plan.tsv` maps H1-H6 to the reviewed source exports required for a minimum real-data test. `results/qc/hypothesis_source_unlock_matrix.tsv` records the source-by-hypothesis curation state. These files are planning aids; biological claims still require populated downstream outputs, assay outcomes where relevant, and validation.

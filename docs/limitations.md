@@ -5,6 +5,8 @@ This project starts as a computational comparative genomics study. Predictions s
 Known limitations to track:
 
 - Public phage-host metadata may be incomplete or inconsistent.
+- The current repository includes an assay schema, but header-only assay tables do not support host-range breadth, productive-infection, or defense/counter-defense prediction claims.
+- Isolation host, reported host, prophage resident host, and predicted host relationships must not be treated as tested susceptible or resistant outcomes.
 - Current local BLASTN pairwise similarity evidence is a conservative initial baseline; comprehensive species-like clustering still requires reviewed all-vs-all similarity across the expanded public phage/prophage dataset, preferably with VIRIDIC, Mash, or an equivalent documented method.
 - Current GenBank CDS product annotations are accession-backed bridge evidence, not a standardized de novo Pharokka/PHROGs/Phold annotation layer.
 - Capsule and O-locus calls may be missing for historical phage hosts.
