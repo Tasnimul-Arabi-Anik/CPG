@@ -53,6 +53,7 @@ Each import entry supports:
 | `require_phage_keyword` | no | If true, rows must contain a phage/virus keyword in any source field. |
 | `include_regex` | no | Optional regular expression that rows must match. |
 | `exclude_regex` | no | Optional regular expression that rows must not match. |
+| `required_note_review_statuses` | no | Optional list or comma-separated set of accepted `review_status` values parsed from the input `notes` field or a `review_status` column. Rows with other statuses are skipped and reported. |
 | `notes` | no | Provenance note appended to normalized rows. |
 
 ## Accepted Input Columns

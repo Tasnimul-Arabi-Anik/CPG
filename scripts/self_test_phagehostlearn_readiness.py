@@ -51,13 +51,16 @@ def result(test_id: str, scenario: str, expected: str, observed: str, notes: str
     }
 
 
-def write_configs(root: Path, enabled: bool = False) -> tuple[Path, Path]:
+def write_configs(root: Path, enabled: bool = False, review_filtered: bool = False) -> tuple[Path, Path]:
     imports = root / "config" / "source_imports.yaml"
     catalog = root / "config" / "source_catalog.yaml"
     imports.parent.mkdir(parents=True, exist_ok=True)
     enabled_text = "true" if enabled else "false"
+    filter_text = ""
+    if review_filtered:
+        filter_text = "\n    required_note_review_statuses: [reviewed, accepted, approved]"
     imports.write_text(
-        f"""imports:\n  - import_id: phagehostlearn_2024_phages\n    enabled: {enabled_text}\n  - import_id: phagehostlearn_2024_hosts\n    enabled: {enabled_text}\n""",
+        f"""imports:\n  - import_id: phagehostlearn_2024_phages\n    enabled: {enabled_text}{filter_text}\n  - import_id: phagehostlearn_2024_hosts\n    enabled: {enabled_text}{filter_text}\n""",
         encoding="utf-8",
     )
     catalog.write_text(
@@ -67,26 +70,85 @@ def write_configs(root: Path, enabled: bool = False) -> tuple[Path, Path]:
     return imports, catalog
 
 
-def make_fixture(root: Path, reviewed: bool = False, enabled: bool = False, assay_rows: bool = False) -> argparse.Namespace:
+def source_row(entity: str, reviewed: bool, entity_type: str) -> dict[str, str]:
+    review_status = "reviewed" if reviewed else "pending_entity_review"
+    if entity_type == "phage":
+        return {
+            "accession": "NA",
+            "genome_id": f"phage_{entity}",
+            "host_species": "Klebsiella pneumoniae species complex",
+            "host_strain": "NA",
+            "country": "NA",
+            "year": "NA",
+            "genome_length": "10",
+            "gc_percent": "50",
+            "raw_sequence_path": f"data/raw/external/phagehostlearn/phage_{entity}.fasta",
+            "notes": f"source_id=phage{entity}; review_status={review_status}",
+        }
+    return {
+        "genome_id": f"host_{entity}",
+        "accession": "NA",
+        "host_species": "Klebsiella pneumoniae species complex",
+        "host_strain": f"host{entity}",
+        "country": "NA",
+        "year": "NA",
+        "K_type": "K1" if reviewed else "NA",
+        "O_type": "O1" if reviewed else "NA",
+        "ST": "ST1" if reviewed else "NA",
+        "AMR_markers": "NA",
+        "virulence_markers": "NA",
+        "raw_sequence_path": f"data/raw/external/phagehostlearn/host_{entity}.fna",
+        "notes": f"source_id=host{entity}; review_status={review_status}",
+    }
+
+
+def map_row(entity: str, reviewed: bool, entity_type: str) -> dict[str, str]:
+    prefix = "phage" if entity_type == "phage" else "host"
+    return {
+        "source_id": f"{prefix}{entity}",
+        "canonical_id": f"{prefix}_{entity}",
+        "review_status": "reviewed" if reviewed else "pending",
+        "notes": "fixture",
+    }
+
+
+def make_fixture(
+    root: Path,
+    reviewed: bool = False,
+    enabled: bool = False,
+    assay_rows: bool = False,
+    review_filtered: bool = False,
+    partial_pending: bool = False,
+) -> argparse.Namespace:
     data = root / "data" / "metadata"
     phage_export = data / "source_exports" / "phages.tsv"
     host_export = data / "source_exports" / "hosts.tsv"
     phage_map = data / "assay_source_exports" / "phage_map.tsv"
     host_map = data / "assay_source_exports" / "host_map.tsv"
     assay_export = data / "assay_source_exports" / "assays.tsv"
-    review_status = "reviewed" if reviewed else "pending"
+
+    phage_rows = [source_row("A", reviewed, "phage")]
+    host_rows = [source_row("A", reviewed, "host")]
+    phage_map_rows = [map_row("A", reviewed, "phage")]
+    host_map_rows = [map_row("A", reviewed, "host")]
+    if partial_pending:
+        phage_rows.append(source_row("B", False, "phage"))
+        host_rows.append(source_row("B", False, "host"))
+        phage_map_rows.append(map_row("B", False, "phage"))
+        host_map_rows.append(map_row("B", False, "host"))
+
     write_tsv(
         phage_export,
         ["accession", "genome_id", "host_species", "host_strain", "country", "year", "genome_length", "gc_percent", "raw_sequence_path", "notes"],
-        [{"accession": "NA", "genome_id": "phage_A", "host_species": "Klebsiella pneumoniae species complex", "host_strain": "NA", "country": "NA", "year": "NA", "genome_length": "10", "gc_percent": "50", "raw_sequence_path": "data/raw/external/phagehostlearn/phage_A.fasta", "notes": "source_id=phageA; review_status=pending_entity_review"}],
+        phage_rows,
     )
     write_tsv(
         host_export,
         ["genome_id", "accession", "host_species", "host_strain", "country", "year", "K_type", "O_type", "ST", "AMR_markers", "virulence_markers", "raw_sequence_path", "notes"],
-        [{"genome_id": "host_A", "accession": "NA", "host_species": "Klebsiella pneumoniae species complex", "host_strain": "hostA", "country": "NA", "year": "NA", "K_type": "K1", "O_type": "O1", "ST": "ST1", "AMR_markers": "NA", "virulence_markers": "NA", "raw_sequence_path": "data/raw/external/phagehostlearn/host_A.fna", "notes": "source_id=hostA; review_status=pending_entity_review"}],
+        host_rows,
     )
-    write_tsv(phage_map, ["source_id", "canonical_id", "review_status", "notes"], [{"source_id": "phageA", "canonical_id": "phage_A", "review_status": review_status, "notes": "fixture"}])
-    write_tsv(host_map, ["source_id", "canonical_id", "review_status", "notes"], [{"source_id": "hostA", "canonical_id": "host_A", "review_status": review_status, "notes": "fixture"}])
+    write_tsv(phage_map, ["source_id", "canonical_id", "review_status", "notes"], phage_map_rows)
+    write_tsv(host_map, ["source_id", "canonical_id", "review_status", "notes"], host_map_rows)
     assay_data = []
     if assay_rows:
         assay_data = [{
@@ -114,7 +176,7 @@ def make_fixture(root: Path, reviewed: bool = False, enabled: bool = False, assa
             "notes": "fixture",
         }]
     write_tsv(assay_export, ASSAY_COLUMNS, assay_data)
-    source_imports, source_catalog = write_configs(root, enabled=enabled)
+    source_imports, source_catalog = write_configs(root, enabled=enabled, review_filtered=review_filtered)
     return argparse.Namespace(
         phage_export=phage_export.as_posix(),
         host_export=host_export.as_posix(),
@@ -140,20 +202,26 @@ def run_tests() -> list[dict[str, str]]:
         args = make_fixture(root, reviewed=False, enabled=False, assay_rows=False)
         rc = audit.run(args)
         rows = read_rows(Path(args.readiness_output))
-        observed = "ok" if rc == 0 and blocking_count(Path(args.readiness_output)) >= 3 and any(row["status"] == "blocked_pending_review" for row in rows) else "bad_output"
+        observed = "ok" if rc == 0 and blocking_count(Path(args.readiness_output)) >= 3 and any(row["status"] == "blocked_no_reviewed_rows" for row in rows) else "bad_output"
         tests.append(result("pending_maps_block", "pending maps block assay import", "ok", observed))
 
-        args = make_fixture(root, reviewed=False, enabled=True, assay_rows=False)
+        args = make_fixture(root, reviewed=False, enabled=True, assay_rows=False, review_filtered=False)
         rc = audit.run(args)
         rows = read_rows(Path(args.readiness_output))
-        observed = "ok" if rc == 0 and any(row["check_id"] == "PHL005" and row["status"] == "fail_enabled_before_review" for row in rows) else "bad_output"
-        tests.append(result("early_enablement_fails", "enabled sources with pending maps are blocking", "ok", observed))
+        observed = "ok" if rc == 0 and any(row["check_id"] == "PHL005" and row["status"] == "fail_unfiltered_enablement" for row in rows) else "bad_output"
+        tests.append(result("unfiltered_enablement_fails", "enabled sources with pending rows must be review-filtered", "ok", observed))
 
-        args = make_fixture(root, reviewed=True, enabled=True, assay_rows=True)
+        args = make_fixture(root, reviewed=True, enabled=True, assay_rows=True, review_filtered=True, partial_pending=True)
+        rc = audit.run(args)
+        rows = read_rows(Path(args.readiness_output))
+        observed = "ok" if rc == 0 and blocking_count(Path(args.readiness_output)) == 0 and any(row["check_id"] == "PHL003" and row["status"] == "partial_reviewed_subset" for row in rows) and any(row["check_id"] == "PHL005" and row["status"] == "pass_review_filtered_subset_enabled" for row in rows) and any(row["check_id"] == "PHL006" and row["status"] == "pass" for row in rows) else "bad_output"
+        tests.append(result("review_filtered_partial_subset_ready", "review-filtered partial subset with assay rows passes readiness", "ok", observed))
+
+        args = make_fixture(root, reviewed=True, enabled=True, assay_rows=True, review_filtered=True)
         rc = audit.run(args)
         rows = read_rows(Path(args.readiness_output))
         observed = "ok" if rc == 0 and blocking_count(Path(args.readiness_output)) == 0 and any(row["check_id"] == "PHL006" and row["status"] == "pass" for row in rows) else "bad_output"
-        tests.append(result("reviewed_assay_ready", "reviewed maps plus assay rows pass readiness", "ok", observed))
+        tests.append(result("reviewed_assay_ready", "fully reviewed maps plus assay rows pass readiness", "ok", observed))
     return tests
 
 

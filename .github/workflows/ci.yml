@@ -36,6 +36,9 @@ jobs:
           python scripts/self_test_source_export_validation.py \
             --output results/validation/source_export_validation_self_test.tsv \
             --report-output results/validation/source_export_validation_self_test_report.tsv
+          python scripts/self_test_source_manifest_import.py \
+            --output results/validation/source_manifest_import_self_test.tsv \
+            --report-output results/validation/source_manifest_import_self_test_report.tsv
           python scripts/self_test_source_work_order_acceptance.py \
             --output results/validation/source_work_order_acceptance_self_test.tsv \
             --report-output results/validation/source_work_order_acceptance_self_test_report.tsv

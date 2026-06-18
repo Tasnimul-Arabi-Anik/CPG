@@ -94,13 +94,14 @@ Primary test:
 - compare modularity and anti-defense burden between broad-range and narrow-range phages after adjusting for panel size and study/panel composition.
 
 Current readiness:
-- blocked until panel-based breadth labels exist. Co-occurrence between RBP candidates and anti-defense candidates is not a host-range test.
+- panel-based spot-test breadth labels are available from the reviewed PhageHostLearn subset in the seed profile; these represent initial-interaction breadth only.
+- biological H3 claims remain blocked until production RBP/depolymerase modularity and explicit counter-defense evidence are available for the assay phages.
 
 Alternative explanation:
 - broad host range may reflect laboratory testing depth rather than biology.
 
 Output:
-- future breadth-aware rows in `results/models/model_comparison.tsv`
+- `results/models/model_comparison.tsv` rows `spot_breadth_vs_rbp_candidates` and `spot_breadth_vs_counterdefense_candidates`;
 - Figure 3 or Figure 5.
 
 ## H4: Defense/Counter-Defense Improves Productive-Infection Prediction Among Receptor-Compatible Pairs

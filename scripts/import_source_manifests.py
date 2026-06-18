@@ -124,6 +124,20 @@ def is_missing(value: str | None) -> bool:
     return value is None or value.strip() in MISSING
 
 
+def note_value(notes: str, key: str) -> str:
+    match = re.search(rf"(?:^|;\s*){re.escape(key)}=([^;]+)", notes)
+    return match.group(1).strip() if match else ""
+
+
+def raw_value_by_alias(raw: dict[str, str], aliases: list[str]) -> str:
+    lowered = {normalize_header(key): value for key, value in raw.items()}
+    for alias in aliases:
+        value = lowered.get(normalize_header(alias), "")
+        if not is_missing(value):
+            return value
+    return ""
+
+
 def bool_value(value: object, default: bool) -> bool:
     if isinstance(value, bool):
         return value
@@ -247,6 +261,18 @@ def row_matches_filters(raw: dict[str, str], spec: dict) -> tuple[bool, str]:
     exclude_regex = normalize(spec.get("exclude_regex"))
     if exclude_regex and re.search(exclude_regex, text, flags=re.IGNORECASE):
         return False, "skipped_exclude_regex"
+    review_statuses = spec.get("required_note_review_statuses", [])
+    if isinstance(review_statuses, str):
+        allowed_review_statuses = {item.strip().lower() for item in review_statuses.split(",") if item.strip()}
+    elif isinstance(review_statuses, list):
+        allowed_review_statuses = {normalize(item).lower() for item in review_statuses if normalize(item)}
+    else:
+        raise ImportErrorConfig("required_note_review_statuses must be a list or comma-separated string when provided.")
+    if allowed_review_statuses:
+        notes = raw_value_by_alias(raw, ["notes", "note", "comment", "comments", "description"])
+        review_status = note_value(notes, "review_status") or raw_value_by_alias(raw, ["review_status"])
+        if review_status.lower() not in allowed_review_statuses:
+            return False, "skipped_review_status"
     return True, "included"
 
 

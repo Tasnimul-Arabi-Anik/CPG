@@ -1994,6 +1994,8 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
                 phage_host_links.as_posix(),
                 "--compatibility-features",
                 compatibility.as_posix(),
+                "--phage-host-assays",
+                phage_host_assays_input.as_posix(),
                 "--model-comparison-output",
                 model_comparison.as_posix(),
                 "--feature-importance-output",

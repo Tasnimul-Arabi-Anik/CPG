@@ -121,6 +121,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rbp-candidates", required=True, help="Stage 4 candidates.tsv.")
     parser.add_argument("--phage-host-links", required=True, help="Stage 5 phage_host_links.tsv.")
     parser.add_argument("--compatibility-features", required=True, help="Stage 6 compatibility_features.tsv.")
+    parser.add_argument("--phage-host-assays", default="", help="Optional canonical phage_host_assays.tsv for assay-derived breadth/outcome tests.")
     parser.add_argument("--model-comparison-output", required=True, help="Output model comparison TSV.")
     parser.add_argument("--feature-importance-output", required=True, help="Output feature importance TSV.")
     parser.add_argument("--prediction-errors-output", required=True, help="Output prediction/error TSV.")
@@ -341,6 +342,94 @@ def rbp_features_by_phage(rows: list[dict[str, str]]) -> dict[str, dict[str, str
 
 def compatibility_by_pair(rows: list[dict[str, str]]) -> dict[tuple[str, str], dict[str, str]]:
     return {(row.get("phage_genome_id", ""), row.get("host_genome_id", "")): row for row in rows}
+
+
+def phage_counterdefense_by_phage(rows: list[dict[str, str]]) -> dict[str, dict[str, str]]:
+    grouped: dict[str, list[dict[str, str]]] = defaultdict(list)
+    for row in rows:
+        phage_id = row.get("phage_genome_id", "")
+        if not is_missing(phage_id):
+            grouped[phage_id].append(row)
+    features: dict[str, dict[str, str]] = {}
+    for phage_id, phage_rows in grouped.items():
+        anti_count = max([parse_int(row.get("phage_antidefense_count", "0")) for row in phage_rows] + [0])
+        features[phage_id] = {
+            "phage_antidefense_count_bin": count_bin(anti_count),
+            "phage_antidefense_targets": joined(row.get("phage_antidefense_targets", "") for row in phage_rows),
+            "phage_antidefense_classes": joined(row.get("phage_antidefense_classes", "") for row in phage_rows),
+        }
+    return features
+
+
+def spot_breadth_bin(positive_count: int, tested_count: int) -> str:
+    if tested_count <= 0:
+        return "no_tested_hosts"
+    if positive_count == 0:
+        return "zero_positive_spot_range"
+    fraction = positive_count / tested_count
+    if fraction < 0.05:
+        return "low_positive_spot_range"
+    return "higher_positive_spot_range"
+
+
+def build_assay_breadth_samples(
+    assay_rows: list[dict[str, str]],
+    manifest: dict[str, dict[str, str]],
+    clusters: dict[str, dict[str, str]],
+    rbp_features: dict[str, dict[str, str]],
+    phage_counterdefense: dict[str, dict[str, str]],
+) -> list[dict[str, str]]:
+    grouped: dict[tuple[str, str, str, str], Counter[str]] = defaultdict(Counter)
+    for row in assay_rows:
+        if row.get("tested") != "true":
+            continue
+        if row.get("assay_type") != "spot":
+            continue
+        result = row.get("spot_result", "")
+        if result not in {"positive", "negative"}:
+            continue
+        phage_id = row.get("phage_id", "")
+        if is_missing(phage_id):
+            continue
+        key = (phage_id, row.get("study_id", "NA"), row.get("panel_id", "NA"), row.get("assay_type", "spot"))
+        grouped[key][result] += 1
+
+    samples: list[dict[str, str]] = []
+    for (phage_id, study_id, panel_id, assay_type), counts in sorted(grouped.items()):
+        tested_count = counts.get("positive", 0) + counts.get("negative", 0)
+        positive_count = counts.get("positive", 0)
+        cluster = clusters.get(phage_id, {})
+        manifest_row = manifest.get(phage_id, {})
+        rbp = rbp_features.get(phage_id, {})
+        counterdefense = phage_counterdefense.get(phage_id, {})
+        fraction = positive_count / tested_count if tested_count else 0.0
+        samples.append(
+            {
+                "sample_id": f"{phage_id}|{study_id}|{panel_id}|{assay_type}",
+                "phage_genome_id": phage_id,
+                "host_genome_id": "assay_panel",
+                "record_type": manifest_row.get("record_type", "phage"),
+                "species_cluster_id": cluster.get("cluster_id", ""),
+                "representative_id": cluster.get("representative_id", ""),
+                "source": manifest_row.get("source", ""),
+                "source_group": source_group(manifest_row),
+                "species_cluster_size_bin": cluster_size_bin(cluster),
+                "rbp_module_clusters": rbp.get("rbp_module_clusters", ""),
+                "rbp_enzyme_classes": rbp.get("rbp_enzyme_classes", ""),
+                "rbp_novelty_tiers": rbp.get("rbp_novelty_tiers", ""),
+                "rbp_candidate_count_bin": rbp.get("rbp_candidate_count_bin", "0"),
+                "rbp_high_confidence_count_bin": rbp.get("rbp_high_confidence_count_bin", "0"),
+                "novel_rbp_status": novelty_status(rbp),
+                "phage_antidefense_classes": counterdefense.get("phage_antidefense_classes", ""),
+                "phage_antidefense_targets": counterdefense.get("phage_antidefense_targets", ""),
+                "phage_antidefense_count_bin": counterdefense.get("phage_antidefense_count_bin", "0"),
+                "spot_tested_host_count": str(tested_count),
+                "spot_positive_host_count": str(positive_count),
+                "spot_host_range_fraction": f"{fraction:.3f}",
+                "spot_host_range_breadth_bin": spot_breadth_bin(positive_count, tested_count),
+            }
+        )
+    return samples
 
 
 def novelty_status(rbp: dict[str, str]) -> str:
@@ -702,6 +791,8 @@ def summary_row(
     row_statuses = {row.get("status", "") for row in rows}
     if "blocked_no_host_range_breadth_labels" in row_statuses:
         action = "Curate phage-host assay panels with tested-host denominators and susceptible-host numerators, then rerun Stage 7."
+    elif primary.get("target") == "spot_host_range_breadth_bin" and "insufficient_groups_for_rate_test" in row_statuses:
+        action = "Add production RBP/depolymerase and counter-defense features for assay phages, or broaden assay panels until H3 groups are informative."
     elif "blocked_no_productive_infection_labels" in row_statuses:
         action = "Curate productive-infection, plaque, or EOP outcomes for tested phage-host pairs, then rerun Stage 7."
     return {
@@ -761,9 +852,9 @@ def build_hypothesis_summary(
             "H3",
             "Are broad-host-range phages enriched for modular RBPs and counter-defense genes?",
             "host-range breadth test from explicit assay panel denominators",
-            {"host_range_breadth_blocker"},
-            "host_range_breadth_metric",
-            "Blocked until explicit assay panels provide tested-host denominators and susceptible-host numerators.",
+            {"host_range_breadth_blocker", "spot_breadth_vs_rbp_candidates", "spot_breadth_vs_counterdefense_candidates"},
+            "spot_test_host_range_breadth_summary",
+            "Spot-test breadth is initial-interaction evidence only; productive-infection breadth remains unavailable without plaque/EOP/propagation outcomes.",
         ),
         (
             "H5",
@@ -838,7 +929,11 @@ def build_hypothesis_summary(
 
 
 
-def run_models(samples: list[dict[str, str]]) -> tuple[list[dict[str, str]], list[dict[str, str]], list[dict[str, str]]]:
+def run_models(
+    samples: list[dict[str, str]],
+    assay_breadth_samples: list[dict[str, str]],
+    assay_row_count: int,
+) -> tuple[list[dict[str, str]], list[dict[str, str]], list[dict[str, str]]]:
     model_rows: list[dict[str, str]] = []
     feature_rows: list[dict[str, str]] = []
     error_rows: list[dict[str, str]] = []
@@ -866,7 +961,7 @@ def run_models(samples: list[dict[str, str]]) -> tuple[list[dict[str, str]], lis
         "productive_infection_result",
         "receptor_plus_defense_counterdefense",
         "blocked_assay_outcome_required",
-        len(samples),
+        assay_row_count if assay_row_count else len(samples),
         "blocked_no_productive_infection_labels",
         "H4 requires tested productive-infection, plaque, or EOP outcomes. compatibility_feature_status and matched_counterdefense_status are feature-derived labels and are not valid biological targets.",
     )
@@ -881,18 +976,40 @@ def run_models(samples: list[dict[str, str]]) -> tuple[list[dict[str, str]], lis
         "record_type",
         "rbp_module_clusters",
     )
-    add_blocked_test(
-        model_rows,
-        "H3",
-        "host_range_breadth_blocker",
-        "test_host_range_breadth_association",
-        "host_range_breadth",
-        "rbp_modularity_plus_counterdefense",
-        "blocked_assay_panel_required",
-        len(samples),
-        "blocked_no_host_range_breadth_labels",
-        "H3 requires assay panels with tested-host denominators and susceptible-host numerators. RBP/counter-defense co-occurrence is not a host-range breadth test.",
-    )
+    if assay_breadth_samples:
+        add_rate_test(
+            model_rows,
+            feature_rows,
+            assay_breadth_samples,
+            "H3",
+            "spot_breadth_vs_rbp_candidates",
+            "spot_host_range_breadth_summary",
+            "rbp_candidate_count_bin",
+            "spot_host_range_breadth_bin",
+        )
+        add_rate_test(
+            model_rows,
+            feature_rows,
+            assay_breadth_samples,
+            "H3",
+            "spot_breadth_vs_counterdefense_candidates",
+            "spot_host_range_breadth_summary",
+            "phage_antidefense_count_bin",
+            "spot_host_range_breadth_bin",
+        )
+    else:
+        add_blocked_test(
+            model_rows,
+            "H3",
+            "host_range_breadth_blocker",
+            "test_host_range_breadth_association",
+            "host_range_breadth",
+            "rbp_modularity_plus_counterdefense",
+            "blocked_assay_panel_required",
+            len(samples),
+            "blocked_no_host_range_breadth_labels",
+            "H3 requires assay panels with tested-host denominators and susceptible-host numerators. RBP/counter-defense co-occurrence is not a host-range breadth test.",
+        )
     add_rate_test(
         model_rows,
         feature_rows,
@@ -935,27 +1052,38 @@ def main() -> int:
     _, rbp_rows = read_tsv(Path(args.rbp_candidates))
     _, link_rows = read_tsv(Path(args.phage_host_links))
     _, compatibility_rows = read_tsv(Path(args.compatibility_features))
+    assay_rows: list[dict[str, str]] = []
+    if args.phage_host_assays and Path(args.phage_host_assays).exists():
+        _, assay_rows = read_tsv(Path(args.phage_host_assays))
+    rbp_features = rbp_features_by_phage(rbp_rows)
     add_report(
         report,
         "info",
         "inputs",
-        f"Loaded {len(manifest)} manifest rows, {len(clusters)} cluster rows, {len(rbp_rows)} RBP candidates, {len(link_rows)} phage-host links, and {len(compatibility_rows)} compatibility rows.",
+        f"Loaded {len(manifest)} manifest rows, {len(clusters)} cluster rows, {len(rbp_rows)} RBP candidates, {len(link_rows)} phage-host links, {len(compatibility_rows)} compatibility rows, and {len(assay_rows)} assay rows.",
     )
 
     samples = build_samples(
         link_rows,
         manifest,
         clusters,
-        rbp_features_by_phage(rbp_rows),
+        rbp_features,
         compatibility_by_pair(compatibility_rows),
     )
-    model_rows, feature_rows, error_rows = run_models(samples)
+    assay_breadth_samples = build_assay_breadth_samples(
+        assay_rows,
+        manifest,
+        clusters,
+        rbp_features,
+        phage_counterdefense_by_phage(compatibility_rows),
+    )
+    model_rows, feature_rows, error_rows = run_models(samples, assay_breadth_samples, len(assay_rows))
     hypothesis_summary_rows = build_hypothesis_summary(model_rows, feature_rows, display_path(Path(args.model_comparison_output)))
     add_report(
         report,
         "info",
         "models",
-        f"Built {len(model_rows)} model/test rows, {len(feature_rows)} feature rows, {len(error_rows)} prediction rows, and {len(hypothesis_summary_rows)} hypothesis summary rows from {len(samples)} samples.",
+        f"Built {len(model_rows)} model/test rows, {len(feature_rows)} feature rows, {len(error_rows)} prediction rows, and {len(hypothesis_summary_rows)} hypothesis summary rows from {len(samples)} metadata-link samples and {len(assay_breadth_samples)} assay-breadth samples.",
     )
 
     write_tsv(Path(args.model_comparison_output), MODEL_COMPARISON_COLUMNS, model_rows)

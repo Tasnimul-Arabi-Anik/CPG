@@ -86,18 +86,18 @@ sources:
 
   - source_id: phagehostlearn_2024_phages
     path: data/metadata/source_manifests/phagehostlearn_2024_phages.tsv
-    enabled: false
+    enabled: true
     required: false
     source_label: PhageHostLearn_2024
     record_type_default: phage
     phage_lifestyle_default: NA
-    notes: Disabled benchmark phage source for pairwise assay matrix validation; enable only after source IDs, sequences, and mapping rows are reviewed.
+    notes: Reviewed source-identity subset for PhageHostLearn pairwise spot-test matrix validation; not productive-infection evidence.
 
   - source_id: phagehostlearn_2024_hosts
     path: data/metadata/source_manifests/phagehostlearn_2024_hosts.tsv
-    enabled: false
+    enabled: true
     required: false
     source_label: PhageHostLearn_2024_host_benchmark
     record_type_default: host
     phage_lifestyle_default: NA
-    notes: Disabled benchmark host source for pairwise assay matrix validation; enable only after host genomes and K/O/ST provenance are reviewed.
+    notes: Reviewed source-identity subset for PhageHostLearn pairwise spot-test matrix validation; K/O/ST/AMR/virulence require separate evidence.

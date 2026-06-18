@@ -126,14 +126,35 @@ def add_row(
     )
 
 
-def enabled_state(config: dict, collection: str, key_name: str, source_id: str) -> tuple[bool, bool]:
+def config_item(config: dict, collection: str, key_name: str, source_id: str) -> dict:
     items = config.get(collection, [])
     if not isinstance(items, list):
-        return False, False
+        return {}
     for item in items:
         if isinstance(item, dict) and item.get(key_name) == source_id:
-            return True, bool(item.get("enabled", False))
-    return False, False
+            return item
+    return {}
+
+
+def enabled_state(config: dict, collection: str, key_name: str, source_id: str) -> tuple[bool, bool]:
+    item = config_item(config, collection, key_name, source_id)
+    return bool(item), bool(item.get("enabled", False))
+
+
+def review_filter_state(config: dict, collection: str, key_name: str, source_id: str) -> tuple[bool, bool, bool, str]:
+    item = config_item(config, collection, key_name, source_id)
+    if not item:
+        return False, False, False, "NA"
+    raw_statuses = item.get("required_note_review_statuses", [])
+    if isinstance(raw_statuses, str):
+        statuses = [raw_statuses]
+    elif isinstance(raw_statuses, list):
+        statuses = [normalize(status) for status in raw_statuses]
+    else:
+        statuses = []
+    normalized_statuses = {status.lower() for status in statuses if status}
+    review_filtered = bool(normalized_statuses & REVIEWED)
+    return True, bool(item.get("enabled", False)), review_filtered, ",".join(sorted(normalized_statuses)) or "NA"
 
 
 def entity_summary(export_rows: list[dict[str, str]], entity_type: str) -> dict[str, int]:
@@ -181,9 +202,25 @@ def map_summary(map_rows: list[dict[str, str]], source_ids: set[str], canonical_
         "extra_source_ids": len(mapped_source_ids - source_ids),
         "reviewed": reviewed,
         "pending": pending,
+        "unreviewed": len(map_rows) - reviewed,
         "missing_canonical": missing_canonical,
         "unresolved_canonical": unresolved_canonical,
     }
+
+
+def map_structural_blocking(stats: dict[str, int]) -> bool:
+    return any(stats[key] for key in ("missing_source_ids", "extra_source_ids", "missing_canonical", "unresolved_canonical"))
+
+
+def map_readiness(stats: dict[str, int]) -> tuple[str, str, bool]:
+    structural_blocking = map_structural_blocking(stats)
+    if structural_blocking:
+        return "fail_structural_map", "error", True
+    if stats["reviewed"] == 0:
+        return "blocked_no_reviewed_rows", "warning", True
+    if stats["reviewed"] < stats["rows"]:
+        return "partial_reviewed_subset", "warning", False
+    return "pass", "info", False
 
 
 def run(args: argparse.Namespace) -> int:
@@ -240,62 +277,80 @@ def run(args: argparse.Namespace) -> int:
     )
 
     phage_map_stats = map_summary(phage_map_rows, phage_source_ids, phage_ids)
-    phage_map_blocking = any(phage_map_stats[key] for key in ("missing_source_ids", "extra_source_ids", "missing_canonical", "unresolved_canonical")) or phage_map_stats["reviewed"] < phage_map_stats["rows"]
+    phage_map_status, phage_map_severity, phage_map_blocking = map_readiness(phage_map_stats)
     add_row(
         readiness,
         "PHL003",
         "phage_id_map",
-        "pass" if not phage_map_blocking else "blocked_pending_review",
-        "warning" if phage_map_stats["pending"] else ("error" if phage_map_blocking else "info"),
+        phage_map_status,
+        phage_map_severity,
         phage_map_blocking,
         display(root, phage_map),
         "; ".join(f"{key}={value}" for key, value in phage_map_stats.items()),
-        "Review phage source-to-canonical map rows; set review_status to reviewed only after source entity checks pass.",
+        "Review pending phage source-to-canonical map rows; reviewed rows may be imported as a filtered subset.",
     )
 
     host_map_stats = map_summary(host_map_rows, host_source_ids, host_ids)
-    host_map_blocking = any(host_map_stats[key] for key in ("missing_source_ids", "extra_source_ids", "missing_canonical", "unresolved_canonical")) or host_map_stats["reviewed"] < host_map_stats["rows"]
+    host_map_status, host_map_severity, host_map_blocking = map_readiness(host_map_stats)
     add_row(
         readiness,
         "PHL004",
         "host_id_map",
-        "pass" if not host_map_blocking else "blocked_pending_review",
-        "warning" if host_map_stats["pending"] else ("error" if host_map_blocking else "info"),
+        host_map_status,
+        host_map_severity,
         host_map_blocking,
         display(root, host_map),
         "; ".join(f"{key}={value}" for key, value in host_map_stats.items()),
-        "Review host source-to-canonical map rows after host genome and K/O/ST provenance are curated.",
+        "Review pending host source-to-canonical map rows; K/O/ST provenance remains separate from source identity review.",
     )
 
-    import_found_phage, import_enabled_phage = enabled_state(imports_cfg, "imports", "import_id", "phagehostlearn_2024_phages")
-    import_found_host, import_enabled_host = enabled_state(imports_cfg, "imports", "import_id", "phagehostlearn_2024_hosts")
+    import_found_phage, import_enabled_phage, import_filtered_phage, import_filter_phage = review_filter_state(imports_cfg, "imports", "import_id", "phagehostlearn_2024_phages")
+    import_found_host, import_enabled_host, import_filtered_host, import_filter_host = review_filter_state(imports_cfg, "imports", "import_id", "phagehostlearn_2024_hosts")
     catalog_found_phage, catalog_enabled_phage = enabled_state(catalog_cfg, "sources", "source_id", "phagehostlearn_2024_phages")
     catalog_found_host, catalog_enabled_host = enabled_state(catalog_cfg, "sources", "source_id", "phagehostlearn_2024_hosts")
-    enabled_too_early = (import_enabled_phage or import_enabled_host or catalog_enabled_phage or catalog_enabled_host) and (phage_map_blocking or host_map_blocking)
+    phage_unfiltered_enablement = (import_enabled_phage or catalog_enabled_phage) and phage_stats.get("pending_entity_review", 0) > 0 and not import_filtered_phage
+    host_unfiltered_enablement = (import_enabled_host or catalog_enabled_host) and host_stats.get("pending_entity_review", 0) > 0 and not import_filtered_host
+    enabled_too_early = phage_unfiltered_enablement or host_unfiltered_enablement
+    any_enabled = import_enabled_phage or import_enabled_host or catalog_enabled_phage or catalog_enabled_host
+    any_filtered = import_filtered_phage or import_filtered_host
+    if enabled_too_early:
+        enablement_status = "fail_unfiltered_enablement"
+    elif any_enabled and any_filtered:
+        enablement_status = "pass_review_filtered_subset_enabled"
+    elif any_enabled:
+        enablement_status = "pass_enabled_no_pending_review"
+    else:
+        enablement_status = "pass_disabled_pending_review"
     add_row(
         readiness,
         "PHL005",
         "source_enablement",
-        "pass_disabled_pending_review" if not enabled_too_early else "fail_enabled_before_review",
+        enablement_status,
         "info" if not enabled_too_early else "error",
         enabled_too_early,
         f"{display(root, source_imports)};{display(root, source_catalog)}",
-        f"imports_found={int(import_found_phage)+int(import_found_host)}; catalog_found={int(catalog_found_phage)+int(catalog_found_host)}; imports_enabled={int(import_enabled_phage)+int(import_enabled_host)}; catalog_enabled={int(catalog_enabled_phage)+int(catalog_enabled_host)}",
-        "Keep benchmark sources disabled until map review, sequence provenance, and host feature provenance are complete.",
+        f"imports_found={int(import_found_phage)+int(import_found_host)}; catalog_found={int(catalog_found_phage)+int(catalog_found_host)}; imports_enabled={int(import_enabled_phage)+int(import_enabled_host)}; catalog_enabled={int(catalog_enabled_phage)+int(catalog_enabled_host)}; import_review_filtered={int(import_filtered_phage)+int(import_filtered_host)}; phage_filter_statuses={import_filter_phage}; host_filter_statuses={import_filter_host}",
+        "Keep benchmark imports review-filtered until all pending entities are reviewed; catalog enablement must consume filtered manifests.",
     )
 
     assay_populated = len([row for row in assay_rows if any(not is_missing(v) for v in row.values())])
     assay_ready = assay_populated > 0 and not (phage_map_blocking or host_map_blocking)
+    if assay_ready:
+        assay_status = "pass"
+    elif phage_map_blocking or host_map_blocking:
+        assay_status = "blocked_no_reviewed_map_subset"
+    else:
+        assay_status = "blocked_no_reviewed_assay_rows"
     add_row(
         readiness,
         "PHL006",
         "assay_export",
-        "pass" if assay_ready else "blocked_no_reviewed_assay_rows",
+        assay_status,
         "info" if assay_ready else "warning",
         not assay_ready,
         display(root, assay_export),
         f"assay_rows={assay_populated}; phage_map_blocking={phage_map_blocking}; host_map_blocking={host_map_blocking}",
-        "After reviewing maps and enabling benchmark entities, normalize the matrix and import canonical assay rows.",
+        "Normalize reviewed map subsets into canonical assay rows; keep pending IDs excluded until reviewed.",
     )
 
     blocking = [row for row in readiness if row["blocking_for_assay_import"] == "true"]
@@ -307,9 +362,9 @@ def run(args: argparse.Namespace) -> int:
         }
     ]
     if blocking:
-        report.append({"severity": "warning", "item": "phagehostlearn_readiness", "message": "Benchmark assay import remains blocked pending review and/or source enablement."})
+        report.append({"severity": "warning", "item": "phagehostlearn_readiness", "message": "Benchmark assay import remains blocked pending reviewed source subsets and/or safe source enablement."})
     else:
-        report.append({"severity": "info", "item": "phagehostlearn_readiness", "message": "Benchmark artifacts are ready for canonical assay import."})
+        report.append({"severity": "info", "item": "phagehostlearn_readiness", "message": "Benchmark reviewed subset is ready for canonical assay import."})
     write_tsv(resolve(root, args.readiness_output), READINESS_COLUMNS, readiness)
     write_tsv(resolve(root, args.report_output), REPORT_COLUMNS, report)
     print(f"PhageHostLearn readiness audit complete: checks={len(readiness)}; blocking={len(blocking)}.")

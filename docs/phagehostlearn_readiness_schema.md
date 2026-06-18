@@ -1,8 +1,8 @@
 # PhageHostLearn Readiness Audit Schema
 
-`scripts/audit_phagehostlearn_readiness.py` audits whether the PhageHostLearn benchmark artifacts are ready to be enabled and imported as canonical phage-host assay rows.
+`scripts/audit_phagehostlearn_readiness.py` audits whether the PhageHostLearn benchmark artifacts are ready to be imported as canonical phage-host assay rows.
 
-The audit is deliberately conservative. Pending source exports and mapping rows are useful curation artifacts, but they block assay import until reviewed. The audit also detects source imports or catalog entries that are enabled before map review is complete.
+The audit is deliberately conservative. Pending source exports and mapping rows are useful curation artifacts, but they are excluded from assay import until reviewed. Review-filtered source imports/catalog entries may be enabled for reviewed subsets while unresolved source IDs remain blocked.
 
 ## Inputs
 
@@ -28,10 +28,10 @@ Important checks:
 
 - `PHL001`: benchmark phage entity export exists and has source IDs.
 - `PHL002`: benchmark host entity export exists and records host feature missingness.
-- `PHL003`: phage source-to-canonical map covers exported source IDs and has reviewed rows.
-- `PHL004`: host source-to-canonical map covers exported source IDs and has reviewed rows.
-- `PHL005`: benchmark source imports/catalog entries are not enabled before review.
-- `PHL006`: canonical assay export is populated only after maps are reviewed and entities are enabled.
+- `PHL003`: phage source-to-canonical map covers exported source IDs and has at least one reviewed row. Structural map errors or zero reviewed rows block import; remaining pending rows are allowed as an excluded subset.
+- `PHL004`: host source-to-canonical map covers exported source IDs and has at least one reviewed row. Structural map errors or zero reviewed rows block import; remaining pending rows are allowed as an excluded subset.
+- `PHL005`: benchmark source imports/catalog entries are review-filtered and do not admit pending entities. Unfiltered enablement with pending source rows is blocking.
+- `PHL006`: canonical assay export is populated from reviewed map subsets while pending map rows remain excluded.
 
 ## Report Output
 
@@ -52,4 +52,4 @@ python scripts/audit_phagehostlearn_readiness.py \
   --root .
 ```
 
-Only when all blocking rows are resolved should the benchmark source imports/catalog entries be enabled and the matrix normalized into populated `phage_host_assays.tsv` rows.
+Only reviewed source/map rows should be normalized into populated `phage_host_assays.tsv` rows. Remaining pending source IDs can stay excluded while the reviewed subset is used for seed-level spot-test breadth analyses. The audit status `partial_reviewed_subset` is therefore not blocking unless structural map errors exist or no reviewed rows are available.

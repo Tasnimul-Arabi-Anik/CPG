@@ -2,8 +2,9 @@
 # These sources convert host-by-phage interaction matrices into canonical
 # data/metadata/assay_source_exports/*.tsv files consumed by config/assay_imports.yaml.
 #
-# The PhageHostLearn source is disabled until the Zenodo CSV is downloaded and
-# source IDs are mapped to canonical local phage/host entities. The normalizer
+# The PhageHostLearn source remains disabled by default because regeneration
+# requires local Zenodo files and reviewed source-to-canonical maps. The tracked
+# reviewed subset export is imported by config/assay_imports.yaml. The normalizer
 # treats blank matrix cells as untested, not negative.
 sources:
   - source_id: phagehostlearn_2024_interaction_matrix
