@@ -1966,6 +1966,21 @@ def select_stages(stages: list[Stage], requested: list[str]) -> list[Stage]:
     return [stage for stage in stages if stage.name in requested_set]
 
 
+def refresh_goal_audit_after_report(root: Path, selected: list[Stage], report_rows: list[dict[str, str]], run_report: Path, dry_run: bool) -> None:
+    if dry_run or any(row.get("status") == "fail" for row in report_rows):
+        return
+    goal_stage = next((stage for stage in selected if stage.name == "stage_11_goal_completion_audit"), None)
+    if goal_stage is None:
+        return
+    # The goal audit consumes workflow_run_report.tsv, so refresh it once after
+    # the final current-run report exists instead of reading a previous run.
+    row = run_stage(root, goal_stage, dry_run=False)
+    for index, existing in enumerate(report_rows):
+        if existing.get("stage") == goal_stage.name:
+            report_rows[index] = row
+            break
+
+
 def main() -> int:
     args = parse_args()
     root = Path(args.root).resolve()
@@ -1982,6 +1997,8 @@ def main() -> int:
             if row["status"] == "fail":
                 break
         if not args.dry_run:
+            write_tsv(run_report, REPORT_COLUMNS, report_rows)
+            refresh_goal_audit_after_report(root, selected, report_rows, run_report, args.dry_run)
             write_tsv(run_report, REPORT_COLUMNS, report_rows)
         failures = [row for row in report_rows if row["status"] == "fail"]
         if failures:

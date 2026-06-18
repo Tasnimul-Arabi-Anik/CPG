@@ -116,7 +116,7 @@ All default outputs are under `results/`. The runner also writes:
 - `results/validation/workflow_run_report.tsv`
 - per-stage logs under `logs/`
 
-The workflow-run report records each command, log path, status, return code, and expected outputs.
+The workflow-run report records each command, log path, status, return code, and expected outputs. When `stage_11_goal_completion_audit` is selected, the direct runner refreshes that audit once after writing the final current-run report so `results/validation/goal_completion_audit.tsv` does not read a stale report from an earlier partial run.
 
 The runner regenerates `results/qc/source_query_plan.tsv` through `stage_0_source_queries`. This table records query intent, reviewed export paths, expected columns, and source rationale before source import.
 

@@ -1,6 +1,6 @@
 # Goal Completion Audit Schema
 
-`scripts/11_audit_goal_completion.py` audits the original project objective against current workflow evidence. It runs after workflow validation, study readiness, and readiness action planning.
+`scripts/11_audit_goal_completion.py` audits the original project objective against current workflow evidence. It runs after workflow validation, study readiness, and readiness action planning. In the direct workflow runner, this audit is refreshed after the final current-run `workflow_run_report.tsv` is written so G01 uses current execution evidence rather than a previous partial run report.
 
 ## Command
 
