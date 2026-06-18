@@ -464,11 +464,35 @@ def evaluate_requirement(requirement: tuple[str, str, str, str], root: Path, res
         host_defense = results_dir / "defense_systems/host_defense_systems.tsv"
         phage_antidefense = results_dir / "defense_systems/phage_antidefense_candidates.tsv"
         compatibility = results_dir / "defense_systems/compatibility_features.tsv"
-        host_rows = count_rows(host_defense)
-        phage_rows = count_rows(phage_antidefense)
+        _, host_defense_rows = read_tsv(host_defense)
+        _, phage_antidefense_rows = read_tsv(phage_antidefense)
         compatibility_rows = count_rows(compatibility)
-        status = "pass" if compatibility_rows > 0 and (host_rows > 0 or phage_rows > 0) else "fail"
-        return status_row(req_id, area, text, compatibility, root, f"host_defense_rows={host_rows}; phage_antidefense_rows={phage_rows}; compatibility_rows={compatibility_rows}", status, status == "fail", "Provide PADLOC/DefenseFinder or phage anti-defense evidence and rerun Stage 6." if status == "fail" else "No action required.")
+        host_rows = len(host_defense_rows)
+        phage_rows = len(phage_antidefense_rows)
+        inferred_phage_rows = [row for row in phage_antidefense_rows if row.get("evidence_type") == "annotation_keyword_inference"]
+        explicit_phage_rows = [
+            row
+            for row in phage_antidefense_rows
+            if not is_missing(row.get("evidence_type")) and row.get("evidence_type") != "annotation_keyword_inference"
+        ]
+        if compatibility_rows > 0 and host_rows > 0 and explicit_phage_rows:
+            status = "pass"
+            blocking = False
+            action = "No action required."
+        elif compatibility_rows > 0 and (host_rows > 0 or phage_rows > 0):
+            status = "warn"
+            blocking = True
+            action = "Provide reviewed host defense and explicit phage anti-defense evidence, then rerun Stage 6."
+        else:
+            status = "fail"
+            blocking = True
+            action = "Provide PADLOC/DefenseFinder or reviewed phage anti-defense evidence and rerun Stage 6."
+        summary = (
+            f"host_defense_rows={host_rows}; phage_antidefense_rows={phage_rows}; "
+            f"explicit_phage_antidefense_rows={len(explicit_phage_rows)}; inferred_phage_antidefense_rows={len(inferred_phage_rows)}; "
+            f"compatibility_rows={compatibility_rows}"
+        )
+        return status_row(req_id, area, text, compatibility, root, summary, status, blocking, action)
 
     if key == "sample_support":
         path = results_dir / "qc/sample_support_by_hypothesis.tsv"
@@ -533,6 +557,8 @@ def main() -> int:
     ]
     if fail_count:
         report.append({"severity": "warning", "item": "study_readiness", "message": "Study is not manuscript-ready; see failing requirements."})
+    elif blocking_count:
+        report.append({"severity": "warning", "item": "study_readiness", "message": "Study is not manuscript-ready; see blocking warning requirements."})
     elif warn_count:
         report.append({"severity": "warning", "item": "study_readiness", "message": "Study has non-blocking readiness warnings."})
     else:

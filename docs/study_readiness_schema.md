@@ -30,7 +30,7 @@ The direct workflow runner executes this as `stage_10_study_readiness` after `st
 | `blocking_for_manuscript` | Whether this gap blocks manuscript-level claims. |
 | `next_action` | Concrete action needed to improve readiness. |
 
-Audited areas include dataset curation, source readiness, source query/template/export-validation/acquisition planning, source work-order acceptance, tool availability, sequence acquisition planning, sequence QC, external evidence planning, dereplication, annotation/pangenome, RBP/depolymerase candidates, host features, defense/counter-defense features, configured H1-H6 sample support, H1-H6 tests, figures, and documentation/claims. Disabled optional source placeholders remain visible in source-acquisition summaries, but they block manuscript readiness only if they are enabled, required, or have an enabled import path that is inconsistent.
+Audited areas include dataset curation, source readiness, source query/template/export-validation/acquisition planning, source work-order acceptance, tool availability, sequence acquisition planning, sequence QC, external evidence planning, dereplication, annotation/pangenome, RBP/depolymerase candidates, host features, defense/counter-defense features, configured H1-H6 sample support, H1-H6 tests, figures, and documentation/claims. Disabled optional source placeholders remain visible in source-acquisition summaries, but they block manuscript readiness only if they are enabled, required, or have an enabled import path that is inconsistent. Defense/counter-defense readiness distinguishes reviewed host-defense and explicit phage anti-defense evidence from annotation-keyword inference; inferred anti-defense candidates keep the workflow executable but do not make the defense layer manuscript-ready.
 
 ## Report
 
@@ -44,7 +44,7 @@ Audited areas include dataset curation, source readiness, source query/template/
 
 ## Interpretation
 
-A mock workflow can pass readiness using bundled fixture data. A real workflow should not be treated as manuscript-ready while requirements remain `fail` or blocking. In particular, an empty audited sample table, blocked rows in `results/qc/sample_support_by_hypothesis.tsv`, empty biological output tables, missing real source manifests, or only limited H1-H6 tests mean the repository is a validated scaffold rather than a populated biological study.
+A mock workflow can pass readiness using bundled fixture data. A real workflow should not be treated as manuscript-ready while requirements remain `fail` or blocking. Warning rows with `blocking_for_manuscript=true` are manuscript blockers even if the row is not an outright schema or workflow failure. In particular, an empty audited sample table, blocked rows in `results/qc/sample_support_by_hypothesis.tsv`, empty biological output tables, missing real source manifests, or only limited H1-H6 tests mean the repository is a validated scaffold rather than a populated biological study.
 
 
 ## Acquisition and Evidence Planning Checks
