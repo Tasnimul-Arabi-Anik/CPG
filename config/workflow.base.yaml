@@ -169,6 +169,8 @@ outputs:
     source_manifest_drift_report: '{results_dir}/qc/source_manifest_drift_report.tsv'
     phagehostlearn_external_files: '{results_dir}/qc/phagehostlearn_2024_external_files.tsv'
     phagehostlearn_external_files_report: '{results_dir}/qc/phagehostlearn_2024_external_files_report.tsv'
+    phagehostlearn_host_archive: '{results_dir}/qc/phagehostlearn_2024_host_archive.tsv'
+    phagehostlearn_host_archive_report: '{results_dir}/qc/phagehostlearn_2024_host_archive_report.tsv'
     phagehostlearn_metadata_support: '{results_dir}/qc/phagehostlearn_2024_metadata_support.tsv'
     phagehostlearn_metadata_support_report: '{results_dir}/qc/phagehostlearn_2024_metadata_support_report.tsv'
     phagehostlearn_map_review: '{results_dir}/qc/phagehostlearn_2024_map_review.tsv'
@@ -241,6 +243,8 @@ outputs:
     phage_host_assay_validation_self_test_report: '{results_dir}/validation/phage_host_assay_validation_self_test_report.tsv'
     phagehostlearn_external_files_self_test: '{results_dir}/validation/phagehostlearn_external_files_self_test.tsv'
     phagehostlearn_external_files_self_test_report: '{results_dir}/validation/phagehostlearn_external_files_self_test_report.tsv'
+    phagehostlearn_host_archive_self_test: '{results_dir}/validation/phagehostlearn_host_archive_self_test.tsv'
+    phagehostlearn_host_archive_self_test_report: '{results_dir}/validation/phagehostlearn_host_archive_self_test_report.tsv'
     phagehostlearn_metadata_support_self_test: '{results_dir}/validation/phagehostlearn_metadata_support_self_test.tsv'
     phagehostlearn_metadata_support_self_test_report: '{results_dir}/validation/phagehostlearn_metadata_support_self_test_report.tsv'
     phagehostlearn_map_review_self_test: '{results_dir}/validation/phagehostlearn_map_review_self_test.tsv'
@@ -427,6 +431,12 @@ phagehostlearn_external_files:
   report: '{results_dir}/qc/phagehostlearn_2024_external_files_report.tsv'
   require_present: false
   require_sha256: false
+phagehostlearn_host_archive:
+  enabled: true
+  archive: data/metadata/external/phagehostlearn/klebsiella_genomes.zip
+  host_export: data/metadata/source_exports/phagehostlearn_2024_hosts.tsv
+  audit: '{results_dir}/qc/phagehostlearn_2024_host_archive.tsv'
+  report: '{results_dir}/qc/phagehostlearn_2024_host_archive_report.tsv'
 phagehostlearn_metadata_support:
   enabled: true
   matrix: data/metadata/external/phagehostlearn/phage_host_interactions.csv

@@ -69,6 +69,9 @@ jobs:
           python scripts/self_test_phagehostlearn_external_files.py \
             --output results/validation/phagehostlearn_external_files_self_test.tsv \
             --report-output results/validation/phagehostlearn_external_files_self_test_report.tsv
+          python scripts/self_test_phagehostlearn_host_archive.py \
+            --output results/validation/phagehostlearn_host_archive_self_test.tsv \
+            --report-output results/validation/phagehostlearn_host_archive_self_test_report.tsv
           python scripts/self_test_phagehostlearn_metadata_support.py \
             --output results/validation/phagehostlearn_metadata_support_self_test.tsv \
             --report-output results/validation/phagehostlearn_metadata_support_self_test_report.tsv

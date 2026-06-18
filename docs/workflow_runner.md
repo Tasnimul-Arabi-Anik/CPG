@@ -57,6 +57,7 @@ python scripts/run_workflow.py --config config/workflow.yaml --stages stage_1_ma
 - `stage_0_source_imports` when `source_imports.enabled: true`
 - `stage_0_source_manifest_drift` when `source_manifest_drift.enabled: true`
 - `stage_0_phagehostlearn_external_files` when `phagehostlearn_external_files.enabled: true`
+- `stage_0_phagehostlearn_host_archive` when `phagehostlearn_host_archive.enabled: true`
 - `stage_0_phagehostlearn_metadata_support` when `phagehostlearn_metadata_support.enabled: true`
 - `stage_0_phagehostlearn_map_review` when `phagehostlearn_map_review.enabled: true`
 - `stage_0_assay_matrix_normalization` when `assay_matrix_normalization.enabled: true`
@@ -188,6 +189,8 @@ The runner writes `results/qc/source_readiness_dashboard.tsv` through `stage_0_s
 The runner can normalize reviewed host-by-phage assay matrices through `stage_0_assay_matrix_normalization` when `assay_matrix_normalization.enabled: true`. This stage is disabled in the base profile so seed and clean-checkout runs do not import unreviewed PhageHostLearn rows; it should only be enabled after the external file checks pass locally and source-to-canonical maps are reviewed.
 
 The runner writes `results/<profile>/qc/phagehostlearn_2024_external_files.tsv` through `stage_0_phagehostlearn_external_files`. This provenance audit verifies local PhageHostLearn files against the tracked checksum manifest when they are present and reports clean-checkout missing files as warnings.
+
+The runner writes `results/<profile>/qc/phagehostlearn_2024_host_archive.tsv` through `stage_0_phagehostlearn_host_archive`. This curation audit compares PhageHostLearn host source IDs with FASTA members in the verified host-genome archive and keeps missing archive/member rows as source-review blockers rather than assay evidence.
 
 The runner writes `results/<profile>/qc/phagehostlearn_2024_metadata_support.tsv` through `stage_0_phagehostlearn_metadata_support`. This curation audit compares PhageHostLearn matrix IDs with optional RBPbase and Locibase support files while keeping pending ID maps blocked and non-claim-bearing.
 

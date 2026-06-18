@@ -43,6 +43,7 @@ STAGE_ORDER = [
     "stage_0_source_imports",
     "stage_0_source_manifest_drift",
     "stage_0_phagehostlearn_external_files",
+    "stage_0_phagehostlearn_host_archive",
     "stage_0_phagehostlearn_metadata_support",
     "stage_0_phagehostlearn_map_review",
     "stage_0_assay_matrix_normalization",
@@ -103,6 +104,7 @@ STAGE_ORDER = [
     "stage_9_phage_host_assay_import_self_test",
     "stage_9_phage_host_assay_validation_self_test",
     "stage_9_phagehostlearn_external_files_self_test",
+    "stage_9_phagehostlearn_host_archive_self_test",
     "stage_9_phagehostlearn_metadata_support_self_test",
     "stage_9_phagehostlearn_map_review_self_test",
     "stage_9_phage_host_assay_validation",
@@ -306,6 +308,11 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     phagehostlearn_external_files_report = configured_path(config, root, ("phagehostlearn_external_files", "report"), "results/qc/phagehostlearn_2024_external_files_report.tsv")
     phagehostlearn_external_files_require_present = nested_get(config, ("phagehostlearn_external_files", "require_present"), "false").strip().lower() in {"true", "1", "yes", "on"}
     phagehostlearn_external_files_require_sha256 = nested_get(config, ("phagehostlearn_external_files", "require_sha256"), "false").strip().lower() in {"true", "1", "yes", "on"}
+    phagehostlearn_host_archive_enabled = nested_get(config, ("phagehostlearn_host_archive", "enabled"), "false").strip().lower() in {"true", "1", "yes", "on"}
+    phagehostlearn_host_archive_file = configured_path(config, root, ("phagehostlearn_host_archive", "archive"), "data/metadata/external/phagehostlearn/klebsiella_genomes.zip")
+    phagehostlearn_host_archive_export = configured_path(config, root, ("phagehostlearn_host_archive", "host_export"), "data/metadata/source_exports/phagehostlearn_2024_hosts.tsv")
+    phagehostlearn_host_archive_audit = configured_path(config, root, ("phagehostlearn_host_archive", "audit"), "results/qc/phagehostlearn_2024_host_archive.tsv")
+    phagehostlearn_host_archive_report = configured_path(config, root, ("phagehostlearn_host_archive", "report"), "results/qc/phagehostlearn_2024_host_archive_report.tsv")
     phagehostlearn_metadata_support_enabled = nested_get(config, ("phagehostlearn_metadata_support", "enabled"), "false").strip().lower() in {"true", "1", "yes", "on"}
     phagehostlearn_metadata_matrix = configured_path(config, root, ("phagehostlearn_metadata_support", "matrix"), "data/metadata/external/phagehostlearn/phage_host_interactions.csv")
     phagehostlearn_metadata_rbpbase = configured_path(config, root, ("phagehostlearn_metadata_support", "rbpbase"), "data/metadata/external/phagehostlearn/RBPbase.csv")
@@ -560,6 +567,8 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     phage_host_assay_validation_self_test_report = out("validation", "phage_host_assay_validation_self_test_report", "results/validation/phage_host_assay_validation_self_test_report.tsv")
     phagehostlearn_external_files_self_test = out("validation", "phagehostlearn_external_files_self_test", "results/validation/phagehostlearn_external_files_self_test.tsv")
     phagehostlearn_external_files_self_test_report = out("validation", "phagehostlearn_external_files_self_test_report", "results/validation/phagehostlearn_external_files_self_test_report.tsv")
+    phagehostlearn_host_archive_self_test = out("validation", "phagehostlearn_host_archive_self_test", "results/validation/phagehostlearn_host_archive_self_test.tsv")
+    phagehostlearn_host_archive_self_test_report = out("validation", "phagehostlearn_host_archive_self_test_report", "results/validation/phagehostlearn_host_archive_self_test_report.tsv")
     phagehostlearn_metadata_support_self_test = out("validation", "phagehostlearn_metadata_support_self_test", "results/validation/phagehostlearn_metadata_support_self_test.tsv")
     phagehostlearn_metadata_support_self_test_report = out("validation", "phagehostlearn_metadata_support_self_test_report", "results/validation/phagehostlearn_metadata_support_self_test_report.tsv")
     phagehostlearn_map_review_self_test = out("validation", "phagehostlearn_map_review_self_test", "results/validation/phagehostlearn_map_review_self_test.tsv")
@@ -789,6 +798,29 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
                 command,
                 logs_dir / "00_validate_phagehostlearn_external_files.log",
                 [phagehostlearn_external_files_validation, phagehostlearn_external_files_report],
+            )
+        )
+
+    if phagehostlearn_host_archive_enabled:
+        stages.append(
+            Stage(
+                "stage_0_phagehostlearn_host_archive",
+                [
+                    python,
+                    script("audit_phagehostlearn_host_archive.py"),
+                    "--host-export",
+                    phagehostlearn_host_archive_export.as_posix(),
+                    "--archive",
+                    phagehostlearn_host_archive_file.as_posix(),
+                    "--audit-output",
+                    phagehostlearn_host_archive_audit.as_posix(),
+                    "--report-output",
+                    phagehostlearn_host_archive_report.as_posix(),
+                    "--root",
+                    root.as_posix(),
+                ],
+                logs_dir / "00_audit_phagehostlearn_host_archive.log",
+                [phagehostlearn_host_archive_audit, phagehostlearn_host_archive_report],
             )
         )
 
@@ -2148,6 +2180,19 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
             ],
             logs_dir / "09_self_test_phagehostlearn_external_files.log",
             [phagehostlearn_external_files_self_test, phagehostlearn_external_files_self_test_report],
+        ),
+        Stage(
+            "stage_9_phagehostlearn_host_archive_self_test",
+            [
+                python,
+                script("self_test_phagehostlearn_host_archive.py"),
+                "--output",
+                phagehostlearn_host_archive_self_test.as_posix(),
+                "--report-output",
+                phagehostlearn_host_archive_self_test_report.as_posix(),
+            ],
+            logs_dir / "09_self_test_phagehostlearn_host_archive.log",
+            [phagehostlearn_host_archive_self_test, phagehostlearn_host_archive_self_test_report],
         ),
         Stage(
             "stage_9_phagehostlearn_metadata_support_self_test",
