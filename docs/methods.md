@@ -733,14 +733,27 @@ Output schemas are documented in `docs/external_evidence_protein_handoff_schema.
 
 After external domain/profile or structure-informed annotation is run, `scripts/normalize_rbp_external_evidence.py` converts reviewed HMMER, Foldseek, Phold, or generic TSV outputs into the exact optional evidence schemas consumed by Stage 4. The normalizer does not run external tools and does not make novelty claims; it only standardizes reviewed evidence for `inputs.domain_evidence` and `inputs.structural_evidence`.
 
+The importer now treats reviewed evidence as a production contract rather than a loose table merge. HMMER orientation is explicit with `--hmmer-mode`, Foldseek and Phold field orders are explicit for headerless outputs, annotation identifiers are canonicalized to Stage 3 `annotation_gene_id` values, numeric ranges and non-finite values are validated, duplicate hits are reported, and absent inputs preserve existing outputs unless `--overwrite-empty` is requested. Domain and structural provenance are supplied separately, row-level provenance takes precedence, and both output tables are atomically replaced only after every supplied input validates.
+
 Implemented command pattern:
 
 ```bash
 python scripts/normalize_rbp_external_evidence.py \
   --domain-input results/external/rbp_domains/hmmer.domtblout \
   --domain-format hmmer_domtblout \
+  --hmmer-mode hmmsearch \
   --structural-input results/external/rbp_structures/foldseek.tsv \
   --structural-format foldseek_tsv \
+  --foldseek-fields query,target,alntmscore,prob,evalue \
+  --annotation-manifest results/annotations/phage_annotations.tsv \
+  --domain-tool hmmer \
+  --domain-tool-version reviewed \
+  --domain-database reviewed_profile_set \
+  --domain-database-version reviewed_profile_snapshot \
+  --structural-tool foldseek \
+  --structural-tool-version reviewed \
+  --structural-database reviewed_structure_set \
+  --structural-database-version reviewed_structure_snapshot \
   --domain-output data/metadata/external_evidence/rbp_domain_evidence.tsv \
   --structural-output data/metadata/external_evidence/rbp_structural_evidence.tsv \
   --report-output results/qc/normalize_rbp_external_evidence_report.tsv
@@ -748,7 +761,7 @@ python scripts/normalize_rbp_external_evidence.py \
 
 Output schemas are documented in `docs/rbp_external_evidence_normalization_schema.md`.
 
-The normalization logic is regression-tested with fixture-only scenarios by `scripts/self_test_rbp_external_evidence_normalization.py`. The self-test covers generic domain TSVs, HMMER `domtblout` parsing, generic structural TSVs, and header-only behavior when no reviewed inputs are supplied.
+The normalization logic is regression-tested with fixture-only scenarios by `scripts/self_test_rbp_external_evidence_normalization.py`. The self-test covers generic domain TSVs, both HMMER `domtblout` orientations, headerless Foldseek parsing, Phold-style parsing, annotation-manifest failures, canonical protein-ID translation, ambiguous alias failures, numeric validation including non-finite values, duplicate handling, no-input preservation, explicit empty overwrite, path-collision rejection, distinct domain/structural provenance, transactional no-partial-write behavior, and full success/failure command paths.
 
 Implemented self-test command:
 
