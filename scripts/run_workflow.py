@@ -31,6 +31,7 @@ STAGE_ORDER = [
     "stage_0_source_query_commands",
     "stage_0_source_export_validation",
     "stage_0_source_imports",
+    "stage_0_source_manifest_drift",
     "stage_0_source_plan",
     "stage_0_source_audit",
     "stage_0_source_curation_tasks",
@@ -58,6 +59,7 @@ STAGE_ORDER = [
     "stage_1_sequence_acquisition",
     "stage_1_sequence_fetch_manifest",
     "stage_1_sequence_fetch_review_packet",
+    "stage_1_sequence_acquisition_manifest_validation",
     "stage_1_sequence_qc",
     "stage_1_external_evidence_plan",
     "stage_1_external_evidence_templates",
@@ -77,6 +79,7 @@ STAGE_ORDER = [
     "stage_7_models",
     "stage_8_figures",
     "stage_9_source_export_validation_self_test",
+    "stage_9_sequence_acquisition_manifest_self_test",
     "stage_9_external_evidence_acceptance_self_test",
     "stage_9_rbp_external_evidence_normalization_self_test",
     "stage_9_defense_external_evidence_normalization_self_test",
@@ -238,6 +241,9 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     source_imports_enabled = nested_get(config, ("source_imports", "enabled"), "false").strip().lower() in {"true", "1", "yes", "on"}
     source_imports_config = configured_path(config, root, ("source_imports", "config"), "config/source_imports.yaml")
     source_imports_report = configured_path(config, root, ("source_imports", "report"), "results/qc/source_import_report.tsv")
+    source_manifest_drift_enabled = nested_get(config, ("source_manifest_drift", "enabled"), "false").strip().lower() in {"true", "1", "yes", "on"}
+    source_manifest_drift_output = configured_path(config, root, ("source_manifest_drift", "drift"), "results/qc/source_manifest_drift.tsv")
+    source_manifest_drift_report = configured_path(config, root, ("source_manifest_drift", "report"), "results/qc/source_manifest_drift_report.tsv")
     source_plan_enabled = nested_get(config, ("source_plan", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
     source_plan_catalog = configured_path(config, root, ("source_plan", "catalog"), "config/source_catalog.yaml")
     source_plan_imports_config = configured_path(config, root, ("source_plan", "imports_config"), source_imports_config.as_posix())
@@ -256,6 +262,10 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     sequence_fetch_review_packet_enabled = nested_get(config, ("sequence_fetch_review_packet", "enabled"), "false").strip().lower() in {"true", "1", "yes", "on"}
     sequence_fetch_review_packet = configured_path(config, root, ("sequence_fetch_review_packet", "packet"), "results/qc/sequence_fetch_review_packet.md")
     sequence_fetch_review_report = configured_path(config, root, ("sequence_fetch_review_packet", "report"), "results/qc/sequence_fetch_review_packet_report.tsv")
+    sequence_acquisition_manifest_enabled = nested_get(config, ("sequence_acquisition_manifest", "enabled"), "false").strip().lower() in {"true", "1", "yes", "on"}
+    sequence_acquisition_manifest = configured_path(config, root, ("sequence_acquisition_manifest", "manifest"), "data/metadata/sequence_acquisition_manifest.tsv")
+    sequence_acquisition_manifest_validation = configured_path(config, root, ("sequence_acquisition_manifest", "validation"), "results/validation/sequence_acquisition_manifest_validation.tsv")
+    sequence_acquisition_manifest_report = configured_path(config, root, ("sequence_acquisition_manifest", "report"), "results/validation/sequence_acquisition_manifest_validation_report.tsv")
     external_evidence_enabled = nested_get(config, ("external_evidence", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
     external_evidence_templates_enabled = nested_get(config, ("external_evidence_templates", "enabled"), "false").strip().lower() in {"true", "1", "yes", "on"}
     external_evidence_templates_dir = configured_path(config, root, ("external_evidence_templates", "templates_dir"), "results/qc/external_evidence_templates")
@@ -451,6 +461,8 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     validation_report = out("validation", "report", "results/validation/workflow_validation_report.tsv")
     source_export_validation_self_test = out("validation", "source_export_validation_self_test", "results/validation/source_export_validation_self_test.tsv")
     source_export_validation_self_test_report = out("validation", "source_export_validation_self_test_report", "results/validation/source_export_validation_self_test_report.tsv")
+    sequence_acquisition_manifest_self_test = out("validation", "sequence_acquisition_manifest_self_test", "results/validation/sequence_acquisition_manifest_self_test.tsv")
+    sequence_acquisition_manifest_self_test_report = out("validation", "sequence_acquisition_manifest_self_test_report", "results/validation/sequence_acquisition_manifest_self_test_report.tsv")
     external_evidence_acceptance_self_test = out("validation", "external_evidence_acceptance_self_test", "results/validation/external_evidence_acceptance_self_test.tsv")
     external_evidence_acceptance_self_test_report = out("validation", "external_evidence_acceptance_self_test_report", "results/validation/external_evidence_acceptance_self_test_report.tsv")
     rbp_external_evidence_normalization_self_test = out("validation", "rbp_external_evidence_normalization_self_test", "results/validation/rbp_external_evidence_normalization_self_test.tsv")
@@ -616,6 +628,27 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
                 ],
                 logs_dir / "00_import_source_manifests.log",
                 [source_imports_report],
+            )
+        )
+
+    if source_manifest_drift_enabled:
+        stages.append(
+            Stage(
+                "stage_0_source_manifest_drift",
+                [
+                    python,
+                    script("audit_source_manifest_drift.py"),
+                    "--config",
+                    source_imports_config.as_posix(),
+                    "--drift-output",
+                    source_manifest_drift_output.as_posix(),
+                    "--report-output",
+                    source_manifest_drift_report.as_posix(),
+                    "--root",
+                    root.as_posix(),
+                ],
+                logs_dir / "00_audit_source_manifest_drift.log",
+                [source_manifest_drift_output, source_manifest_drift_report],
             )
         )
 
@@ -1254,6 +1287,27 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
             )
         )
 
+    if sequence_acquisition_manifest_enabled:
+        stages.append(
+            Stage(
+                "stage_1_sequence_acquisition_manifest_validation",
+                [
+                    python,
+                    script("validate_sequence_acquisition_manifest.py"),
+                    "--manifest",
+                    sequence_acquisition_manifest.as_posix(),
+                    "--validation-output",
+                    sequence_acquisition_manifest_validation.as_posix(),
+                    "--report-output",
+                    sequence_acquisition_manifest_report.as_posix(),
+                    "--root",
+                    root.as_posix(),
+                ],
+                logs_dir / "00_validate_sequence_acquisition_manifest.log",
+                [sequence_acquisition_manifest_validation, sequence_acquisition_manifest_report],
+            )
+        )
+
     stages.append(
         Stage(
             "stage_1_sequence_qc",
@@ -1733,6 +1787,19 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
             ],
             logs_dir / "09_self_test_source_export_validation.log",
             [source_export_validation_self_test, source_export_validation_self_test_report],
+        ),
+        Stage(
+            "stage_9_sequence_acquisition_manifest_self_test",
+            [
+                python,
+                script("self_test_sequence_acquisition_manifest.py"),
+                "--output",
+                sequence_acquisition_manifest_self_test.as_posix(),
+                "--report-output",
+                sequence_acquisition_manifest_self_test_report.as_posix(),
+            ],
+            logs_dir / "09_self_test_sequence_acquisition_manifest.log",
+            [sequence_acquisition_manifest_self_test, sequence_acquisition_manifest_self_test_report],
         ),
         Stage(
             "stage_9_external_evidence_acceptance_self_test",

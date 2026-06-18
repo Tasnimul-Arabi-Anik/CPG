@@ -175,6 +175,7 @@ REQUIRED_DOCS = [
     "docs/genome_sequence_qc_schema.md",
     "docs/sequence_acquisition_schema.md",
     "docs/sequence_fetch_manifest_schema.md",
+    "docs/sequence_acquisition_manifest_schema.md",
     "docs/external_evidence_plan_schema.md",
     "docs/external_evidence_template_schema.md",
     "docs/external_evidence_run_packet_schema.md",
@@ -254,6 +255,7 @@ REQUIRED_SCRIPTS = [
     "scripts/self_test_rbp_external_evidence_normalization.py",
     "scripts/self_test_defense_external_evidence_normalization.py",
     "scripts/import_source_manifests.py",
+    "scripts/audit_source_manifest_drift.py",
     "scripts/plan_source_acquisition.py",
     "scripts/build_samples_from_sources.py",
     "scripts/audit_source_catalog.py",
@@ -283,6 +285,8 @@ REQUIRED_SCRIPTS = [
     "scripts/plan_sequence_acquisition.py",
     "scripts/create_sequence_fetch_manifest.py",
     "scripts/create_sequence_fetch_review_packet.py",
+    "scripts/validate_sequence_acquisition_manifest.py",
+    "scripts/self_test_sequence_acquisition_manifest.py",
     "scripts/plan_external_evidence.py",
     "scripts/create_external_evidence_templates.py",
     "scripts/create_external_evidence_run_packets.py",
@@ -317,6 +321,8 @@ REQUIRED_CONFIGS = [
     "config/thresholds.yaml",
     "config/tools.yaml",
     "config/workflow.yaml",
+    "config/workflow.seed.yaml",
+    "config/workflow.production.yaml",
     "config/source_catalog.yaml",
     "config/source_catalog.mock.yaml",
     "config/source_imports.yaml",
@@ -325,6 +331,8 @@ REQUIRED_CONFIGS = [
     "config/source_queries.mock.yaml",
     "data/metadata/phage_host_assays.tsv",
     "data/metadata/phage_host_relationships.tsv",
+    "data/metadata/sequence_acquisition_manifest.tsv",
+    "data/metadata/mock_sequence_acquisition_manifest.tsv",
 ]
 
 REQUIRED_FIGURES = [

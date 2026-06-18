@@ -1,0 +1,3 @@
+entity_id	accession	database	source_version	retrieval_command	retrieved_at	expected_path	file_size	sha256	review_status	notes
+mock_phage_MK000001	MK000001	bundled mock fixture	tracked fixture	not_applicable_tracked_fixture	2026-06-18	data/raw/mock_public/MK000001.fna	12089	daeae0d70a0b8cdd6a04105065ea3e9025f5a9151e6d20d31cde1a7e3284cf62	reviewed_local_file	Tracked mock FASTA fixture for offline workflow validation.
+mock_phage_MK000004	MK000004	bundled mock fixture	tracked fixture	not_applicable_tracked_fixture	2026-06-18	data/raw/mock_public/MK000004.fna	13089	1f06e9d946dab2104898a822c41d9947a3768274cc39d66018e934d50e7bc916	reviewed_local_file	Tracked mock FASTA fixture for offline workflow validation.

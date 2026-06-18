@@ -9,9 +9,10 @@ The repository is ready for technical review of the workflow design, data contra
 Current expected state after running the real workflow:
 
 - workflow scripts run from config;
-- outputs are written under `results/`;
+- default outputs are written under `results/`, while explicit seed and production profiles write under `results/seed/` and `results/production/`;
 - H1-H6 tests exist as quantitative model rows;
 - reviewed seed rows are present for INPHARED, NCBI Virus/GenBank, host-genome, and prophage source layers;
+- checksum-backed raw acquisition manifests exist for current reviewed local FASTA files, but this does not make the tiny seed dataset manuscript-ready;
 - `results/source_builder/samples.tsv` should contain seed real-data rows built from enabled source manifests;
 - real H1-H6 evidence remains limited because the seed dataset is small, most public records still need expansion/deduplication, and production external evidence is incomplete;
 - `results/validation/goal_completion_audit.tsv` should keep the goal incomplete.
@@ -30,11 +31,13 @@ Run these from the repository root:
 ```bash
 python -m py_compile scripts/*.py
 python scripts/self_test_source_export_validation.py   --output results/validation/source_export_validation_self_test.tsv   --report-output results/validation/source_export_validation_self_test_report.tsv
+python scripts/self_test_sequence_acquisition_manifest.py   --output results/validation/sequence_acquisition_manifest_self_test.tsv   --report-output results/validation/sequence_acquisition_manifest_self_test_report.tsv
 python scripts/run_workflow.py --config config/workflow.mock.yaml
-python scripts/run_workflow.py --config config/workflow.yaml
+python scripts/run_workflow.py --config config/workflow.seed.yaml
+python scripts/run_workflow.py --config config/workflow.production.yaml --dry-run
 ```
 
-The first three commands mirror the GitHub Actions CI. The final real workflow command should run, but its readiness audit should still report blocked manuscript-level support until source acquisition is consistent, production evidence tables are accepted, and H1-H6 have data-supported model rows.
+The compile, self-tests, and mock workflow are CI-style checks. The seed workflow should run, but its readiness audit should still report blocked manuscript-level support until source expansion, production evidence tables, assay outcomes, and H1-H6 data-supported model rows are available. The production workflow is a profile contract and may be dry-run until accepted production evidence files exist.
 
 ## What To Inspect First
 
@@ -53,6 +56,8 @@ Start with these files:
 - `results/qc/external_evidence_plan.tsv`: evidence readiness, provenance origin, and real-claim usability status.
 - `results/qc/external_evidence_acceptance.tsv`: configured reviewed evidence versus missing tool/input blockers.
 - `results/qc/genome_sequence_qc_report.tsv`: current sequence-backed versus metadata-only record status.
+- `results/validation/sequence_acquisition_manifest_validation.tsv`: checksum verification for reviewed local raw files.
+- `results/qc/source_manifest_drift.tsv`: source export versus normalized manifest drift audit.
 - `results/source_builder/sample_source_report.tsv`: enabled source manifests and seed-row loading status.
 
 ## What To Review Technically
@@ -64,6 +69,7 @@ Reviewers should focus on:
 - whether H1-H6 each map to a quantitative test and figure/data output;
 - whether real and mock paths are separated cleanly, including the `mock_fixture_boundary` validation row;
 - whether seed real-data rows are clearly separated from manuscript-scale biological evidence;
+- whether `workflow.mock.yaml`, `workflow.seed.yaml`, and `workflow.production.yaml` separate fixture, seed, and production scopes cleanly;
 - whether optional external evidence tables have clear schemas and provenance labels separating mock fixtures, bridge evidence, handoff files, and production evidence;
 - whether claim wording is conservative and tied to current evidence status.
 
@@ -74,7 +80,7 @@ Use the GitHub issue template `.github/ISSUE_TEMPLATE/source-curation.yml` for r
 The current blockers are:
 
 - expand and deduplicate INPHARED and NCBI cultured-phage sources before atlas-size or source-enrichment interpretation;
-- acquire or reconstruct local FASTA/GenBank sequence files for metadata-only rows using the generated sequence-fetch manifests;
+- acquire or reconstruct local FASTA/GenBank sequence files for metadata-only rows using the generated sequence-fetch manifests and record reviewed checksums in `data/metadata/sequence_acquisition_manifest.tsv`;
 - replace bridge evidence with reviewed production evidence from standardized tools where needed;
 - add accepted RBP domain/structural evidence, host defense evidence, and phage anti-defense evidence;
 - rerun H1-H6 model comparisons after the above evidence layers are accepted.
@@ -86,6 +92,8 @@ Inspect these generated reports after each real workflow run:
 - `results/qc/sample_support_by_hypothesis.tsv`
 - `results/qc/external_evidence_acceptance.tsv`
 - `results/qc/genome_sequence_qc_report.tsv`
+- `results/validation/sequence_acquisition_manifest_validation.tsv`
+- `results/qc/source_manifest_drift.tsv`
 - `results/validation/study_readiness.tsv`
 - `results/validation/goal_completion_audit.tsv`
 

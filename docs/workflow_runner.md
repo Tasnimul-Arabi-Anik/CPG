@@ -10,6 +10,17 @@ Snakemake remains the preferred orchestrator for larger production runs.
 python scripts/run_workflow.py --config config/workflow.yaml
 ```
 
+## Workflow Profiles
+
+- `config/workflow.mock.yaml`: synthetic fixture workflow for offline CI and plumbing checks. Uses tracked mock FASTA files and writes to `results/mock/`.
+- `config/workflow.seed.yaml`: seed real-data workflow for reviewed source rows and bridge evidence. Writes to `results/seed/` and does not support biological claims.
+- `config/workflow.production.yaml`: production profile for sequence-backed records and accepted production evidence paths. It is a contract for manuscript-scale runs and should not be treated as passing until production evidence files exist.
+
+```bash
+python scripts/run_workflow.py --config config/workflow.seed.yaml
+python scripts/run_workflow.py --config config/workflow.production.yaml --dry-run
+```
+
 ## Snakemake Entrypoint
 
 The `Snakefile` delegates to the same config-driven direct runner instead of duplicating stage commands. This prevents drift between Snakemake and `scripts/run_workflow.py`.
@@ -39,6 +50,7 @@ python scripts/run_workflow.py --config config/workflow.yaml --stages stage_1_ma
 - `stage_0_source_export_templates` when `source_export_templates.enabled: true`
 - `stage_0_source_export_validation` when `source_export_validation.enabled: true`
 - `stage_0_source_imports` when `source_imports.enabled: true`
+- `stage_0_source_manifest_drift` when `source_manifest_drift.enabled: true`
 - `stage_0_source_plan` when `source_plan.enabled: true`
 - `stage_0_source_audit` when `source_audit.enabled: true`
 - `stage_0_source_curation_tasks` when `source_curation_tasks.enabled: true`
@@ -65,6 +77,8 @@ python scripts/run_workflow.py --config config/workflow.yaml --stages stage_1_ma
 - `stage_1_manifest`
 - `stage_1_sequence_acquisition`
 - `stage_1_sequence_fetch_manifest` when `sequence_fetch_manifest.enabled: true`
+- `stage_1_sequence_fetch_review_packet` when `sequence_fetch_review_packet.enabled: true`
+- `stage_1_sequence_acquisition_manifest_validation` when `sequence_acquisition_manifest.enabled: true`
 - `stage_1_sequence_qc`
 - `stage_1_external_evidence_plan`
 - `stage_1_external_evidence_templates` when `external_evidence_templates.enabled: true`
@@ -76,6 +90,7 @@ python scripts/run_workflow.py --config config/workflow.yaml --stages stage_1_ma
 - `stage_7_models`
 - `stage_8_figures`
 - `stage_9_source_export_validation_self_test`
+- `stage_9_sequence_acquisition_manifest_self_test`
 - `stage_9_external_evidence_acceptance_self_test`
 - `stage_9_rbp_external_evidence_normalization_self_test`
 - `stage_9_defense_external_evidence_normalization_self_test`

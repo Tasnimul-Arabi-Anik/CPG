@@ -156,6 +156,8 @@ outputs:
     production_evidence_handoff_report: results/qc/production_evidence_handoff_report.tsv
     pipeline_efficiency_audit: results/validation/pipeline_efficiency_audit.tsv
     pipeline_efficiency_report: results/validation/pipeline_efficiency_report.tsv
+    source_manifest_drift: results/qc/source_manifest_drift.tsv
+    source_manifest_drift_report: results/qc/source_manifest_drift_report.tsv
   clusters:
     ani: results/clusters/phage_ani.tsv
     clusters: results/clusters/phage_clusters.tsv
@@ -225,6 +227,10 @@ outputs:
     goal_completion_audit: results/validation/goal_completion_audit.tsv
     goal_completion_report: results/validation/goal_completion_report.tsv
     run_report: results/validation/workflow_run_report.tsv
+    sequence_acquisition_manifest_validation: results/validation/sequence_acquisition_manifest_validation.tsv
+    sequence_acquisition_manifest_validation_report: results/validation/sequence_acquisition_manifest_validation_report.tsv
+    sequence_acquisition_manifest_self_test: results/validation/sequence_acquisition_manifest_self_test.tsv
+    sequence_acquisition_manifest_self_test_report: results/validation/sequence_acquisition_manifest_self_test_report.tsv
 logs:
   directory: logs
 source_curation_tasks:
@@ -366,8 +372,19 @@ production_evidence_handoff:
   enabled: true
   handoff: results/qc/production_evidence_handoff.md
   report: results/qc/production_evidence_handoff_report.tsv
-
 pipeline_efficiency:
   enabled: true
   audit: results/validation/pipeline_efficiency_audit.tsv
   report: results/validation/pipeline_efficiency_report.tsv
+profile:
+  name: seed_default
+  description: Default seed real-data workflow; bridge evidence only; no manuscript biological claims.
+sequence_acquisition_manifest:
+  enabled: true
+  manifest: data/metadata/sequence_acquisition_manifest.tsv
+  validation: results/validation/sequence_acquisition_manifest_validation.tsv
+  report: results/validation/sequence_acquisition_manifest_validation_report.tsv
+source_manifest_drift:
+  enabled: true
+  drift: results/qc/source_manifest_drift.tsv
+  report: results/qc/source_manifest_drift_report.tsv
