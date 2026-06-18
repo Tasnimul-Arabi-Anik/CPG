@@ -4,6 +4,8 @@ The assay import layer converts reviewed phage-host interaction exports into can
 
 The importer does not download data and does not infer untested pairs as negatives. Header-only exports are valid for seed/mock workflow plumbing but cannot support H1/H3/H4 biological claims.
 
+Host-by-phage matrices should first be normalized with `scripts/normalize_assay_matrix.py`; see `docs/assay_matrix_normalization_schema.md`. That normalizer applies explicit source-to-canonical ID maps and skips blank matrix cells as untested before the generic importer consumes the resulting source export.
+
 ## Config
 
 `config/assay_imports.yaml` contains an `imports` list. Each enabled import may define:

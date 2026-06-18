@@ -1,0 +1,30 @@
+# Reviewed assay matrix normalization sources.
+# These sources convert host-by-phage interaction matrices into canonical
+# data/metadata/assay_source_exports/*.tsv files consumed by config/assay_imports.yaml.
+#
+# The PhageHostLearn source is disabled until the Zenodo CSV is downloaded and
+# source IDs are mapped to canonical local phage/host entities. The normalizer
+# treats blank matrix cells as untested, not negative.
+sources:
+  - source_id: phagehostlearn_2024_interaction_matrix
+    enabled: false
+    matrix_path: data/metadata/external/phagehostlearn/phage_host_interactions.csv
+    delimiter: comma
+    host_id_column: auto_first_column
+    phage_id_map: data/metadata/assay_source_exports/phagehostlearn_2024_phage_id_map.tsv
+    host_id_map: data/metadata/assay_source_exports/phagehostlearn_2024_host_id_map.tsv
+    output_path: data/metadata/assay_source_exports/reviewed_klebsiella_phage_host_assays.tsv
+    report_output: results/qc/phagehostlearn_2024_assay_matrix_normalization_report.tsv
+    use_source_ids_as_canonical: false
+    fail_on_unresolved: false
+    study_id: phagehostlearn_2024
+    panel_id: phagehostlearn_training_test_matrix
+    assay_type: spot
+    evidence_tier: supplementary_matrix
+    reference: https://doi.org/10.5281/zenodo.11061100; https://doi.org/10.1038/s41467-024-48675-6
+    positive_values: ["1", "1.0"]
+    negative_values: ["0", "0.0"]
+    skip_values: ["", "NA", "N/A"]
+    positive_outcome_tier: initial_interaction
+    negative_outcome_tier: tested_negative
+    notes: "PhageHostLearn matrix; spot-test interaction layer only, not productive-infection evidence."
