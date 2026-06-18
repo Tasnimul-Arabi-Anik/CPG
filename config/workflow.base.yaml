@@ -25,6 +25,12 @@ source_imports:
   enabled: true
   config: config/source_imports.yaml
   report: '{results_dir}/qc/source_import_report.tsv'
+assay_imports:
+  enabled: true
+  config: config/assay_imports.yaml
+  assays_output: '{results_dir}/metadata/phage_host_assays.tsv'
+  relationships_output: '{results_dir}/metadata/phage_host_relationships.tsv'
+  report: '{results_dir}/qc/assay_import_report.tsv'
 source_plan:
   enabled: true
   catalog: config/source_catalog.yaml
@@ -64,8 +70,8 @@ inputs:
   samples: config/samples.tsv
   thresholds: config/thresholds.yaml
   tools: config/tools.yaml
-  phage_host_assays: data/metadata/phage_host_assays.tsv
-  phage_host_relationships: data/metadata/phage_host_relationships.tsv
+  phage_host_assays: '{results_dir}/metadata/phage_host_assays.tsv'
+  phage_host_relationships: '{results_dir}/metadata/phage_host_relationships.tsv'
   pairwise_similarity: data/metadata/external_evidence/blastn_pairwise_similarity.tsv
   annotation_input: data/metadata/external_evidence/genbank_cds_annotations.tsv
   domain_evidence: ''
@@ -158,6 +164,10 @@ outputs:
     pipeline_efficiency_report: '{results_dir}/validation/pipeline_efficiency_report.tsv'
     source_manifest_drift: '{results_dir}/qc/source_manifest_drift.tsv'
     source_manifest_drift_report: '{results_dir}/qc/source_manifest_drift_report.tsv'
+    assay_import_report: '{results_dir}/qc/assay_import_report.tsv'
+  metadata:
+    phage_host_assays: '{results_dir}/metadata/phage_host_assays.tsv'
+    phage_host_relationships: '{results_dir}/metadata/phage_host_relationships.tsv'
   clusters:
     ani: '{results_dir}/clusters/phage_ani.tsv'
     clusters: '{results_dir}/clusters/phage_clusters.tsv'
@@ -213,6 +223,8 @@ outputs:
     rbp_external_evidence_normalization_self_test_report: '{results_dir}/validation/rbp_external_evidence_normalization_self_test_report.tsv'
     defense_external_evidence_normalization_self_test: '{results_dir}/validation/defense_external_evidence_normalization_self_test.tsv'
     defense_external_evidence_normalization_self_test_report: '{results_dir}/validation/defense_external_evidence_normalization_self_test_report.tsv'
+    phage_host_assay_import_self_test: '{results_dir}/validation/phage_host_assay_import_self_test.tsv'
+    phage_host_assay_import_self_test_report: '{results_dir}/validation/phage_host_assay_import_self_test_report.tsv'
     phage_host_assay_validation_self_test: '{results_dir}/validation/phage_host_assay_validation_self_test.tsv'
     phage_host_assay_validation_self_test_report: '{results_dir}/validation/phage_host_assay_validation_self_test_report.tsv'
     phage_host_assay_validation: '{results_dir}/validation/phage_host_assay_validation.tsv'

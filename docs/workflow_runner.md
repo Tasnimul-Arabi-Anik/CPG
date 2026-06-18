@@ -199,6 +199,12 @@ The runner writes `results/validation/workflow_config_self_test.tsv` through `st
 
 The runner writes `results/validation/source_export_validation_self_test.tsv` through `stage_9_source_export_validation_self_test`. This stage creates temporary reviewed-export examples and verifies that malformed year, GC, lifestyle, and identity fields are blocked before source import.
 
+## Phage-Host Assay Import
+
+The runner writes `results/metadata/phage_host_assays.tsv`, `results/metadata/phage_host_relationships.tsv`, and `results/qc/assay_import_report.tsv` through `stage_0_assay_imports`. These profile-local files are generated from reviewed assay source exports and remain header-only until tested interaction matrices are curated.
+
+The runner also writes `results/validation/phage_host_assay_import_self_test.tsv` through `stage_9_phage_host_assay_import_self_test`. This self-test verifies header-only imports, populated assay imports, derived tested-host relationships, malformed input blocking, path-collision rejection, and output preservation on failure.
+
 ## Phage-Host Assay Validation
 
 The runner writes `results/validation/phage_host_assay_validation.tsv`, `results/validation/phage_host_relationship_validation.tsv`, and `results/validation/phage_host_assay_validation_report.tsv` through `stage_9_phage_host_assay_validation`. Header-only assay and relationship tables pass as schema scaffolds, but they do not support host-range or productive-infection claims.

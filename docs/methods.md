@@ -307,6 +307,13 @@ A populated fixture-backed smoke test uses the same runner and writes under `res
 python scripts/run_workflow.py --config config/workflow.mock.yaml
 ```
 
+
+## Phage-Host Assay Source Import
+
+Tested phage-host outcomes are handled as a separate reviewed source layer, not as ordinary phage or host metadata. `scripts/import_phage_host_assays.py` reads `config/assay_imports.yaml`, normalizes reviewed assay source exports, and writes profile-local canonical tables under `results/<profile>/metadata/`. The same step can derive `tested_assay_host` relationship rows, but those relationships remain assay provenance rather than inferred infectivity labels.
+
+Header-only assay exports are valid for mock and seed plumbing, but they do not support H1/H3/H4 biological claims. Populated rows must explicitly distinguish `tested=true` negatives from untested pairs, identify the study/panel/assay type, and carry a source reference. The canonical imported tables are checked again by `scripts/validate_phage_host_assays.py` before model or readiness audits consume them.
+
 ## Stage 1: Dataset Curation
 
 Input records are listed in `config/samples.tsv`. The manifest builder validates required columns, unique genome identifiers, record types, numeric genome length, GC percentage, and optional local raw-sequence paths.

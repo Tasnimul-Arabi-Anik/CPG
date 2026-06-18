@@ -51,6 +51,9 @@ jobs:
           python scripts/self_test_defense_external_evidence_normalization.py \
             --output results/validation/defense_external_evidence_normalization_self_test.tsv \
             --report-output results/validation/defense_external_evidence_normalization_self_test_report.tsv
+          python scripts/self_test_phage_host_assay_import.py \
+            --output results/validation/phage_host_assay_import_self_test.tsv \
+            --report-output results/validation/phage_host_assay_import_self_test_report.tsv
           python scripts/self_test_phage_host_assay_validation.py \
             --output results/validation/phage_host_assay_validation_self_test.tsv \
             --report-output results/validation/phage_host_assay_validation_self_test_report.tsv

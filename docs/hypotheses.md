@@ -1,6 +1,6 @@
 # Hypothesis-to-Analysis Map
 
-This map separates metadata associations from tested phage-host outcomes. Host-range prediction, broad-host-range breadth, and productive-infection claims require curated rows in `data/metadata/phage_host_assays.tsv`. Isolation host, reported host, prophage resident host, and predicted host relationships are tracked separately in `data/metadata/phage_host_relationships.tsv` and are not infection labels.
+This map separates metadata associations from tested phage-host outcomes. Host-range prediction, broad-host-range breadth, and productive-infection claims require curated rows in `results/<profile>/metadata/phage_host_assays.tsv`. Isolation host, reported host, prophage resident host, and predicted host relationships are tracked separately in `results/<profile>/metadata/phage_host_relationships.tsv` and are not infection labels.
 
 ## H1a: RBP/Depolymerase Modules Predict K/O Tropism Among Known Positive Associations
 
@@ -29,7 +29,7 @@ Output:
 ## H1b: RBP/Depolymerase Modules Predict Pairwise Receptor Compatibility
 
 Input data:
-- `data/metadata/phage_host_assays.tsv` with tested positive and tested negative pairs;
+- `results/<profile>/metadata/phage_host_assays.tsv` with tested positive and tested negative pairs;
 - host K/O metadata;
 - RBP/depolymerase candidate modules.
 
@@ -79,7 +79,7 @@ Output:
 ## H3: Broad-Host-Range Phages Are Enriched for Modular RBPs and Counter-Defense Genes
 
 Input data:
-- explicit tested host panels from `data/metadata/phage_host_assays.tsv`;
+- explicit tested host panels from `results/<profile>/metadata/phage_host_assays.tsv`;
 - RBP domain architectures;
 - anti-defense candidate genes.
 

@@ -24,8 +24,8 @@ One seed row can satisfy `seed_data_ready`; it cannot satisfy `analysis_ready`, 
 | --- | --- | --- |
 | `phages.tsv` or phage manifest | One phage genome | Atlas, dereplication, annotation, RBP/depolymerase and anti-defense evidence. |
 | `hosts.tsv` or host metadata | One host genome | K/O/ST/AMR/virulence and defense-system evidence. |
-| `data/metadata/phage_host_relationships.tsv` | One non-assay phage-host relationship | Provenance for isolation host, reported host, resident host, predicted host, or assay-panel membership. |
-| `data/metadata/phage_host_assays.tsv` | One tested phage-host pair per study/panel/assay | Response variable for receptor compatibility, host-range breadth, and productive-infection modeling. |
+| `results/<profile>/metadata/phage_host_relationships.tsv` | One non-assay phage-host relationship | Provenance for isolation host, reported host, resident host, predicted host, or assay-panel membership. |
+| `results/<profile>/metadata/phage_host_assays.tsv` | One tested phage-host pair per study/panel/assay | Response variable for receptor compatibility, host-range breadth, and productive-infection modeling. |
 
 ## Hypothesis Contracts
 

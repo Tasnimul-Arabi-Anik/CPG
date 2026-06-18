@@ -41,6 +41,7 @@ STAGE_ORDER = [
     "stage_0_source_query_commands",
     "stage_0_source_export_validation",
     "stage_0_source_imports",
+    "stage_0_assay_imports",
     "stage_0_source_manifest_drift",
     "stage_0_source_plan",
     "stage_0_source_audit",
@@ -94,6 +95,7 @@ STAGE_ORDER = [
     "stage_9_external_evidence_acceptance_self_test",
     "stage_9_rbp_external_evidence_normalization_self_test",
     "stage_9_defense_external_evidence_normalization_self_test",
+    "stage_9_phage_host_assay_import_self_test",
     "stage_9_phage_host_assay_validation_self_test",
     "stage_9_phage_host_assay_validation",
     "stage_9_validation",
@@ -278,6 +280,11 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     source_imports_enabled = nested_get(config, ("source_imports", "enabled"), "false").strip().lower() in {"true", "1", "yes", "on"}
     source_imports_config = configured_path(config, root, ("source_imports", "config"), "config/source_imports.yaml")
     source_imports_report = configured_path(config, root, ("source_imports", "report"), "results/qc/source_import_report.tsv")
+    assay_imports_enabled = nested_get(config, ("assay_imports", "enabled"), "false").strip().lower() in {"true", "1", "yes", "on"}
+    assay_imports_config = configured_path(config, root, ("assay_imports", "config"), "config/assay_imports.yaml")
+    assay_imports_assays = configured_path(config, root, ("assay_imports", "assays_output"), phage_host_assays_input.as_posix())
+    assay_imports_relationships = configured_path(config, root, ("assay_imports", "relationships_output"), phage_host_relationships_input.as_posix())
+    assay_imports_report = configured_path(config, root, ("assay_imports", "report"), "results/qc/assay_import_report.tsv")
     source_manifest_drift_enabled = nested_get(config, ("source_manifest_drift", "enabled"), "false").strip().lower() in {"true", "1", "yes", "on"}
     source_manifest_drift_output = configured_path(config, root, ("source_manifest_drift", "drift"), "results/qc/source_manifest_drift.tsv")
     source_manifest_drift_report = configured_path(config, root, ("source_manifest_drift", "report"), "results/qc/source_manifest_drift_report.tsv")
@@ -508,6 +515,8 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     rbp_external_evidence_normalization_self_test_report = out("validation", "rbp_external_evidence_normalization_self_test_report", "results/validation/rbp_external_evidence_normalization_self_test_report.tsv")
     defense_external_evidence_normalization_self_test = out("validation", "defense_external_evidence_normalization_self_test", "results/validation/defense_external_evidence_normalization_self_test.tsv")
     defense_external_evidence_normalization_self_test_report = out("validation", "defense_external_evidence_normalization_self_test_report", "results/validation/defense_external_evidence_normalization_self_test_report.tsv")
+    phage_host_assay_import_self_test = out("validation", "phage_host_assay_import_self_test", "results/validation/phage_host_assay_import_self_test.tsv")
+    phage_host_assay_import_self_test_report = out("validation", "phage_host_assay_import_self_test_report", "results/validation/phage_host_assay_import_self_test_report.tsv")
     phage_host_assay_validation_self_test = out("validation", "phage_host_assay_validation_self_test", "results/validation/phage_host_assay_validation_self_test.tsv")
     phage_host_assay_validation_self_test_report = out("validation", "phage_host_assay_validation_self_test_report", "results/validation/phage_host_assay_validation_self_test_report.tsv")
     phage_host_assay_validation = out("validation", "phage_host_assay_validation", "results/validation/phage_host_assay_validation.tsv")
@@ -688,6 +697,29 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
                 ],
                 logs_dir / "00_import_source_manifests.log",
                 [source_imports_report],
+            )
+        )
+
+    if assay_imports_enabled:
+        stages.append(
+            Stage(
+                "stage_0_assay_imports",
+                [
+                    python,
+                    script("import_phage_host_assays.py"),
+                    "--config",
+                    assay_imports_config.as_posix(),
+                    "--assays-output",
+                    assay_imports_assays.as_posix(),
+                    "--relationships-output",
+                    assay_imports_relationships.as_posix(),
+                    "--report-output",
+                    assay_imports_report.as_posix(),
+                    "--root",
+                    root.as_posix(),
+                ],
+                logs_dir / "00_import_phage_host_assays.log",
+                [assay_imports_assays, assay_imports_relationships, assay_imports_report],
             )
         )
 
@@ -1912,6 +1944,19 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
             ],
             logs_dir / "09_self_test_defense_external_evidence_normalization.log",
             [defense_external_evidence_normalization_self_test, defense_external_evidence_normalization_self_test_report],
+        ),
+        Stage(
+            "stage_9_phage_host_assay_import_self_test",
+            [
+                python,
+                script("self_test_phage_host_assay_import.py"),
+                "--output",
+                phage_host_assay_import_self_test.as_posix(),
+                "--report-output",
+                phage_host_assay_import_self_test_report.as_posix(),
+            ],
+            logs_dir / "09_self_test_phage_host_assay_import.log",
+            [phage_host_assay_import_self_test, phage_host_assay_import_self_test_report],
         ),
         Stage(
             "stage_9_phage_host_assay_validation_self_test",
