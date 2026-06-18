@@ -31,6 +31,7 @@ ACCEPTANCE_COLUMNS = [
 ]
 REPORT_COLUMNS = ["severity", "item", "message"]
 MISSING = {"", "NA", "N/A", "na", "n/a", "None", "none", "-"}
+PHAGE_LIKE = {"phage", "prophage", "metagenomic_viral_contig"}
 GENERATED_RESULT_PREFIXES = (
     "results/annotations/",
     "results/clusters/",
@@ -121,16 +122,103 @@ def provenance_counts(path: Path) -> tuple[int, int, str]:
     return source_count, notes_count, ";".join(lint) if lint else "NA"
 
 
-def content_lint(root: Path, evidence_id: str, configured_path: Path) -> str:
+def infer_results_dir(evidence_plan: Path) -> Path:
+    return evidence_plan.parent.parent if evidence_plan.parent.name == "qc" else evidence_plan.parent
+
+
+def plan_configured_path(root: Path, plan_rows: list[dict[str, str]], evidence_id: str) -> Path | None:
+    for row in plan_rows:
+        if row.get("evidence_id") == evidence_id and not is_missing(row.get("configured_input_path")):
+            return resolve(root, row.get("configured_input_path", ""))
+    return None
+
+
+def add_column_values(target: set[str], rows: list[dict[str, str]], column: str) -> None:
+    for row in rows:
+        value = row.get(column, "")
+        if not is_missing(value):
+            target.add(value)
+
+
+def build_reference_ids(root: Path, evidence_plan: Path, plan_rows: list[dict[str, str]]) -> dict[str, set[str]]:
+    results_dir = infer_results_dir(evidence_plan)
+    references = {
+        "genome_ids": set(),
+        "phage_genome_ids": set(),
+        "host_genome_ids": set(),
+        "annotation_gene_ids": set(),
+    }
+    _, manifest_rows = read_tsv(results_dir / "qc/phage_genome_manifest.tsv")
+    for row in manifest_rows:
+        genome_id = row.get("genome_id", "")
+        if is_missing(genome_id):
+            continue
+        references["genome_ids"].add(genome_id)
+        record_type = row.get("record_type", "")
+        if record_type in PHAGE_LIKE:
+            references["phage_genome_ids"].add(genome_id)
+        if record_type == "host":
+            references["host_genome_ids"].add(genome_id)
+
+    _, host_rows = read_tsv(results_dir / "host_features/host_metadata.tsv")
+    add_column_values(references["host_genome_ids"], host_rows, "host_genome_id")
+
+    _, annotation_rows = read_tsv(results_dir / "annotations/phage_annotations.tsv")
+    add_column_values(references["annotation_gene_ids"], annotation_rows, "annotation_gene_id")
+    if not references["annotation_gene_ids"]:
+        annotation_input = plan_configured_path(root, plan_rows, "phage_annotation")
+        if annotation_input:
+            _, input_rows = read_tsv(annotation_input)
+            for row in input_rows:
+                if not is_missing(row.get("annotation_gene_id")):
+                    references["annotation_gene_ids"].add(row["annotation_gene_id"])
+                elif not is_missing(row.get("genome_id")) and not is_missing(row.get("gene_id")):
+                    references["annotation_gene_ids"].add(f"{row['genome_id']}|{row['gene_id']}")
+    return references
+
+
+def unknown_values(rows: list[dict[str, str]], columns: list[str], known: set[str]) -> set[str]:
+    if not known:
+        return set()
+    unknown: set[str] = set()
+    for row in rows:
+        for column in columns:
+            value = row.get(column, "")
+            if not is_missing(value) and value not in known:
+                unknown.add(value)
+    return unknown
+
+
+def content_lint(root: Path, evidence_id: str, configured_path: Path, reference_ids: dict[str, set[str]]) -> str:
     lint: list[str] = []
     configured_display = display_path(root, configured_path).replace("\\", "/")
     if any(configured_display.startswith(prefix) for prefix in GENERATED_RESULT_PREFIXES):
         lint.append("configured_path_is_workflow_generated_output")
     fieldnames, rows = read_tsv(configured_path)
-    if evidence_id == "phage_antidefense_candidates" and "evidence_type" in fieldnames:
-        inferred_rows = [row for row in rows if row.get("evidence_type") == "annotation_keyword_inference"]
-        if inferred_rows:
-            lint.append(f"annotation_keyword_inference_rows={len(inferred_rows)}")
+    if evidence_id == "pairwise_similarity":
+        unknown = unknown_values(rows, ["genome_id_1", "genome_id_2"], reference_ids["genome_ids"])
+        if unknown:
+            lint.append(f"unknown_genome_ids={len(unknown)}")
+    if evidence_id == "phage_annotation":
+        unknown = unknown_values(rows, ["genome_id"], reference_ids["genome_ids"])
+        if unknown:
+            lint.append(f"unknown_genome_ids={len(unknown)}")
+    if evidence_id in {"rbp_domain_evidence", "rbp_structural_evidence", "phage_antidefense_candidates"}:
+        unknown = unknown_values(rows, ["annotation_gene_id"], reference_ids["annotation_gene_ids"])
+        if unknown:
+            lint.append(f"unknown_annotation_gene_ids={len(unknown)}")
+    if evidence_id == "phage_antidefense_candidates":
+        unknown = unknown_values(rows, ["phage_genome_id"], reference_ids["phage_genome_ids"])
+        if unknown:
+            lint.append(f"unknown_phage_genome_ids={len(unknown)}")
+        if "evidence_type" in fieldnames:
+            inferred_rows = [row for row in rows if row.get("evidence_type") == "annotation_keyword_inference"]
+            if inferred_rows:
+                lint.append(f"annotation_keyword_inference_rows={len(inferred_rows)}")
+    if evidence_id == "host_defense_systems":
+        unknown = unknown_values(rows, ["host_genome_id", "genome_id", "sample"], reference_ids["host_genome_ids"])
+        if unknown:
+            lint.append(f"unknown_host_genome_ids={len(unknown)}")
     return ";".join(lint) if lint else "NA"
 
 
@@ -174,13 +262,14 @@ def check_acceptance(root: Path, evidence_plan: Path) -> tuple[list[dict[str, st
         report = [{"severity": "error", "item": "external_evidence_acceptance", "message": "Missing evidence plan columns: " + ";".join(missing)}]
         return [], report
 
+    reference_ids = build_reference_ids(root, evidence_plan, plan_rows)
     acceptance: list[dict[str, str]] = []
     for row in plan_rows:
         configured_path_text = row.get("configured_input_path", "")
         configured_path = resolve(root, configured_path_text) if configured_path_text else Path("")
         has_configured_file = bool(configured_path_text and configured_path.exists() and configured_path.is_file())
         source_count, notes_count, lint = provenance_counts(configured_path) if has_configured_file else (0, 0, "NA")
-        evidence_content_lint = content_lint(root, row.get("evidence_id", ""), configured_path) if has_configured_file else "NA"
+        evidence_content_lint = content_lint(root, row.get("evidence_id", ""), configured_path, reference_ids) if has_configured_file else "NA"
         acceptance_status, blocking_issue, next_action = classify(row, source_count, notes_count, lint, evidence_content_lint)
         acceptance.append(
             {

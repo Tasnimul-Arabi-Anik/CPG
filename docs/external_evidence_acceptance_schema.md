@@ -27,7 +27,7 @@ This is an operational acceptance check. It does not prove biological claims and
 | `rows_with_evidence_source` | Rows with `evidence_source`, `tool`, or `evidence` populated. |
 | `rows_with_notes` | Rows with `notes` populated. |
 | `provenance_lint` | Missing provenance columns or missing populated provenance values. |
-| `content_lint` | Evidence-specific content problems, such as workflow-generated result paths or keyword-inference anti-defense rows configured as production evidence. |
+| `content_lint` | Evidence-specific content problems, such as workflow-generated result paths, keyword-inference anti-defense rows configured as production evidence, or IDs that do not resolve against current workflow manifest/annotation/host tables. |
 | `acceptance_status` | Operational status for this evidence layer. |
 | `blocking_issue` | Whether this layer currently blocks production evidence readiness. |
 | `next_action` | Concrete next action. |
@@ -50,4 +50,4 @@ This is an operational acceptance check. It does not prove biological claims and
 
 ## Interpretation
 
-Rows with `accepted` or `accepted_with_provenance_lint` can be consumed by workflow stages, but only the full study-readiness, hypothesis-coverage, traceability, and claim-support audits determine whether a manuscript claim can be strengthened. Rows marked `content_rejected` must not be configured as accepted production evidence; this currently guards against circular workflow-generated outputs and keyword-only anti-defense inference.
+Rows with `accepted` or `accepted_with_provenance_lint` can be consumed by workflow stages, but only the full study-readiness, hypothesis-coverage, traceability, and claim-support audits determine whether a manuscript claim can be strengthened. Rows marked `content_rejected` must not be configured as accepted production evidence; this currently guards against circular workflow-generated outputs, keyword-only anti-defense inference, and evidence IDs that do not resolve against the current manifest, annotation table, or host metadata when those reference tables are available.

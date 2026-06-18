@@ -41,6 +41,7 @@ The self-test covers:
 - schema-invalid configured evidence remaining blocking;
 - missing production tool/input remaining blocking;
 - keyword-inference anti-defense rows rejected as production evidence;
-- workflow-generated result paths rejected as production external-evidence inputs.
+- workflow-generated result paths rejected as production external-evidence inputs;
+- unknown genome, annotation-gene, phage-genome, and host-genome identifiers rejected when current workflow reference tables are available.
 
 This self-test validates the acceptance gate logic only. It does not validate real external evidence or support biological claims.

@@ -104,12 +104,15 @@ def check_case(
     expected_content_lint_contains: str = "",
     evidence_id: str | None = None,
     evidence_subpath: str | None = None,
+    reference_files: dict[str, str] | None = None,
 ) -> dict[str, str]:
     evidence_path: Path | None = None
     if evidence_body is not None:
         evidence_path = tmpdir / (evidence_subpath or f"{test_id}.tsv")
         write_text(evidence_path, evidence_body)
-    plan_path = tmpdir / f"{test_id}_plan.tsv"
+    for reference_path, reference_body in (reference_files or {}).items():
+        write_text(tmpdir / reference_path, reference_body)
+    plan_path = tmpdir / f"results/qc/{test_id}_plan.tsv"
     plan_evidence_id = evidence_id or test_id
     write_tsv(plan_path, PLAN_COLUMNS, [plan_row(tmpdir, plan_evidence_id, evidence_path, evidence_status, schema_status, configured_rows)])
     rows, _ = acceptance.check_acceptance(tmpdir, plan_path)
@@ -221,6 +224,71 @@ def run_tests() -> list[dict[str, str]]:
                 expected_content_lint_contains="configured_path_is_workflow_generated_output",
                 evidence_id="pairwise_similarity",
                 evidence_subpath="results/defense_systems/phage_antidefense_candidates.tsv",
+            ),
+            check_case(
+                tmpdir,
+                "reject_unknown_pairwise_genome",
+                "pairwise evidence with an unknown genome ID is rejected",
+                "genome_id_1\tgenome_id_2\tidentity_percent\tcoverage_percent\tmethod\tevidence_source\tnotes\nphage_1\tmissing_phage\t95\t90\tmash\ttool\treviewed\n",
+                "provided_input_ready",
+                "pass",
+                "1",
+                "content_rejected",
+                "true",
+                expected_content_lint_contains="unknown_genome_ids=1",
+                evidence_id="pairwise_similarity",
+                reference_files={
+                    "results/qc/phage_genome_manifest.tsv": "record_type\tgenome_id\nphage\tphage_1\n",
+                },
+            ),
+            check_case(
+                tmpdir,
+                "reject_unknown_annotation_gene",
+                "RBP domain evidence with an unknown annotation_gene_id is rejected",
+                "annotation_gene_id\tdomain_id\tdomain_name\tevidence_source\tnotes\nphage_1|bad_gene\tPF0001\ttail fiber\thmmer\treviewed\n",
+                "provided_input_ready",
+                "pass",
+                "1",
+                "content_rejected",
+                "true",
+                expected_content_lint_contains="unknown_annotation_gene_ids=1",
+                evidence_id="rbp_domain_evidence",
+                reference_files={
+                    "results/annotations/phage_annotations.tsv": "genome_id\tannotation_gene_id\nphage_1\tphage_1|good_gene\n",
+                },
+            ),
+            check_case(
+                tmpdir,
+                "reject_unknown_phage_antidefense_id",
+                "phage anti-defense evidence with an unknown phage genome ID is rejected",
+                "antidefense_class\tphage_genome_id\tannotation_gene_id\tevidence_type\tevidence_source\tnotes\nanti_restriction\tmissing_phage\tphage_1|gene_1\treviewed_profile_hit\ttool\treviewed\n",
+                "provided_input_ready",
+                "pass",
+                "1",
+                "content_rejected",
+                "true",
+                expected_content_lint_contains="unknown_phage_genome_ids=1",
+                evidence_id="phage_antidefense_candidates",
+                reference_files={
+                    "results/qc/phage_genome_manifest.tsv": "record_type\tgenome_id\nphage\tphage_1\n",
+                    "results/annotations/phage_annotations.tsv": "genome_id\tannotation_gene_id\nphage_1\tphage_1|gene_1\n",
+                },
+            ),
+            check_case(
+                tmpdir,
+                "reject_unknown_host_defense_id",
+                "host defense evidence with an unknown host genome ID is rejected",
+                "system\ttype\thost_genome_id\tevidence_source\tnotes\nRM\trestriction-modification\tmissing_host\tdefensefinder\treviewed\n",
+                "provided_input_ready",
+                "pass",
+                "1",
+                "content_rejected",
+                "true",
+                expected_content_lint_contains="unknown_host_genome_ids=1",
+                evidence_id="host_defense_systems",
+                reference_files={
+                    "results/host_features/host_metadata.tsv": "host_genome_id\nknown_host\n",
+                },
             ),
         ]
 
