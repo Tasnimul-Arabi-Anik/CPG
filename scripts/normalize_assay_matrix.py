@@ -183,11 +183,13 @@ def load_mapping(path: Path, entity_type: str) -> tuple[dict[str, str], list[str
         review_status = norm_lower(row.get("review_status") or "reviewed")
         if is_missing(source_id) and is_missing(canonical_id):
             continue
-        if is_missing(source_id) or is_missing(canonical_id):
-            raise MatrixNormalizationError(f"{entity_type} mapping row {index} must include source_id and canonical_id.")
+        if is_missing(source_id):
+            raise MatrixNormalizationError(f"{entity_type} mapping row {index} must include source_id.")
         if review_status not in REVIEWED_STATUSES:
             warnings.append(f"{entity_type} mapping row {index} has non-reviewed status {review_status}; mapping skipped for {source_id}.")
             continue
+        if is_missing(canonical_id):
+            raise MatrixNormalizationError(f"{entity_type} mapping row {index} is reviewed but missing canonical_id.")
         previous = mapping.get(source_id)
         if previous and previous != canonical_id:
             raise MatrixNormalizationError(f"{entity_type} source_id maps to multiple canonical IDs: {source_id}")

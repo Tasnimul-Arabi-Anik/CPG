@@ -57,6 +57,9 @@ jobs:
           python scripts/self_test_assay_matrix_normalization.py \
             --output results/validation/assay_matrix_normalization_self_test.tsv \
             --report-output results/validation/assay_matrix_normalization_self_test_report.tsv
+          python scripts/self_test_assay_matrix_mapping_templates.py \
+            --output results/validation/assay_matrix_mapping_template_self_test.tsv \
+            --report-output results/validation/assay_matrix_mapping_template_self_test_report.tsv
           python scripts/self_test_phage_host_assay_validation.py \
             --output results/validation/phage_host_assay_validation_self_test.tsv \
             --report-output results/validation/phage_host_assay_validation_self_test_report.tsv
