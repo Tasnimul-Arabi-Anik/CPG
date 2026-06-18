@@ -75,8 +75,13 @@ python scripts/run_workflow.py --config config/workflow.yaml --stages stage_1_ma
 - `stage_6_defense_counterdefense`
 - `stage_7_models`
 - `stage_8_figures`
-- `stage_9_validation`
 - `stage_9_source_export_validation_self_test`
+- `stage_9_external_evidence_acceptance_self_test`
+- `stage_9_rbp_external_evidence_normalization_self_test`
+- `stage_9_defense_external_evidence_normalization_self_test`
+- `stage_9_phage_host_assay_validation_self_test`
+- `stage_9_phage_host_assay_validation`
+- `stage_9_validation`
 - `stage_10_study_readiness`
 - `stage_11_hypothesis_traceability`
 - `stage_11_claim_support_audit`
@@ -106,6 +111,8 @@ Optional upstream evidence tables are configured under `inputs`:
 - `kaptive_input`
 - `host_defense_input`
 - `phage_antidefense_input`
+- `phage_host_assays`
+- `phage_host_relationships`
 
 Leave optional paths blank until the corresponding upstream tool output exists. If a path is supplied, the runner checks that it exists before starting the relevant stage.
 
@@ -162,6 +169,13 @@ The runner writes `results/qc/source_post_acceptance_plan.tsv` through `stage_0_
 ## Source Export Validation Self-Test
 
 The runner writes `results/validation/source_export_validation_self_test.tsv` through `stage_9_source_export_validation_self_test`. This stage creates temporary reviewed-export examples and verifies that malformed year, GC, lifestyle, and identity fields are blocked before source import.
+
+
+## Phage-Host Assay Validation
+
+The runner writes `results/validation/phage_host_assay_validation.tsv`, `results/validation/phage_host_relationship_validation.tsv`, and `results/validation/phage_host_assay_validation_report.tsv` through `stage_9_phage_host_assay_validation`. Header-only assay and relationship tables pass as schema scaffolds, but they do not support host-range or productive-infection claims.
+
+The runner also writes `results/validation/phage_host_assay_validation_self_test.tsv` through `stage_9_phage_host_assay_validation_self_test`. This self-test verifies valid positives, tested negatives, untested-negative contradictions, spot-only productive-infection claims, malformed EOP values, duplicates, unknown IDs, and invalid relationship types.
 
 ## Claim Support Audit
 

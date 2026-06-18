@@ -64,6 +64,8 @@ inputs:
   samples: config/samples.tsv
   thresholds: config/thresholds.yaml
   tools: config/tools.yaml
+  phage_host_assays: data/metadata/phage_host_assays.tsv
+  phage_host_relationships: data/metadata/phage_host_relationships.tsv
   pairwise_similarity: data/metadata/external_evidence/blastn_pairwise_similarity.tsv
   annotation_input: data/metadata/external_evidence/genbank_cds_annotations.tsv
   domain_evidence: ''
@@ -206,6 +208,11 @@ outputs:
     rbp_external_evidence_normalization_self_test_report: results/validation/rbp_external_evidence_normalization_self_test_report.tsv
     defense_external_evidence_normalization_self_test: results/validation/defense_external_evidence_normalization_self_test.tsv
     defense_external_evidence_normalization_self_test_report: results/validation/defense_external_evidence_normalization_self_test_report.tsv
+    phage_host_assay_validation_self_test: results/validation/phage_host_assay_validation_self_test.tsv
+    phage_host_assay_validation_self_test_report: results/validation/phage_host_assay_validation_self_test_report.tsv
+    phage_host_assay_validation: results/validation/phage_host_assay_validation.tsv
+    phage_host_relationship_validation: results/validation/phage_host_relationship_validation.tsv
+    phage_host_assay_validation_report: results/validation/phage_host_assay_validation_report.tsv
     study_readiness: results/validation/study_readiness.tsv
     study_readiness_report: results/validation/study_readiness_report.tsv
     readiness_action_plan: results/validation/readiness_action_plan.tsv

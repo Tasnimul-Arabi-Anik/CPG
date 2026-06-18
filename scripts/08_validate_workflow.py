@@ -55,6 +55,11 @@ REQUIRED_OUTPUTS = [
     ("stage_9_rbp_external_evidence_normalization_self_test_report", "results/validation/rbp_external_evidence_normalization_self_test_report.tsv", ["severity", "item", "message"]),
     ("stage_9_defense_external_evidence_normalization_self_test", "results/validation/defense_external_evidence_normalization_self_test.tsv", ["test_id", "scenario", "expected_host_rows", "observed_host_rows", "expected_antidefense_rows", "observed_antidefense_rows", "status"]),
     ("stage_9_defense_external_evidence_normalization_self_test_report", "results/validation/defense_external_evidence_normalization_self_test_report.tsv", ["severity", "item", "message"]),
+    ("stage_9_phage_host_assay_validation_self_test", "results/validation/phage_host_assay_validation_self_test.tsv", ["test_id", "scenario", "expected_blocking_count", "observed_blocking_count", "status"]),
+    ("stage_9_phage_host_assay_validation_self_test_report", "results/validation/phage_host_assay_validation_self_test_report.tsv", ["severity", "item", "message"]),
+    ("stage_9_phage_host_assay_validation", "results/validation/phage_host_assay_validation.tsv", ["scope", "row_number", "entity_id", "check_id", "severity", "status", "blocking_issue", "message"]),
+    ("stage_9_phage_host_relationship_validation", "results/validation/phage_host_relationship_validation.tsv", ["scope", "row_number", "entity_id", "check_id", "severity", "status", "blocking_issue", "message"]),
+    ("stage_9_phage_host_assay_validation_report", "results/validation/phage_host_assay_validation_report.tsv", ["severity", "item", "message"]),
     ("stage_0_source_import_report", "results/qc/source_import_report.tsv", ["severity", "import_id", "input_path", "output_path", "message"]),
     ("stage_0_source_acquisition_plan", "results/qc/source_acquisition_plan.tsv", ["source_id", "record_layer", "manifest_path", "manifest_row_count", "import_input_row_count", "import_input_identity_columns", "import_input_filter_pass_count", "acquisition_status", "next_action"]),
     ("stage_0_source_acquisition_report", "results/qc/source_acquisition_report.tsv", ["severity", "item", "message"]),
@@ -163,6 +168,8 @@ REQUIRED_DOCS = [
     "docs/claim_ledger.md",
     "docs/figure_plan.md",
     "docs/metadata_schema.md",
+    "docs/scientific_analysis_contract.md",
+    "docs/phage_host_assay_schema.md",
     "docs/tool_availability_schema.md",
     "docs/genome_sequence_qc_schema.md",
     "docs/sequence_acquisition_schema.md",
@@ -241,6 +248,8 @@ REQUIRED_SCRIPTS = [
     "scripts/self_test_source_export_validation.py",
     "scripts/self_test_source_work_order_acceptance.py",
     "scripts/self_test_external_evidence_acceptance.py",
+    "scripts/validate_phage_host_assays.py",
+    "scripts/self_test_phage_host_assay_validation.py",
     "scripts/self_test_rbp_external_evidence_normalization.py",
     "scripts/self_test_defense_external_evidence_normalization.py",
     "scripts/import_source_manifests.py",
@@ -313,6 +322,8 @@ REQUIRED_CONFIGS = [
     "config/source_imports.mock.yaml",
     "config/source_queries.yaml",
     "config/source_queries.mock.yaml",
+    "data/metadata/phage_host_assays.tsv",
+    "data/metadata/phage_host_relationships.tsv",
 ]
 
 REQUIRED_FIGURES = [

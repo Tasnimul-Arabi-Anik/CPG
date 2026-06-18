@@ -491,6 +491,20 @@ python scripts/04_integrate_host_features.py \
 
 Optional Kleborate and Kaptive input schemas are documented in `docs/host_feature_schema.md`.
 
+## Phage-Host Assay Contract and Validation
+
+Pairwise host-range prediction requires explicit tested phage-host assay rows. The project therefore separates `data/metadata/phage_host_relationships.tsv`, which records non-assay relationships such as isolation host, reported host, prophage resident host, predicted host, and assay-panel membership, from `data/metadata/phage_host_assays.tsv`, which records tested positive and tested negative interactions.
+
+The validator accepts header-only tables as schema scaffolds but treats them as insufficient for H1b, H3, and H4. Populated assay rows must resolve phage and host IDs to canonical entities, record `tested=true` or `tested=false`, preserve study/provenance fields, keep untested pairs distinct from tested negatives, and avoid inferring productive infection from spot clearing alone.
+
+Implemented command:
+
+```bash
+python scripts/validate_phage_host_assays.py   --assays data/metadata/phage_host_assays.tsv   --relationships data/metadata/phage_host_relationships.tsv   --phage-manifest results/qc/phage_genome_manifest.tsv   --host-metadata results/host_features/host_metadata.tsv   --assay-validation-output results/validation/phage_host_assay_validation.tsv   --relationship-validation-output results/validation/phage_host_relationship_validation.tsv   --report-output results/validation/phage_host_assay_validation_report.tsv   --root .
+```
+
+`self_test_phage_host_assay_validation.py` covers header-only tables, valid positives, tested negatives, untested-negative contradictions, spot-only productive-infection claims, malformed EOP values, duplicates, unknown IDs, and invalid relationship types. Output schemas are documented in `docs/phage_host_assay_schema.md`, and the scientific interpretation contract is documented in `docs/scientific_analysis_contract.md`.
+
 ## Host Defense Run Handoff
 
 After host feature integration, `scripts/create_host_defense_run_handoff.py` creates a DefenseFinder/PADLOC run manifest for reviewed host genome records with local FASTA files. The manifest and command file are production handoffs only; host defense calls are not accepted until reviewed tool output is normalized and configured as `inputs.host_defense_input`.
@@ -548,7 +562,7 @@ python scripts/06_compare_feature_models.py \
   --report-output results/models/model_report.tsv
 ```
 
-The current model layer is a reproducible scaffold. It also writes `results/models/hypothesis_summary.tsv`, a one-row-per-hypothesis evidence table that links H1-H6 to model rows, metrics, claim status, and interpretation guardrails. It does not claim true host-range prediction without experimental infectivity labels.
+The current model layer is a reproducible scaffold. It also writes `results/models/hypothesis_summary.tsv`, a one-row-per-hypothesis evidence table that links H1-H6 to model rows, metrics, claim status, and interpretation guardrails. It does not claim true host-range prediction without experimental infectivity labels. Current compatibility-feature summaries must not be interpreted as H4 biological targets because they are derived from receptor/defense feature availability rather than observed productive-infection outcomes.
 
 ## Stage 8: Figure Source and Draft SVG Generation
 
@@ -582,7 +596,7 @@ Figure output schemas are documented in `docs/figure_generation_schema.md`.
 
 ## Stage 9: Workflow Validation and Manuscript-Readiness Audit
 
-The validation script audits required outputs, required columns, documentation files, script compilation, figure source files, source query/acquisition plans, and H1-H6 hypothesis coverage in the model comparison table. Missing files or schema mismatches are errors. Empty but schema-valid scaffold outputs are warnings.
+The validation script audits required outputs, required columns, documentation files, script compilation, figure source files, assay validation outputs, source query/acquisition plans, and H1-H6 hypothesis coverage in the model comparison table. Missing files or schema mismatches are errors. Empty but schema-valid scaffold outputs are warnings.
 
 Implemented command:
 
