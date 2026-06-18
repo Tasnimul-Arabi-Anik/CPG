@@ -25,7 +25,7 @@
 
 `phagehostlearn_2024_external_files.tsv` contains one row per manifest file with observed file size/checksums when present and status values such as `local_file_missing`, `checksum_verified`, `size_mismatch`, `md5_mismatch`, or `sha256_mismatch`.
 
-The companion report records summary counts and repeats the claim boundary: checksum verification supports benchmark-file provenance only; it does not approve assay rows or biological claims. The host genome archive is large and may remain `local_file_missing` or `sha256_pending_local_review` until a local reviewer downloads it and records the SHA-256.
+The companion report records summary counts and repeats the claim boundary: checksum verification supports benchmark-file provenance only; it does not approve assay rows or biological claims. The host genome archive is large and may remain `local_file_missing` or `sha256_pending_local_review` until a local reviewer downloads it and records the SHA-256. Its manifest command uses resumable `curl -C -` to a `.part` file and only moves that file to the final expected path after completion, because Zenodo downloads may be slow or interrupted.
 
 ## Self-Test
 
