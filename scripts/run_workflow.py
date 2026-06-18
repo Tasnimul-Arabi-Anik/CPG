@@ -43,6 +43,8 @@ STAGE_ORDER = [
     "stage_0_source_imports",
     "stage_0_assay_imports",
     "stage_0_source_manifest_drift",
+    "stage_0_phagehostlearn_metadata_support",
+    "stage_0_phagehostlearn_map_review",
     "stage_0_source_plan",
     "stage_0_source_audit",
     "stage_0_source_curation_tasks",
@@ -97,6 +99,8 @@ STAGE_ORDER = [
     "stage_9_defense_external_evidence_normalization_self_test",
     "stage_9_phage_host_assay_import_self_test",
     "stage_9_phage_host_assay_validation_self_test",
+    "stage_9_phagehostlearn_metadata_support_self_test",
+    "stage_9_phagehostlearn_map_review_self_test",
     "stage_9_phage_host_assay_validation",
     "stage_9_validation",
     "stage_10_study_readiness",
@@ -288,6 +292,25 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     source_manifest_drift_enabled = nested_get(config, ("source_manifest_drift", "enabled"), "false").strip().lower() in {"true", "1", "yes", "on"}
     source_manifest_drift_output = configured_path(config, root, ("source_manifest_drift", "drift"), "results/qc/source_manifest_drift.tsv")
     source_manifest_drift_report = configured_path(config, root, ("source_manifest_drift", "report"), "results/qc/source_manifest_drift_report.tsv")
+    phagehostlearn_metadata_support_enabled = nested_get(config, ("phagehostlearn_metadata_support", "enabled"), "false").strip().lower() in {"true", "1", "yes", "on"}
+    phagehostlearn_metadata_matrix = configured_path(config, root, ("phagehostlearn_metadata_support", "matrix"), "data/metadata/external/phagehostlearn/phage_host_interactions.csv")
+    phagehostlearn_metadata_rbpbase = configured_path(config, root, ("phagehostlearn_metadata_support", "rbpbase"), "data/metadata/external/phagehostlearn/RBPbase.csv")
+    phagehostlearn_metadata_locibase = configured_path(config, root, ("phagehostlearn_metadata_support", "locibase"), "data/metadata/external/phagehostlearn/Locibase.json")
+    phagehostlearn_metadata_locibase_invitro = configured_path(config, root, ("phagehostlearn_metadata_support", "locibase_invitro"), "data/metadata/external/phagehostlearn/Locibase_invitro.json")
+    phagehostlearn_metadata_phage_export = configured_path(config, root, ("phagehostlearn_metadata_support", "phage_export"), "data/metadata/source_exports/phagehostlearn_2024_phages.tsv")
+    phagehostlearn_metadata_host_export = configured_path(config, root, ("phagehostlearn_metadata_support", "host_export"), "data/metadata/source_exports/phagehostlearn_2024_hosts.tsv")
+    phagehostlearn_metadata_phage_map = configured_path(config, root, ("phagehostlearn_metadata_support", "phage_map"), "data/metadata/assay_source_exports/phagehostlearn_2024_phage_id_map.tsv")
+    phagehostlearn_metadata_host_map = configured_path(config, root, ("phagehostlearn_metadata_support", "host_map"), "data/metadata/assay_source_exports/phagehostlearn_2024_host_id_map.tsv")
+    phagehostlearn_metadata_support = configured_path(config, root, ("phagehostlearn_metadata_support", "support"), "results/qc/phagehostlearn_2024_metadata_support.tsv")
+    phagehostlearn_metadata_support_report = configured_path(config, root, ("phagehostlearn_metadata_support", "report"), "results/qc/phagehostlearn_2024_metadata_support_report.tsv")
+    phagehostlearn_map_review_enabled = nested_get(config, ("phagehostlearn_map_review", "enabled"), "false").strip().lower() in {"true", "1", "yes", "on"}
+    phagehostlearn_map_review_support = configured_path(config, root, ("phagehostlearn_map_review", "metadata_support"), phagehostlearn_metadata_support.as_posix())
+    phagehostlearn_map_review_phage_export = configured_path(config, root, ("phagehostlearn_map_review", "phage_export"), "data/metadata/source_exports/phagehostlearn_2024_phages.tsv")
+    phagehostlearn_map_review_host_export = configured_path(config, root, ("phagehostlearn_map_review", "host_export"), "data/metadata/source_exports/phagehostlearn_2024_hosts.tsv")
+    phagehostlearn_map_review_phage_map = configured_path(config, root, ("phagehostlearn_map_review", "phage_map"), "data/metadata/assay_source_exports/phagehostlearn_2024_phage_id_map.tsv")
+    phagehostlearn_map_review_host_map = configured_path(config, root, ("phagehostlearn_map_review", "host_map"), "data/metadata/assay_source_exports/phagehostlearn_2024_host_id_map.tsv")
+    phagehostlearn_map_review = configured_path(config, root, ("phagehostlearn_map_review", "review"), "results/qc/phagehostlearn_2024_map_review.tsv")
+    phagehostlearn_map_review_report = configured_path(config, root, ("phagehostlearn_map_review", "report"), "results/qc/phagehostlearn_2024_map_review_report.tsv")
     source_plan_enabled = nested_get(config, ("source_plan", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
     source_plan_catalog = configured_path(config, root, ("source_plan", "catalog"), "config/source_catalog.yaml")
     source_plan_imports_config = configured_path(config, root, ("source_plan", "imports_config"), source_imports_config.as_posix())
@@ -519,6 +542,10 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     phage_host_assay_import_self_test_report = out("validation", "phage_host_assay_import_self_test_report", "results/validation/phage_host_assay_import_self_test_report.tsv")
     phage_host_assay_validation_self_test = out("validation", "phage_host_assay_validation_self_test", "results/validation/phage_host_assay_validation_self_test.tsv")
     phage_host_assay_validation_self_test_report = out("validation", "phage_host_assay_validation_self_test_report", "results/validation/phage_host_assay_validation_self_test_report.tsv")
+    phagehostlearn_metadata_support_self_test = out("validation", "phagehostlearn_metadata_support_self_test", "results/validation/phagehostlearn_metadata_support_self_test.tsv")
+    phagehostlearn_metadata_support_self_test_report = out("validation", "phagehostlearn_metadata_support_self_test_report", "results/validation/phagehostlearn_metadata_support_self_test_report.tsv")
+    phagehostlearn_map_review_self_test = out("validation", "phagehostlearn_map_review_self_test", "results/validation/phagehostlearn_map_review_self_test.tsv")
+    phagehostlearn_map_review_self_test_report = out("validation", "phagehostlearn_map_review_self_test_report", "results/validation/phagehostlearn_map_review_self_test_report.tsv")
     phage_host_assay_validation = out("validation", "phage_host_assay_validation", "results/validation/phage_host_assay_validation.tsv")
     phage_host_relationship_validation = out("validation", "phage_host_relationship_validation", "results/validation/phage_host_relationship_validation.tsv")
     phage_host_assay_validation_report = out("validation", "phage_host_assay_validation_report", "results/validation/phage_host_assay_validation_report.tsv")
@@ -741,6 +768,70 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
                 ],
                 logs_dir / "00_audit_source_manifest_drift.log",
                 [source_manifest_drift_output, source_manifest_drift_report],
+            )
+        )
+
+    if phagehostlearn_metadata_support_enabled:
+        stages.append(
+            Stage(
+                "stage_0_phagehostlearn_metadata_support",
+                [
+                    python,
+                    script("audit_phagehostlearn_metadata_support.py"),
+                    "--matrix",
+                    phagehostlearn_metadata_matrix.as_posix(),
+                    "--rbpbase",
+                    phagehostlearn_metadata_rbpbase.as_posix(),
+                    "--locibase",
+                    phagehostlearn_metadata_locibase.as_posix(),
+                    "--locibase-invitro",
+                    phagehostlearn_metadata_locibase_invitro.as_posix(),
+                    "--phage-export",
+                    phagehostlearn_metadata_phage_export.as_posix(),
+                    "--host-export",
+                    phagehostlearn_metadata_host_export.as_posix(),
+                    "--phage-map",
+                    phagehostlearn_metadata_phage_map.as_posix(),
+                    "--host-map",
+                    phagehostlearn_metadata_host_map.as_posix(),
+                    "--support-output",
+                    phagehostlearn_metadata_support.as_posix(),
+                    "--report-output",
+                    phagehostlearn_metadata_support_report.as_posix(),
+                    "--root",
+                    root.as_posix(),
+                ],
+                logs_dir / "00_audit_phagehostlearn_metadata_support.log",
+                [phagehostlearn_metadata_support, phagehostlearn_metadata_support_report],
+            )
+        )
+
+    if phagehostlearn_map_review_enabled:
+        stages.append(
+            Stage(
+                "stage_0_phagehostlearn_map_review",
+                [
+                    python,
+                    script("audit_phagehostlearn_map_review.py"),
+                    "--metadata-support",
+                    phagehostlearn_map_review_support.as_posix(),
+                    "--phage-export",
+                    phagehostlearn_map_review_phage_export.as_posix(),
+                    "--host-export",
+                    phagehostlearn_map_review_host_export.as_posix(),
+                    "--phage-map",
+                    phagehostlearn_map_review_phage_map.as_posix(),
+                    "--host-map",
+                    phagehostlearn_map_review_host_map.as_posix(),
+                    "--review-output",
+                    phagehostlearn_map_review.as_posix(),
+                    "--report-output",
+                    phagehostlearn_map_review_report.as_posix(),
+                    "--root",
+                    root.as_posix(),
+                ],
+                logs_dir / "00_audit_phagehostlearn_map_review.log",
+                [phagehostlearn_map_review, phagehostlearn_map_review_report],
             )
         )
 
@@ -1970,6 +2061,32 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
             ],
             logs_dir / "09_self_test_phage_host_assay_validation.log",
             [phage_host_assay_validation_self_test, phage_host_assay_validation_self_test_report],
+        ),
+        Stage(
+            "stage_9_phagehostlearn_metadata_support_self_test",
+            [
+                python,
+                script("self_test_phagehostlearn_metadata_support.py"),
+                "--output",
+                phagehostlearn_metadata_support_self_test.as_posix(),
+                "--report-output",
+                phagehostlearn_metadata_support_self_test_report.as_posix(),
+            ],
+            logs_dir / "09_self_test_phagehostlearn_metadata_support.log",
+            [phagehostlearn_metadata_support_self_test, phagehostlearn_metadata_support_self_test_report],
+        ),
+        Stage(
+            "stage_9_phagehostlearn_map_review_self_test",
+            [
+                python,
+                script("self_test_phagehostlearn_map_review.py"),
+                "--output",
+                phagehostlearn_map_review_self_test.as_posix(),
+                "--report-output",
+                phagehostlearn_map_review_self_test_report.as_posix(),
+            ],
+            logs_dir / "09_self_test_phagehostlearn_map_review.log",
+            [phagehostlearn_map_review_self_test, phagehostlearn_map_review_self_test_report],
         ),
         Stage(
             "stage_9_phage_host_assay_validation",

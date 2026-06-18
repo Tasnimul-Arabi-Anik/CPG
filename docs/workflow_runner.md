@@ -56,6 +56,8 @@ python scripts/run_workflow.py --config config/workflow.yaml --stages stage_1_ma
 - `stage_0_source_export_validation` when `source_export_validation.enabled: true`
 - `stage_0_source_imports` when `source_imports.enabled: true`
 - `stage_0_source_manifest_drift` when `source_manifest_drift.enabled: true`
+- `stage_0_phagehostlearn_metadata_support` when `phagehostlearn_metadata_support.enabled: true`
+- `stage_0_phagehostlearn_map_review` when `phagehostlearn_map_review.enabled: true`
 - `stage_0_source_plan` when `source_plan.enabled: true`
 - `stage_0_source_audit` when `source_audit.enabled: true`
 - `stage_0_source_curation_tasks` when `source_curation_tasks.enabled: true`
@@ -180,6 +182,10 @@ python scripts/run_workflow.py --config config/workflow.mock.yaml
 This writes populated test outputs under `results/mock/` and stage logs under `logs/mock/`. It is intended to verify that optional pairwise similarity, annotation, domain, structural, host-feature, defense, and anti-defense evidence tables are wired correctly.
 
 The runner writes `results/qc/source_readiness_dashboard.tsv` through `stage_0_source_readiness_dashboard`. This table is the ranked source-curation dashboard that combines export validation, enablement dry-run status, and sample-support preflight blockers.
+
+The runner writes `results/<profile>/qc/phagehostlearn_2024_metadata_support.tsv` through `stage_0_phagehostlearn_metadata_support`. This curation audit compares PhageHostLearn matrix IDs with optional RBPbase and Locibase support files while keeping pending ID maps blocked and non-claim-bearing.
+
+The runner writes `results/<profile>/qc/phagehostlearn_2024_map_review.tsv` through `stage_0_phagehostlearn_map_review`. This curation audit turns metadata-support and map/export status into row-level manual review recommendations without editing the map files.
 
 The runner writes `results/qc/source_curation_work_order.tsv` through `stage_0_source_curation_work_order`. This table converts the source readiness dashboard into concrete reviewed-row curation tasks with required fields, minimum rows, and validation commands.
 
