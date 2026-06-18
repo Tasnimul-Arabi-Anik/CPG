@@ -139,6 +139,8 @@ After Stage 1 manifest generation, the runner writes `results/qc/sequence_acquis
 
 The runner then writes `results/qc/sequence_fetch_manifest.tsv` and `results/qc/sequence_fetch_commands.sh` through `stage_1_sequence_fetch_manifest`. The commands file is a review artifact and is not executed by the workflow.
 
+Stage 5 writes `results/host_features/phage_host_relationships.tsv` as the explicit non-assay relationship table and keeps `results/host_features/phage_host_links.tsv` only as a deprecated compatibility output for current downstream scaffold stages.
+
 After sequence QC, the runner writes `results/qc/external_evidence_plan.tsv` through `stage_1_external_evidence_plan`. This table records whether pairwise similarity, annotation, RBP domain/structural, host-feature, and defense/counter-defense evidence are already configured or still need external tool runs.
 
 The runner then writes `results/qc/external_evidence_template_manifest.tsv` and templates under `results/qc/external_evidence_templates/` through `stage_1_external_evidence_templates`. These are fillable schemas for production evidence TSVs and are not consumed as evidence unless configured under `inputs`.

@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
-import re
 from pathlib import Path
 from typing import Iterable
 
@@ -72,6 +71,18 @@ HOST_METADATA_COLUMNS = [
     "kaptive_status",
     "linked_phage_like_records",
     "linked_species_clusters",
+    "notes",
+]
+
+PHAGE_HOST_RELATIONSHIP_COLUMNS = [
+    "relationship_id",
+    "phage_id",
+    "host_id",
+    "relationship_type",
+    "relationship_status",
+    "relationship_evidence",
+    "source_reference",
+    "confidence",
     "notes",
 ]
 
@@ -154,7 +165,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--host-metadata-output", required=True, help="Output integrated host metadata TSV.")
     parser.add_argument("--kaptive-output", required=True, help="Output normalized Kaptive TSV.")
     parser.add_argument("--kleborate-output", required=True, help="Output normalized Kleborate TSV.")
-    parser.add_argument("--phage-host-links-output", required=True, help="Output phage/prophage to host link TSV.")
+    parser.add_argument("--phage-host-links-output", required=True, help="Deprecated compatibility output for phage/prophage to host metadata links.")
+    parser.add_argument("--phage-host-relationships-output", default="", help="Output explicit non-assay phage-host relationship TSV.")
     parser.add_argument("--report-output", required=True, help="Output integration report TSV.")
     return parser.parse_args()
 
@@ -213,6 +225,72 @@ def host_label(row: dict[str, str]) -> str:
     values = [row.get("host_species", ""), row.get("host_strain", ""), row.get("isolation_host", "")]
     values = [value for value in values if not is_missing(value)]
     return " | ".join(values) if values else ""
+
+def stable_relationship_id(phage_id: str, host_id: str, relationship_type: str, evidence: str) -> str:
+    key = "|".join([phage_id, host_id, relationship_type, evidence]).lower()
+    digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:12]
+    return f"relationship_{digest}"
+
+
+def relationship_type_for(row: dict[str, str], status: str) -> str:
+    record_type = row.get("record_type", "")
+    if record_type == "prophage":
+        return "prophage_resident_host"
+    if not is_missing(row.get("isolation_host")):
+        return "isolation_host"
+    if status in {"source_matches_host_genome_id", "host_species_strain_exact_match", "metadata_only_host_no_genome", "ambiguous_host_species_strain_match"}:
+        return "reported_host"
+    return "predicted_host"
+
+
+def relationship_status_for(status: str, host_id: str) -> str:
+    if status in {"ambiguous_host_species_strain_match", "no_host_metadata"} or is_missing(host_id):
+        return "unresolved"
+    if status == "source_matches_host_genome_id":
+        return "reviewed"
+    return "inferred"
+
+
+def relationship_confidence_for(status: str, relationship_status: str) -> str:
+    if relationship_status == "reviewed":
+        return "high"
+    if status == "host_species_strain_exact_match":
+        return "medium"
+    if relationship_status == "unresolved":
+        return "low"
+    return "medium"
+
+
+def source_reference_for(row: dict[str, str]) -> str:
+    for column in ["source", "accession", "genome_id"]:
+        value = row.get(column, "")
+        if not is_missing(value):
+            return value
+    return "manifest"
+
+
+def build_relationship_row(row: dict[str, str], host_id: str, status: str, note: str) -> dict[str, str] | None:
+    label = host_label(row)
+    if is_missing(host_id) and is_missing(label):
+        return None
+    phage_id = row.get("genome_id", "")
+    relationship_type = relationship_type_for(row, status)
+    relationship_status = relationship_status_for(status, host_id)
+    evidence = status
+    notes = f"{note}; non-assay relationship; not an infectivity label"
+    return {
+        "relationship_id": stable_relationship_id(phage_id, host_id, relationship_type, evidence),
+        "phage_id": phage_id,
+        "host_id": host_id,
+        "relationship_type": relationship_type,
+        "relationship_status": relationship_status,
+        "relationship_evidence": evidence,
+        "source_reference": source_reference_for(row),
+        "confidence": relationship_confidence_for(status, relationship_status),
+        "notes": notes,
+    }
+
+
 
 
 def normalize_kleborate(path_text: str, report: list[dict[str, str]]) -> list[dict[str, str]]:
@@ -433,9 +511,10 @@ def build_phage_host_links(
     manifest_rows: list[dict[str, str]],
     clusters: dict[str, dict[str, str]],
     hosts: dict[str, dict[str, str]],
-) -> list[dict[str, str]]:
+) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
     manifest_host_rows, by_species_strain = manifest_host_index(manifest_rows)
     links = []
+    relationships = []
     linked_by_host: dict[str, set[str]] = {}
     linked_clusters_by_host: dict[str, set[str]] = {}
 
@@ -450,6 +529,9 @@ def build_phage_host_links(
             linked_by_host.setdefault(host_id, set()).add(genome_id)
             if not is_missing(cluster.get("cluster_id")):
                 linked_clusters_by_host.setdefault(host_id, set()).add(cluster["cluster_id"])
+        relationship = build_relationship_row(row, host_id, status, note)
+        if relationship is not None:
+            relationships.append(relationship)
         links.append(
             {
                 "phage_genome_id": genome_id,
@@ -466,7 +548,7 @@ def build_phage_host_links(
                 "ST": host.get("ST", row.get("ST", "")),
                 "AMR_markers": host.get("AMR_markers", row.get("AMR_markers", "")),
                 "virulence_markers": host.get("virulence_markers", row.get("virulence_markers", "")),
-                "notes": note,
+                "notes": note + "; deprecated compatibility output; non-assay relationship; not an infectivity label",
             }
         )
 
@@ -474,7 +556,7 @@ def build_phage_host_links(
         hosts[host_id]["linked_phage_like_records"] = ";".join(sorted(genome_ids))
     for host_id, cluster_ids in linked_clusters_by_host.items():
         hosts[host_id]["linked_species_clusters"] = ";".join(sorted(cluster_ids))
-    return links
+    return links, relationships
 
 
 def build_host_table(
@@ -482,7 +564,7 @@ def build_host_table(
     kleborate_rows: list[dict[str, str]],
     kaptive_rows: list[dict[str, str]],
     clusters: dict[str, dict[str, str]],
-) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+) -> tuple[list[dict[str, str]], list[dict[str, str]], list[dict[str, str]]]:
     hosts: dict[str, dict[str, str]] = {}
     for row in manifest_rows:
         if row.get("record_type") == "host" and not is_missing(row.get("genome_id")):
@@ -490,9 +572,9 @@ def build_host_table(
 
     merge_kleborate(hosts, kleborate_rows)
     merge_kaptive(hosts, kaptive_rows)
-    links = build_phage_host_links(manifest_rows, clusters, hosts)
+    links, relationships = build_phage_host_links(manifest_rows, clusters, hosts)
     host_rows = [hosts[host_id] for host_id in sorted(hosts)]
-    return host_rows, links
+    return host_rows, links, relationships
 
 
 def main() -> int:
@@ -505,20 +587,24 @@ def main() -> int:
         add_report(report, "info", "manifest", f"Loaded {len(manifest_rows)} manifest rows and {len(clusters)} phage-like cluster rows.")
         kleborate_rows = normalize_kleborate(args.kleborate_input, report)
         kaptive_rows = normalize_kaptive(args.kaptive_input, report)
-        host_rows, link_rows = build_host_table(manifest_rows, kleborate_rows, kaptive_rows, clusters)
-        add_report(report, "info", "host_metadata", f"Integrated {len(host_rows)} host metadata rows and {len(link_rows)} phage-host links.")
+        host_rows, link_rows, relationship_rows = build_host_table(manifest_rows, kleborate_rows, kaptive_rows, clusters)
+        add_report(report, "info", "host_metadata", f"Integrated {len(host_rows)} host metadata rows, {len(link_rows)} deprecated phage-host links, and {len(relationship_rows)} explicit relationship rows.")
 
         write_tsv(Path(args.kleborate_output), KLEBORATE_COLUMNS, kleborate_rows)
         write_tsv(Path(args.kaptive_output), KAPTIVE_COLUMNS, kaptive_rows)
         write_tsv(Path(args.host_metadata_output), HOST_METADATA_COLUMNS, host_rows)
         write_tsv(Path(args.phage_host_links_output), PHAGE_HOST_LINK_COLUMNS, link_rows)
+        if not is_missing(args.phage_host_relationships_output):
+            write_tsv(Path(args.phage_host_relationships_output), PHAGE_HOST_RELATIONSHIP_COLUMNS, relationship_rows)
+        else:
+            add_report(report, "warning", "phage_host_relationships", "No relationship output path supplied; wrote deprecated link table only.")
         write_tsv(Path(args.report_output), REPORT_COLUMNS, report)
     except StageError:
         write_tsv(Path(args.report_output), REPORT_COLUMNS, report)
         return 1
 
     error_count = sum(1 for row in report if row["severity"] == "error")
-    print(f"Integrated {len(host_rows)} host metadata rows and {len(link_rows)} phage-host links.")
+    print(f"Integrated {len(host_rows)} host metadata rows, {len(link_rows)} deprecated phage-host links, and {len(relationship_rows)} relationship rows.")
     return 1 if error_count else 0
 
 
