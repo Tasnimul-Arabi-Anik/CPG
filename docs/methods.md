@@ -545,7 +545,7 @@ Optional PADLOC/DefenseFinder-style and phage anti-defense schemas are documente
 
 ## Stage 7: Feature-Set Model Comparison
 
-The model comparison script consumes phage clusters, RBP/depolymerase candidates, phage-host links, and compatibility features. It writes transparent leave-one-out categorical baselines for K/O prediction and compatibility-feature status prediction, plus group summaries for prophage RBP reservoirs, RBP/counter-defense burden, and host background defense burden.
+The model comparison script consumes phage clusters, RBP/depolymerase candidates, phage-host links, and compatibility features. It writes transparent leave-one-out categorical baselines for K/O association proxies plus group summaries for prophage RBP reservoirs, host background defense burden, and exploratory novelty context. H3 and H4 are written as explicit blocked rows until assay-derived host-range breadth and productive-infection outcomes are curated.
 
 Implemented command:
 
@@ -563,7 +563,7 @@ python scripts/06_compare_feature_models.py \
   --report-output results/models/model_report.tsv
 ```
 
-The current model layer is a reproducible scaffold. It also writes `results/models/hypothesis_summary.tsv`, a one-row-per-hypothesis evidence table that links H1-H6 to model rows, metrics, claim status, and interpretation guardrails. It does not claim true host-range prediction without experimental infectivity labels. Current compatibility-feature summaries must not be interpreted as H4 biological targets because they are derived from receptor/defense feature availability rather than observed productive-infection outcomes.
+The current model layer is a reproducible scaffold. It also writes `results/models/hypothesis_summary.tsv`, a one-row-per-hypothesis evidence table that links H1-H6 to model rows, metrics, claim status, and interpretation guardrails. It does not claim true host-range prediction without experimental infectivity labels. `compatibility_feature_status` and `matched_counterdefense_status` are no longer modeled as H4 targets because they are derived from receptor/defense feature availability rather than observed productive-infection outcomes.
 
 ## Stage 8: Figure Source and Draft SVG Generation
 

@@ -24,7 +24,7 @@ Columns:
 - `blocking_for_goal`: whether the row blocks marking the full goal complete.
 - `next_action`: concrete action needed when incomplete.
 
-Current requirements check that the workflow runs from config, outputs are under `results/` with valid schemas, H1-H6 have passing quantitative tests, audited sample support is sufficient, study readiness has no blocking rows, and documentation/claims/limitations/figures pass validation.
+Current requirements check that the workflow runs from config, outputs are under `results/` with valid schemas, H1-H6 have passing quantitative tests, audited sample support is sufficient, study readiness has no blocking rows, and documentation/claims/limitations/figures pass validation. Assay-dependent blocked rows for H3 or H4 intentionally keep the full goal incomplete until valid host-range breadth and productive-infection outcomes are curated.
 
 ## `goal_completion_report.tsv`
 
