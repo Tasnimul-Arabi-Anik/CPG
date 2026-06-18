@@ -339,8 +339,8 @@ REQUIRED_FIGURES = [
 HYPOTHESIS_TESTS = [
     ("H1", "K/O prediction model comparison", lambda row: row.get("hypothesis") == "H1" and row.get("task") in {"predict_K_type", "predict_O_type"}),
     ("H2", "prophage RBP module reservoir summary", lambda row: row.get("analysis_id") == "record_type_vs_rbp_modules"),
-    ("H3", "RBP module versus counter-defense summary", lambda row: row.get("analysis_id") == "rbp_modules_vs_counterdefense"),
-    ("H4", "receptor plus defense/counter-defense model comparison", lambda row: row.get("hypothesis") == "H4" and row.get("feature_set") in {"receptor_plus_defense_counterdefense", "taxonomy_plus_receptor_defense_counterdefense"}),
+    ("H3", "host-range breadth association requires explicit assay panel labels", lambda row: row.get("analysis_id") == "host_range_breadth_blocker" or row.get("target") == "host_range_breadth"),
+    ("H4", "productive-infection model comparison requires explicit assay outcome labels", lambda row: row.get("hypothesis") == "H4" and (row.get("analysis_id") == "productive_infection_receptor_defense_blocker" or row.get("target") == "productive_infection_result")),
     ("H5", "host background versus defense burden summary", lambda row: row.get("analysis_id") == "st_vs_defense_status"),
     ("H6", "source and cluster novelty prioritization summary", lambda row: row.get("analysis_id") in {"source_vs_rbp_novelty", "cluster_size_vs_rbp_novelty"}),
 ]
@@ -606,7 +606,11 @@ def validate_hypotheses(root: Path, results_dir: Path, report: list[dict[str, st
             notes = "quantitative test rows present with at least one ok status"
         else:
             status = "warn"
-            notes = "quantitative test rows present but current data are insufficient or uninformative"
+            blocked_statuses = sorted({row.get("status", "") for row in matching if row.get("status", "").startswith("blocked_")})
+            if blocked_statuses:
+                notes = "assay-dependent test is explicitly blocked: " + ";".join(blocked_statuses)
+            else:
+                notes = "quantitative test rows present but current data are insufficient or uninformative"
         output_rows.append(
             {
                 "hypothesis": hypothesis,

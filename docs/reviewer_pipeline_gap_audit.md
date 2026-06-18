@@ -19,7 +19,7 @@ The current workflow is useful for controlled development and early real-data un
 | RBP/depolymerase evidence | Keyword, synteny, length, and provisional gene-cluster evidence | Product keywords alone are weak for novelty/function | Add domain/profile evidence and structural/remote-homology evidence such as Phold/Foldseek-style annotations | Planned |
 | Host K/O/ST/AMR/virulence | One reviewed host row with K/O/ST metadata | Insufficient host diversity for H1/H2/H5 | Public-scale Klebsiella host panel typed with Kleborate/Kaptive or reviewed equivalent outputs | In progress |
 | Defense/counter-defense | Phage anti-defense inferred from annotation keywords; host defense table empty | Intracellular compatibility claims are weak without host defense calls | DefenseFinder/PADLOC host defense calls and curated phage anti-defense evidence | Planned |
-| Statistical modeling | H3/H4/H6 have passing quantitative scaffold rows; H1/H2/H5 remain warning-level | Current tests are underpowered and partly uninformative | Model comparison after enough K/O-labeled hosts, phage modules, defense systems, and infectivity/host-link labels are available | In progress |
+| Statistical modeling | H3/H4 are explicit blocked rows pending assay outcomes; H1/H2/H5/H6 remain scaffold/proxy tests | Host-range breadth and productive infection cannot be tested without an assay matrix | Import tested phage-host matrices, then model K/O receptor compatibility and productive-infection outcomes with grouped splits | In progress |
 | Claims | Claim ledger blocks biological result claims | Strong claims would overstate bridge evidence | Keep only workflow/resource claims until claim-support audit allows stronger wording | Implemented |
 
 ## Reviewer-Safe Wording

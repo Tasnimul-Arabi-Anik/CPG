@@ -515,6 +515,40 @@ def add_model_results(
         )
 
 
+def add_blocked_test(
+    rows: list[dict[str, str]],
+    hypothesis: str,
+    analysis_id: str,
+    task: str,
+    target: str,
+    feature_set: str,
+    model_type: str,
+    n_samples: int,
+    status: str,
+    notes: str,
+) -> None:
+    rows.append(
+        {
+            "analysis_id": analysis_id,
+            "hypothesis": hypothesis,
+            "task": task,
+            "target": target,
+            "feature_set": feature_set,
+            "model_type": model_type,
+            "n_samples": str(n_samples),
+            "n_classes": "0",
+            "n_features": "0",
+            "coverage": "0.000",
+            "accuracy": "",
+            "macro_f1": "",
+            "baseline_accuracy": "",
+            "delta_vs_baseline": "",
+            "status": status,
+            "notes": notes,
+        }
+    )
+
+
 def add_rate_test(
     rows: list[dict[str, str]],
     feature_rows: list[dict[str, str]],
@@ -665,6 +699,11 @@ def summary_row(
     ok_count = sum(1 for row in rows if row.get("status") == "ok")
     limited_count = sum(1 for row in rows if row.get("status") and row.get("status") != "ok")
     status, claim_status, action, max_n = summary_status(rows)
+    row_statuses = {row.get("status", "") for row in rows}
+    if "blocked_no_host_range_breadth_labels" in row_statuses:
+        action = "Curate phage-host assay panels with tested-host denominators and susceptible-host numerators, then rerun Stage 7."
+    elif "blocked_no_productive_infection_labels" in row_statuses:
+        action = "Curate productive-infection, plaque, or EOP outcomes for tested phage-host pairs, then rerun Stage 7."
     return {
         "hypothesis": hypothesis,
         "primary_question": question,
@@ -703,8 +742,8 @@ def build_hypothesis_summary(
     h1_effect = mean_delta_between(h1_rows, h1_targets, "rbp_depolymerase_modules", "taxonomy_only")
 
     h4_rows = rows_for(model_rows, "H4")
-    h4_primary = first_row([row for row in h4_rows if row.get("feature_set") == "receptor_plus_defense_counterdefense"])
-    h4_targets = ["compatibility_feature_status", "matched_counterdefense_status"]
+    h4_primary = first_row([row for row in h4_rows if row.get("feature_set") == "receptor_plus_defense_counterdefense"], first_row(h4_rows))
+    h4_targets = ["productive_infection_result"]
     h4_metric = mean_accuracy_for(h4_rows, h4_targets, "receptor_plus_defense_counterdefense")
     h4_baseline = mean_accuracy_for(h4_rows, h4_targets, "receptor_only")
     h4_effect = mean_delta_between(h4_rows, h4_targets, "receptor_plus_defense_counterdefense", "receptor_only")
@@ -720,11 +759,11 @@ def build_hypothesis_summary(
         ),
         (
             "H3",
-            "Are RBP-rich phages enriched for counter-defense burden?",
-            "RBP candidate count versus anti-defense count group-rate summary",
-            {"rbp_modules_vs_counterdefense"},
-            "top_label_fraction_range_by_rbp_count_bin",
-            "Host-range breadth cannot be inferred without explicit assay or curated breadth labels.",
+            "Are broad-host-range phages enriched for modular RBPs and counter-defense genes?",
+            "host-range breadth test from explicit assay panel denominators",
+            {"host_range_breadth_blocker"},
+            "host_range_breadth_metric",
+            "Blocked until explicit assay panels provide tested-host denominators and susceptible-host numerators.",
         ),
         (
             "H5",
@@ -761,8 +800,8 @@ def build_hypothesis_summary(
         ),
         summary_row(
             "H4",
-            "Does adding defense/counter-defense improve compatibility prediction over receptor features alone?",
-            "receptor-only versus receptor plus defense/counter-defense model comparison",
+            "Among receptor-compatible tested pairs, do defense/counter-defense features improve productive-infection prediction?",
+            "productive-infection assay model comparison with receptor-only and receptor plus defense/counter-defense feature sets",
             evidence_path,
             h4_rows,
             h4_primary,
@@ -771,7 +810,7 @@ def build_hypothesis_summary(
             h4_baseline,
             h4_effect,
             "receptor_only",
-            "Compatibility features are not productive-infection evidence without host-range assays.",
+            "Blocked until productive-infection, plaque, or EOP outcomes exist; compatibility feature strings are not biological targets.",
         ),
     ]
 
@@ -819,20 +858,18 @@ def run_models(samples: list[dict[str, str]]) -> tuple[list[dict[str, str]], lis
                 samples,
             )
 
-    for target in ["compatibility_feature_status", "matched_counterdefense_status"]:
-        for feature_set, features in COMPATIBILITY_FEATURE_SETS.items():
-            add_model_results(
-                model_rows,
-                feature_rows,
-                error_rows,
-                f"{target}_{feature_set}",
-                "H4",
-                f"predict_{target}",
-                target,
-                feature_set,
-                features,
-                samples,
-            )
+    add_blocked_test(
+        model_rows,
+        "H4",
+        "productive_infection_receptor_defense_blocker",
+        "predict_productive_infection_result",
+        "productive_infection_result",
+        "receptor_plus_defense_counterdefense",
+        "blocked_assay_outcome_required",
+        len(samples),
+        "blocked_no_productive_infection_labels",
+        "H4 requires tested productive-infection, plaque, or EOP outcomes. compatibility_feature_status and matched_counterdefense_status are feature-derived labels and are not valid biological targets.",
+    )
 
     add_rate_test(
         model_rows,
@@ -844,15 +881,17 @@ def run_models(samples: list[dict[str, str]]) -> tuple[list[dict[str, str]], lis
         "record_type",
         "rbp_module_clusters",
     )
-    add_rate_test(
+    add_blocked_test(
         model_rows,
-        feature_rows,
-        samples,
         "H3",
-        "rbp_modules_vs_counterdefense",
-        "rbp_module_counterdefense_summary",
-        "rbp_candidate_count_bin",
-        "phage_antidefense_count_bin",
+        "host_range_breadth_blocker",
+        "test_host_range_breadth_association",
+        "host_range_breadth",
+        "rbp_modularity_plus_counterdefense",
+        "blocked_assay_panel_required",
+        len(samples),
+        "blocked_no_host_range_breadth_labels",
+        "H3 requires assay panels with tested-host denominators and susceptible-host numerators. RBP/counter-defense co-occurrence is not a host-range breadth test.",
     )
     add_rate_test(
         model_rows,
