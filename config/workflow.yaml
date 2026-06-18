@@ -204,6 +204,8 @@ outputs:
     external_evidence_acceptance_self_test_report: results/validation/external_evidence_acceptance_self_test_report.tsv
     rbp_external_evidence_normalization_self_test: results/validation/rbp_external_evidence_normalization_self_test.tsv
     rbp_external_evidence_normalization_self_test_report: results/validation/rbp_external_evidence_normalization_self_test_report.tsv
+    defense_external_evidence_normalization_self_test: results/validation/defense_external_evidence_normalization_self_test.tsv
+    defense_external_evidence_normalization_self_test_report: results/validation/defense_external_evidence_normalization_self_test_report.tsv
     study_readiness: results/validation/study_readiness.tsv
     study_readiness_report: results/validation/study_readiness_report.tsv
     readiness_action_plan: results/validation/readiness_action_plan.tsv

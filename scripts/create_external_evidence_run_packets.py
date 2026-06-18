@@ -114,6 +114,16 @@ def render_packet(root: Path, row: dict[str, str], template: dict[str, str]) -> 
             "",
             "These files are screening instructions only; they are not accepted anti-defense calls and should not be configured as `inputs.phage_antidefense_input`.",
             "",
+            "## Normalization Commands",
+            "",
+            "Reviewed phage anti-defense hit tables can be normalized with `scripts/normalize_defense_external_evidence.py` into the Stage 6 optional input schema.",
+            "",
+            "```bash",
+            "python scripts/normalize_defense_external_evidence.py --phage-antidefense-input <reviewed_antidefense_hits.tsv> --phage-antidefense-format reviewed_hits_tsv --phage-antidefense-output data/metadata/external_evidence/phage_antidefense_candidates.tsv --report-output results/qc/normalize_defense_external_evidence_report.tsv",
+            "```",
+            "",
+            "After review, configure the populated phage anti-defense TSV in `config/workflow.yaml` as `inputs.phage_antidefense_input`. Header-only normalizer outputs are not accepted evidence.",
+            "",
         ]
     host_defense_handoff_lines: list[str] = []
     if evidence_id == "host_defense_systems":
@@ -126,6 +136,16 @@ def render_packet(root: Path, row: dict[str, str], template: dict[str, str]) -> 
             "- DefenseFinder/PADLOC command file: `results/qc/host_defense_run_commands.sh`",
             "",
             "These files are run instructions only; they are not host defense calls and should not be configured as `inputs.host_defense_input`.",
+            "",
+            "## Normalization Commands",
+            "",
+            "Reviewed DefenseFinder/PADLOC-style host-defense tables can be normalized with `scripts/normalize_defense_external_evidence.py` into the Stage 6 optional input schema.",
+            "",
+            "```bash",
+            "python scripts/normalize_defense_external_evidence.py --host-defense-input <reviewed_host_defense.tsv> --host-defense-format defensefinder_tsv --host-defense-output data/metadata/external_evidence/host_defense_systems.tsv --report-output results/qc/normalize_defense_external_evidence_report.tsv",
+            "```",
+            "",
+            "Use `--host-defense-format padloc_tsv` for reviewed PADLOC-style tables. After review, configure the populated host defense TSV in `config/workflow.yaml` as `inputs.host_defense_input`. Header-only normalizer outputs are not accepted evidence.",
             "",
         ]
     protein_handoff_lines: list[str] = []

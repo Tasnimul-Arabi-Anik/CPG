@@ -46,6 +46,7 @@ Each Markdown packet includes:
 - the fillable TSV template path and required columns;
 - advisory production command text;
 - RBP/domain and structural packets include copy-paste normalization commands for reviewed HMMER, Foldseek, Phold, or generic TSV outputs;
+- host-defense and phage anti-defense packets include copy-paste normalization commands for reviewed DefenseFinder/PADLOC-style or curated anti-defense hit TSVs;
 - an acceptance checklist for provenance and missing-value handling;
 - a rerun command for evidence planning, validation, readiness, and claim-support audits.
 

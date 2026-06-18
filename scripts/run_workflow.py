@@ -79,6 +79,7 @@ STAGE_ORDER = [
     "stage_9_source_export_validation_self_test",
     "stage_9_external_evidence_acceptance_self_test",
     "stage_9_rbp_external_evidence_normalization_self_test",
+    "stage_9_defense_external_evidence_normalization_self_test",
     "stage_9_validation",
     "stage_10_study_readiness",
     "stage_10_readiness_actions",
@@ -449,6 +450,8 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     external_evidence_acceptance_self_test_report = out("validation", "external_evidence_acceptance_self_test_report", "results/validation/external_evidence_acceptance_self_test_report.tsv")
     rbp_external_evidence_normalization_self_test = out("validation", "rbp_external_evidence_normalization_self_test", "results/validation/rbp_external_evidence_normalization_self_test.tsv")
     rbp_external_evidence_normalization_self_test_report = out("validation", "rbp_external_evidence_normalization_self_test_report", "results/validation/rbp_external_evidence_normalization_self_test_report.tsv")
+    defense_external_evidence_normalization_self_test = out("validation", "defense_external_evidence_normalization_self_test", "results/validation/defense_external_evidence_normalization_self_test.tsv")
+    defense_external_evidence_normalization_self_test_report = out("validation", "defense_external_evidence_normalization_self_test_report", "results/validation/defense_external_evidence_normalization_self_test_report.tsv")
     study_readiness = out("validation", "study_readiness", "results/validation/study_readiness.tsv")
     study_readiness_report = out("validation", "study_readiness_report", "results/validation/study_readiness_report.tsv")
     readiness_action_plan = out("validation", "readiness_action_plan", "results/validation/readiness_action_plan.tsv")
@@ -1744,6 +1747,19 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
             ],
             logs_dir / "09_self_test_rbp_external_evidence_normalization.log",
             [rbp_external_evidence_normalization_self_test, rbp_external_evidence_normalization_self_test_report],
+        ),
+        Stage(
+            "stage_9_defense_external_evidence_normalization_self_test",
+            [
+                python,
+                script("self_test_defense_external_evidence_normalization.py"),
+                "--output",
+                defense_external_evidence_normalization_self_test.as_posix(),
+                "--report-output",
+                defense_external_evidence_normalization_self_test_report.as_posix(),
+            ],
+            logs_dir / "09_self_test_defense_external_evidence_normalization.log",
+            [defense_external_evidence_normalization_self_test, defense_external_evidence_normalization_self_test_report],
         ),
         Stage(
             "stage_9_validation",

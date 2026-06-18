@@ -745,6 +745,37 @@ python scripts/self_test_rbp_external_evidence_normalization.py \
 
 Self-test schemas are documented in `docs/rbp_external_evidence_normalization_self_test_schema.md`.
 
+## Defense External Evidence Normalization
+
+After external host-defense or phage anti-defense searches are run, `scripts/normalize_defense_external_evidence.py` converts reviewed DefenseFinder/PADLOC-style host-defense outputs and reviewed phage anti-defense hit tables into the exact optional evidence schemas consumed by Stage 6. The normalizer does not run external tools and does not make defense-escape claims; it only standardizes reviewed evidence for `inputs.host_defense_input` and `inputs.phage_antidefense_input`.
+
+Implemented command pattern:
+
+```bash
+python scripts/normalize_defense_external_evidence.py \
+  --host-defense-input results/external/defensefinder/host_defense.tsv \
+  --host-defense-format defensefinder_tsv \
+  --host-defense-output data/metadata/external_evidence/host_defense_systems.tsv \
+  --phage-antidefense-input results/external/antidefense/reviewed_hits.tsv \
+  --phage-antidefense-format reviewed_hits_tsv \
+  --phage-antidefense-output data/metadata/external_evidence/phage_antidefense_candidates.tsv \
+  --report-output results/qc/normalize_defense_external_evidence_report.tsv
+```
+
+Output schemas are documented in `docs/defense_external_evidence_normalization_schema.md`. Host-defense and phage anti-defense outputs can also be written independently, which avoids overwriting one reviewed target TSV while normalizing the other.
+
+The normalization logic is regression-tested with fixture-only scenarios by `scripts/self_test_defense_external_evidence_normalization.py`. The self-test covers generic host-defense TSVs, PADLOC-like alias handling, independent host-only output writing, generic phage anti-defense TSVs with anti-defense class inference, and header-only behavior when no reviewed inputs are supplied.
+
+Implemented self-test command:
+
+```bash
+python scripts/self_test_defense_external_evidence_normalization.py \
+  --output results/validation/defense_external_evidence_normalization_self_test.tsv \
+  --report-output results/validation/defense_external_evidence_normalization_self_test_report.tsv
+```
+
+Self-test schemas are documented in `docs/defense_external_evidence_normalization_self_test_schema.md`.
+
 ## Phage Anti-Defense Screening Handoff
 
 After protein export, `scripts/create_phage_antidefense_screening_handoff.py` writes a screening manifest and command hints for curated phage anti-defense searches. The handoff links `annotation_gene_id` values to the all-protein FASTA and identifies annotation-text priority targets for review. These priority labels are not accepted anti-defense evidence; reviewed HMM/profile, sequence, or structure-informed hits must be normalized and configured as `inputs.phage_antidefense_input`.
