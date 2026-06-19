@@ -299,6 +299,9 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     assay_dataset_audit_enabled = nested_get(config, ("assay_dataset_audit", "enabled"), "false").strip().lower() in {"true", "1", "yes", "on"}
     assay_dataset_audit_output = configured_path(config, root, ("assay_dataset_audit", "audit"), "results/qc/assay_dataset_audit.tsv")
     assay_dataset_audit_report = configured_path(config, root, ("assay_dataset_audit", "report"), "results/qc/assay_dataset_audit_report.tsv")
+    h3_min_assessed_phages = nested_get(config, ("analysis_readiness", "h3_min_assessed_phages"), "20")
+    h3_min_feature_groups = nested_get(config, ("analysis_readiness", "h3_min_feature_groups"), "2")
+    h3_min_group_size = nested_get(config, ("analysis_readiness", "h3_min_group_size"), "5")
     source_plan_enabled = nested_get(config, ("source_plan", "enabled"), "true").strip().lower() in {"true", "1", "yes", "on"}
     source_plan_catalog = configured_path(config, root, ("source_plan", "catalog"), "config/source_catalog.yaml")
     source_plan_imports_config = configured_path(config, root, ("source_plan", "imports_config"), source_imports_config.as_posix())
@@ -485,6 +488,7 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     feature_importance = out("models", "feature_importance", "results/models/feature_importance.tsv")
     prediction_errors = out("models", "prediction_errors", "results/models/prediction_errors.tsv")
     hypothesis_summary = out("models", "hypothesis_summary", "results/models/hypothesis_summary.tsv")
+    assay_feature_coverage = out("qc", "assay_feature_coverage", "results/qc/assay_feature_coverage.tsv")
     model_report = out("models", "report", "results/models/model_report.tsv")
 
     figure_dir = out("figures", "directory", "results/figures")
@@ -1863,6 +1867,26 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
                 compatibility.as_posix(),
                 "--phage-host-assays",
                 phage_host_assays_input.as_posix(),
+                "--sequence-qc",
+                sequence_qc.as_posix(),
+                "--annotations",
+                annotations.as_posix(),
+                "--domain-architectures",
+                domain_architectures.as_posix(),
+                "--host-metadata",
+                host_metadata.as_posix(),
+                "--host-defense",
+                host_defense.as_posix(),
+                "--phage-antidefense",
+                phage_antidefense.as_posix(),
+                "--h3-min-assessed-phages",
+                h3_min_assessed_phages,
+                "--h3-min-feature-groups",
+                h3_min_feature_groups,
+                "--h3-min-group-size",
+                h3_min_group_size,
+                "--assay-feature-coverage-output",
+                assay_feature_coverage.as_posix(),
                 "--model-comparison-output",
                 model_comparison.as_posix(),
                 "--feature-importance-output",
@@ -1875,7 +1899,7 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
                 model_report.as_posix(),
             ],
             logs_dir / "06_compare_feature_models.log",
-            [model_comparison, feature_importance, prediction_errors, hypothesis_summary, model_report],
+            [model_comparison, feature_importance, prediction_errors, hypothesis_summary, assay_feature_coverage, model_report],
         ),
         Stage(
             "stage_8_figures",
@@ -2229,6 +2253,10 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
         "stage_6_defense_counterdefense": [
             ("--host-defense-input", optional_input(config, root, ("inputs", "host_defense_input"))),
             ("--phage-antidefense-input", optional_input(config, root, ("inputs", "phage_antidefense_input"))),
+        ],
+        "stage_7_models": [
+            ("--phage-receptor-support", optional_input(config, root, ("inputs", "phage_receptor_support"))),
+            ("--host-receptor-support", optional_input(config, root, ("inputs", "host_receptor_support"))),
         ],
     }
 

@@ -38,6 +38,10 @@ assay_imports:
 assay_matrix_normalization:
   enabled: false
   config: config/assay_matrix_sources.yaml
+analysis_readiness:
+  h3_min_assessed_phages: 20
+  h3_min_feature_groups: 2
+  h3_min_group_size: 5
 source_plan:
   enabled: true
   catalog: config/source_catalog.yaml
@@ -87,6 +91,8 @@ inputs:
   kaptive_input: data/metadata/external_evidence/kaptive_ko_typing.tsv
   host_defense_input: ''
   phage_antidefense_input: ''
+  phage_receptor_support: ''
+  host_receptor_support: ''
 outputs:
   qc:
     source_query_plan: '{results_dir}/qc/source_query_plan.tsv'
@@ -175,6 +181,7 @@ outputs:
     assay_dataset_audit_report: '{results_dir}/qc/assay_dataset_audit_report.tsv'
     assay_import_report: '{results_dir}/qc/assay_import_report.tsv'
     assay_matrix_normalization_report: '{results_dir}/qc/phagehostlearn_2024_assay_matrix_normalization_report.tsv'
+    assay_feature_coverage: '{results_dir}/qc/assay_feature_coverage.tsv'
   metadata:
     phage_host_assays: '{results_dir}/metadata/phage_host_assays.tsv'
     phage_host_relationships: '{results_dir}/metadata/phage_host_relationships.tsv'

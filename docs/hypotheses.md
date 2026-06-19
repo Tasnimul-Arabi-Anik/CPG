@@ -20,7 +20,7 @@ Primary test:
 - compare taxonomy-only, genome-similarity, RBP/depolymerase, and combined feature sets for K/O tropism among curated positive associations.
 
 Current readiness:
-- association proxy only until assay-positive rows are curated.
+- reviewed spot-positive assay rows exist in the seed profile, but H1a remains blocked for claim use until the corresponding host K/O metadata and production RBP/depolymerase evidence are available.
 
 Output:
 - `results/models/model_comparison.tsv`
@@ -43,10 +43,14 @@ Primary test:
 - compare receptor-feature models against taxonomy and genome-similarity baselines under grouped train/test splits.
 
 Current readiness:
-- blocked until tested phage-host assay rows are populated.
+- seed profile contains 10,006 reviewed PhageHostLearn spot-test pairs, so H1b has an initial-interaction endpoint;
+- Stage 7 writes `spot_interaction_*` screening rows and can use tracked PhageHostLearn RBPbase/Locibase bridge metadata for seed screening features;
+- these are pair-level exact-match checks and are not claim-ready;
+- receptor-feature interpretation remains blocked until `results/<profile>/qc/assay_feature_coverage.tsv` shows adequate production RBP/depolymerase/domain evidence, host K/O/ST receptor features, and grouped cold-host/cold-phage/cold-study evaluation with uncertainty analysis.
 
 Output:
-- future pairwise model rows in `results/models/model_comparison.tsv`.
+- `results/models/model_comparison.tsv` rows `spot_interaction_*`;
+- `results/models/hypothesis_summary.tsv` H1 row.
 
 ## H2: Prophages Are an Under-Sampled Reservoir of Capsule-Recognition Proteins
 
@@ -91,17 +95,19 @@ Required features:
 - anti-defense gene counts or categories.
 
 Primary test:
-- compare modularity and anti-defense burden between broad-range and narrow-range phages after adjusting for panel size and study/panel composition.
+- first retain continuous panel breadth values (`tested_host_count`, `spot_positive_host_count`, `spot_positive_fraction`, Wilson interval for the observed tested-panel spot-positive proportion, `study_id`, and `panel_id`); then compare modularity and anti-defense burden only after feature coverage is actually assessed and minimum group-size thresholds are satisfied.
 
 Current readiness:
-- panel-based spot-test breadth labels are available from the reviewed PhageHostLearn subset in the seed profile; these represent initial-interaction breadth only.
+- panel-based spot-test breadth values are available from the reviewed PhageHostLearn subset in the seed profile; these represent initial-interaction breadth only.
+- Stage 7 reports `descriptive_breadth_available` plus `blocked_feature_not_assessed` for current RBP/counter-defense association rows when assay-phage features have not actually been assessed.
 - biological H3 claims remain blocked until production RBP/depolymerase modularity and explicit counter-defense evidence are available for the assay phages.
 
 Alternative explanation:
 - broad host range may reflect laboratory testing depth rather than biology.
 
 Output:
-- `results/models/model_comparison.tsv` rows `spot_breadth_vs_rbp_candidates` and `spot_breadth_vs_counterdefense_candidates`;
+- `results/<profile>/qc/assay_feature_coverage.tsv` rows `spot_breadth_continuous`, RBP coverage, and counter-defense coverage;
+- `results/models/model_comparison.tsv` rows `spot_breadth_descriptive`, `spot_breadth_vs_rbp_candidates`, and `spot_breadth_vs_counterdefense_candidates`;
 - Figure 3 or Figure 5.
 
 ## H4: Defense/Counter-Defense Improves Productive-Infection Prediction Among Receptor-Compatible Pairs

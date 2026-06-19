@@ -2,7 +2,7 @@
 
 ## Working Title
 
-Structural pangenomics reveals receptor-binding and counter-defense modules shaping Klebsiella phage host range.
+A comparative-genomics framework for receptor-binding and counter-defense modules shaping Klebsiella phage host range.
 
 ## Core Claim
 

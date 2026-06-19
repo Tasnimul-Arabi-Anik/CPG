@@ -6,7 +6,7 @@ This repository is a reproducible seed-data workflow for a Klebsiella phage comp
 
 The workflow now uses base/profile workflow inheritance: `config/workflow.base.yaml` contains shared stage wiring, `workflow.mock.yaml`, `workflow.seed.yaml`, and `workflow.production.yaml` are thin overlays, and `workflow.yaml` aliases the seed profile. The run report records profile, evidence class, resolved config checksum, git commit, and run start time. Production profile execution is fail-closed until production evidence and assay outcomes are populated.
 
-The repository is ready for technical review of the workflow design, data contracts, mock analysis path, and minimum real-data path. It is not yet ready for biological interpretation from real data.
+The repository is ready for technical review of the workflow design, data contracts, mock analysis path, and seed real-data path. It now contains a reviewed PhageHostLearn spot-test outcome layer, but it is not yet ready for manuscript-level biological interpretation because production feature evidence is incomplete.
 
 Current expected state after running the real workflow:
 
@@ -16,7 +16,10 @@ Current expected state after running the real workflow:
 - reviewed seed rows are present for INPHARED, NCBI Virus/GenBank, host-genome, and prophage source layers;
 - checksum-backed raw acquisition manifests exist for current reviewed local FASTA files, but this does not make the tiny seed dataset manuscript-ready;
 - `results/source_builder/samples.tsv` should contain seed real-data rows built from enabled source manifests;
-- real H1-H6 evidence remains limited because the seed dataset is small, most public records still need expansion/deduplication, and production external evidence is incomplete;
+- `results/seed/metadata/phage_host_assays.tsv` should contain 10,006 reviewed PhageHostLearn spot-test rows: 333 positive and 9,673 tested negative;
+- blank PhageHostLearn matrix cells remain untested and productive infection remains `not_measured`;
+- `results/seed/qc/assay_feature_coverage.tsv` should show descriptive spot-breadth availability but missing production K/O/ST, RBP/domain/structural, host-defense, phage-counter-defense, and productive-infection coverage;
+- real H1-H6 evidence remains limited because production external evidence is incomplete and most claims require feature coverage beyond the seed assay outcome layer;
 - `results/validation/goal_completion_audit.tsv` should keep the goal incomplete.
 
 Current expected state after running the mock workflow:
@@ -84,7 +87,9 @@ The current blockers are:
 - expand and deduplicate INPHARED and NCBI cultured-phage sources before atlas-size or source-enrichment interpretation;
 - acquire or reconstruct local FASTA/GenBank sequence files for metadata-only rows using the generated sequence-fetch manifests and record reviewed checksums in `data/metadata/sequence_acquisition_manifest.tsv`;
 - replace bridge evidence with reviewed production evidence from standardized tools where needed;
-- add accepted RBP domain/structural evidence, host defense evidence, and phage anti-defense evidence;
+- extract or reconstruct benchmark host genomes and run K/O/ST typing for assay hosts;
+- add accepted RBP domain/structural evidence, host defense evidence, and phage anti-defense evidence for the assay benchmark entities;
+- curate productive-infection, plaque, propagation, or EOP outcomes before testing H4;
 - rerun H1-H6 model comparisons after the above evidence layers are accepted.
 
 Inspect these generated reports after each real workflow run:
@@ -118,7 +123,7 @@ Inspect `results/validation/claim_support_audit.tsv` after each workflow run bef
 
 Acceptable current claim:
 
-> The repository implements a reproducible comparative-genomics workflow with seed real-data rows, bridge evidence, and mock validation for testing a two-layer Klebsiella phage host-range hypothesis.
+> The repository implements a reproducible comparative-genomics workflow with reviewed seed spot-test outcomes, bridge evidence, feature-coverage auditing, and mock validation for testing a two-layer Klebsiella phage host-range hypothesis.
 
 Not acceptable yet:
 

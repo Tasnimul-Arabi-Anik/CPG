@@ -1,0 +1,4 @@
+severity	item	message
+info	phage_bridge_metadata	normalized_rows=105; reviewed_phage_map_rows=105
+info	host_bridge_metadata	normalized_rows=200; reviewed_host_map_rows=200
+warning	claim_boundary	RBPbase/Locibase metadata are seed bridge metadata, not production K/O typing, structural annotation, or functional proof.
