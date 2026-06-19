@@ -12,5 +12,8 @@ profile:
   allows_biological_claims: false
   results_directory: results/seed
   claim_scope: workflow_validation_only
+inputs:
+  phage_receptor_support: data/metadata/external_evidence/phagehostlearn_rbpbase_receptor_support.tsv
+  host_receptor_support: data/metadata/external_evidence/phagehostlearn_locibase_host_locus_support.tsv
 sequence_acquisition_manifest:
   manifest: data/metadata/seed_sequence_acquisition_manifest.tsv

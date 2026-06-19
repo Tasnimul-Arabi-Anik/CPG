@@ -167,6 +167,7 @@ REQUIRED_OUTPUTS = [
     ("stage_7_feature_importance", "results/models/feature_importance.tsv", ["analysis_id", "hypothesis", "task", "feature_set", "feature", "association_metric"]),
     ("stage_7_prediction_errors", "results/models/prediction_errors.tsv", ["analysis_id", "task", "target", "feature_set", "sample_id", "true_label", "predicted_label"]),
     ("stage_7_hypothesis_summary", "results/models/hypothesis_summary.tsv", ["hypothesis", "primary_question", "required_test", "matching_model_rows", "ok_model_rows", "summary_status", "claim_status"]),
+    ("stage_7_assay_feature_coverage", "results/qc/assay_feature_coverage.tsv", ["metric", "entity_level", "numerator", "denominator", "coverage_fraction", "evidence_state", "blocking_hypotheses", "next_action"]),
     ("stage_8_figure_manifest", "results/figures/figure_manifest.tsv", ["figure_id", "source_tsv", "draft_svg", "row_count", "status"]),
 ]
 
@@ -183,6 +184,7 @@ REQUIRED_DOCS = [
     "docs/scientific_analysis_contract.md",
     "docs/phage_host_assay_schema.md",
     "docs/phage_host_assay_import_schema.md",
+    "docs/assay_feature_coverage_schema.md",
     "docs/tool_availability_schema.md",
     "docs/genome_sequence_qc_schema.md",
     "docs/sequence_acquisition_schema.md",
@@ -383,7 +385,7 @@ REQUIRED_FIGURES = [
 HYPOTHESIS_TESTS = [
     ("H1", "K/O prediction model comparison", lambda row: row.get("hypothesis") == "H1" and row.get("task") in {"predict_K_type", "predict_O_type"}),
     ("H2", "prophage RBP module reservoir summary", lambda row: row.get("analysis_id") == "record_type_vs_rbp_modules"),
-    ("H3", "host-range breadth association from explicit assay panel labels", lambda row: row.get("analysis_id") == "host_range_breadth_blocker" or row.get("target") in {"host_range_breadth", "spot_host_range_breadth_bin"}),
+    ("H3", "host-range breadth association from explicit assay panel labels", lambda row: row.get("analysis_id") in {"host_range_breadth_blocker", "spot_breadth_descriptive", "spot_breadth_vs_rbp_candidates", "spot_breadth_vs_counterdefense_candidates"} or row.get("target") in {"host_range_breadth", "spot_positive_fraction"}),
     ("H4", "productive-infection model comparison requires explicit assay outcome labels", lambda row: row.get("hypothesis") == "H4" and (row.get("analysis_id") == "productive_infection_receptor_defense_blocker" or row.get("target") == "productive_infection_result")),
     ("H5", "host background versus defense burden summary", lambda row: row.get("analysis_id") == "st_vs_defense_status"),
     ("H6", "source and cluster novelty prioritization summary", lambda row: row.get("analysis_id") in {"source_vs_rbp_novelty", "cluster_size_vs_rbp_novelty"}),

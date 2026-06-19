@@ -5,7 +5,8 @@ This project starts as a computational comparative genomics study. Predictions s
 Known limitations to track:
 
 - Public phage-host metadata may be incomplete or inconsistent.
-- The current repository includes an assay schema, but header-only assay tables do not support host-range breadth, productive-infection, or defense/counter-defense prediction claims.
+- The current seed profile includes reviewed PhageHostLearn spot-test outcomes, which support initial-interaction and panel-breadth screening only. They do not support productive-infection, plaque, EOP, or defense/counter-defense prediction claims.
+- PhageHostLearn RBPbase/Locibase bridge metadata are useful for seed screening coverage, but they are not production structural/domain annotation, Kaptive/Kleborate K/O/ST typing, or functional receptor validation.
 - Isolation host, reported host, prophage resident host, and predicted host relationships must not be treated as tested susceptible or resistant outcomes.
 - Current local BLASTN pairwise similarity evidence is a conservative initial baseline; comprehensive species-like clustering still requires reviewed all-vs-all similarity across the expanded public phage/prophage dataset, preferably with VIRIDIC, Mash, or an equivalent documented method.
 - Checksum-verified seed FASTA files prove local raw-file reproducibility only for those rows; ignored `data/raw/` files still need reviewed acquisition or reconstruction on a clean checkout before production analyses.
@@ -19,3 +20,7 @@ Known limitations to track:
 Each manuscript claim should distinguish observation, computational inference, and experimentally validated conclusion.
 
 Claim wording and remaining speculative claims are tracked explicitly in `docs/claim_ledger.md`. Reviewer-sensitive bridge-versus-production gaps are tracked in `docs/reviewer_pipeline_gap_audit.md`.
+
+## Assay Feature Coverage
+
+The seed profile contains reviewed spot-test outcomes, but most explanatory biological features are not yet production-assessed for the assay benchmark entities. Missing RBP, domain, structural, K/O/ST, defense, or counter-defense evidence must be interpreted as `not_assessed`, not as biological absence. H3 therefore has descriptive spot-breadth values but no supported RBP/counter-defense enrichment claim until production feature coverage is sufficient.

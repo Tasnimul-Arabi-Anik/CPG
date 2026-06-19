@@ -204,7 +204,9 @@ The runner writes `results/validation/source_export_validation_self_test.tsv` th
 
 ## Phage-Host Assay Import
 
-The runner writes `results/metadata/phage_host_assays.tsv`, `results/metadata/phage_host_relationships.tsv`, and `results/qc/assay_import_report.tsv` through `stage_0_assay_imports`. These profile-local files are generated from reviewed assay source exports and remain header-only until tested interaction matrices are curated.
+The runner writes `results/metadata/phage_host_assays.tsv`, `results/metadata/phage_host_relationships.tsv`, and `results/qc/assay_import_report.tsv` through `stage_0_assay_imports`. These profile-local files are generated from reviewed assay source exports. Header-only imports remain valid schema scaffolds, while the seed profile now imports the reviewed PhageHostLearn spot-test matrix as explicit tested positive and tested negative rows.
+
+Stage 7 writes `results/qc/assay_feature_coverage.tsv` from the existing model invocation. This table audits whether the imported assay phages, hosts, and tested pairs have verified sequence, K/O/ST, annotation, RBP, domain, structural, defense, counter-defense, receptor-layer, defense/counter-defense, and productive-infection evidence. It also records continuous spot-breadth rows with Wilson intervals for the observed tested-panel spot-positive proportion.
 
 The runner also writes `results/validation/phage_host_assay_import_self_test.tsv` through `stage_9_phage_host_assay_import_self_test`. This self-test verifies header-only imports, populated assay imports, derived tested-host relationships, malformed input blocking, path-collision rejection, and output preservation on failure.
 

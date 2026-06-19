@@ -2,7 +2,7 @@
 
 ## Working Title
 
-Structural pangenomics reveals receptor-binding and counter-defense modules shaping Klebsiella phage host range.
+A comparative-genomics framework for receptor-binding and counter-defense modules shaping Klebsiella phage host range.
 
 ## Study Motivation
 
@@ -56,6 +56,7 @@ The computational study is ready for manuscript drafting when:
 - all scripts run from a clean checkout;
 - all parameters are in config files;
 - all major outputs are in results/;
+- assay feature coverage is audited so missing biological evidence is not treated as feature absence;
 - all major figures have source data;
 - docs/methods.md describes the pipeline;
 - docs/hypotheses.md maps each hypothesis to a specific test and marks assay-dependent hypotheses blocked until valid outcomes exist;

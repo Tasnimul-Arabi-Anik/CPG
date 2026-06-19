@@ -24,9 +24,15 @@ For another AI or collaborator reviewing the repository, start with `docs/review
 4. RBP/depolymerase discovery
 5. Host K/O/ST/AMR/virulence annotation
 6. Defense/counter-defense annotation
-7. Statistical model comparison
+7. Statistical model comparison and assay feature-coverage audit
 8. Figure generation
 9. Manuscript methods and interpretation
+
+## Current Seed Assay Layer
+
+The seed profile imports 10,006 reviewed PhageHostLearn spot-test phage-host outcomes: 333 spot-positive and 9,673 tested spot-negative pairs. Blank matrix cells remain untested, and `productive_infection_result` remains `not_measured`. These rows support initial-interaction and descriptive panel-breadth audits, not productive-infection or therapeutic claims.
+
+The Stage 7 output `results/<profile>/qc/assay_feature_coverage.tsv` measures how much of that assay matrix has sequence, K/O/ST, RBP, domain, structural, defense, and counter-defense evidence. Missing analysis is reported as `not_assessed`, never as biological zero.
 
 ## Quick Start
 
@@ -68,7 +74,7 @@ python scripts/self_test_source_work_order_acceptance.py   --output results/vali
 python scripts/run_workflow.py --config config/workflow.mock.yaml
 ```
 
-This CI proves that the pipeline scaffold, reviewed-export and source-intake regression tests, and mock H1-H6 workflow run from config. It does not prove that the real biological study is populated or manuscript-ready; real claims still require reviewed source exports and downstream evidence tables.
+This CI proves that the pipeline scaffold, reviewed-export and source-intake regression tests, and mock H1-H6 workflow run from config. The seed profile contains reviewed PhageHostLearn spot-test outcomes, but manuscript claims still require production receptor/RBP, K/O/ST, defense, counter-defense, and productive-infection evidence where relevant.
 
 Audit workflow-core and planned external tool availability:
 
