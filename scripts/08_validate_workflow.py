@@ -719,6 +719,77 @@ def validate_hypotheses(root: Path, results_dir: Path, report: list[dict[str, st
     return output_rows
 
 
+PRODUCTIVE_INFECTION_OBSERVED_VALUES = {"positive", "negative", "inconclusive", "equivocal"}
+
+
+def row_matches(row: dict[str, str], **criteria: str) -> bool:
+    return all(row.get(key, "") == value for key, value in criteria.items())
+
+
+def first_matching_row(rows: list[dict[str, str]], **criteria: str) -> dict[str, str]:
+    for row in rows:
+        if row_matches(row, **criteria):
+            return row
+    return {}
+
+
+def add_seed_assertion(report: list[dict[str, str]], item: str, passed: bool, message: str) -> None:
+    add_report(report, "info" if passed else "error", item, "pass" if passed else "fail", message)
+
+
+def validate_seed_assay_readiness(root: Path, results_dir: Path, workflow_config: Path, report: list[dict[str, str]]) -> None:
+    try:
+        resolved = load_workflow_config(workflow_config, root)
+    except WorkflowConfigError as exc:
+        add_report(report, "warning", "seed_assay_readiness", "warn", f"Could not resolve workflow config for seed assertions: {exc}")
+        return
+    profile = resolved.get("profile", {}) if isinstance(resolved.get("profile", {}), dict) else {}
+    if profile.get("name") != "seed":
+        add_report(report, "info", "seed_assay_readiness", "pass", "Seed-specific assay readiness assertions skipped for non-seed profile.")
+        return
+
+    _, assay_rows = read_tsv(results_dir / "metadata/phage_host_assays.tsv")
+    _, coverage_rows = read_tsv(results_dir / "qc/assay_feature_coverage.tsv")
+    _, model_rows = read_tsv(results_dir / "models/model_comparison.tsv")
+    _, summary_rows = read_tsv(results_dir / "models/hypothesis_summary.tsv")
+
+    spot_rows = [
+        row for row in assay_rows
+        if row.get("tested") == "true" and row.get("assay_type") == "spot" and row.get("spot_result") in {"positive", "negative"}
+    ]
+    spot_positive = sum(1 for row in spot_rows if row.get("spot_result") == "positive")
+    spot_negative = sum(1 for row in spot_rows if row.get("spot_result") == "negative")
+    productive_measured = sum(
+        1
+        for row in spot_rows
+        if row.get("productive_infection_result", "").strip().lower() in PRODUCTIVE_INFECTION_OBSERVED_VALUES
+    )
+
+    rbp_row = first_matching_row(coverage_rows, metric="rbp_candidates", entity_level="unique_phage")
+    k_row = first_matching_row(coverage_rows, metric="host_K_type", entity_level="unique_host")
+    o_row = first_matching_row(coverage_rows, metric="host_O_type", entity_level="unique_host")
+    st_row = first_matching_row(coverage_rows, metric="host_ST", entity_level="unique_host")
+    receptor_row = first_matching_row(coverage_rows, metric="receptor_layer_feature_completeness", entity_level="pair")
+    productive_row = first_matching_row(coverage_rows, metric="productive_infection_outcomes", entity_level="pair")
+    h3_statuses = {row.get("status", "") for row in model_rows if row.get("hypothesis") == "H3"}
+    h4_statuses = {row.get("status", "") for row in model_rows if row.get("hypothesis") == "H4"}
+    h3_summary = first_matching_row(summary_rows, hypothesis="H3")
+
+    add_seed_assertion(report, "seed_assay_rows", len(assay_rows) == 10006, f"assay_rows={len(assay_rows)}; expected=10006")
+    add_seed_assertion(report, "seed_spot_positive", spot_positive == 333, f"spot_positive={spot_positive}; expected=333")
+    add_seed_assertion(report, "seed_spot_negative", spot_negative == 9673, f"spot_negative={spot_negative}; expected=9673")
+    add_seed_assertion(report, "seed_production_rbp_assessed", rbp_row.get("numerator") == "0" and rbp_row.get("denominator") == "105" and rbp_row.get("evidence_state") == "not_assessed", f"rbp_candidates_unique_phage={rbp_row}")
+    add_seed_assertion(report, "seed_host_k_type_coverage", k_row.get("numerator") == "0" and k_row.get("denominator") == "200" and k_row.get("evidence_state") == "not_assessed", f"host_K_type_unique_host={k_row}")
+    add_seed_assertion(report, "seed_host_o_type_coverage", o_row.get("numerator") == "0" and o_row.get("denominator") == "200" and o_row.get("evidence_state") == "not_assessed", f"host_O_type_unique_host={o_row}")
+    add_seed_assertion(report, "seed_host_st_coverage", st_row.get("numerator") == "0" and st_row.get("denominator") == "200" and st_row.get("evidence_state") == "not_assessed", f"host_ST_unique_host={st_row}")
+    add_seed_assertion(report, "seed_receptor_layer_completeness", receptor_row.get("numerator") == "0" and receptor_row.get("denominator") == "10006" and receptor_row.get("evidence_state") == "not_assessed", f"receptor_layer_feature_completeness={receptor_row}")
+    add_seed_assertion(report, "seed_h3_descriptive_breadth", "descriptive_breadth_available" in h3_statuses, "H3 statuses=" + ";".join(sorted(h3_statuses)))
+    add_seed_assertion(report, "seed_h3_feature_block", "blocked_feature_not_assessed" in h3_statuses, "H3 statuses=" + ";".join(sorted(h3_statuses)))
+    add_seed_assertion(report, "seed_h3_claim_status", h3_summary.get("claim_status") == "data_dependent", f"H3 summary={h3_summary}")
+    add_seed_assertion(report, "seed_h4_productive_block", "blocked_no_productive_infection_labels" in h4_statuses, "H4 statuses=" + ";".join(sorted(h4_statuses)))
+    add_seed_assertion(report, "seed_productive_infection_measured", productive_measured == 0 and productive_row.get("numerator") == "0", f"productive_infection_measured={productive_measured}; productive_row={productive_row}")
+
+
 def inventory_outputs(root: Path, results_dir: Path) -> list[dict[str, str]]:
     rows = []
     for path in sorted(results_dir.rglob("*")) if results_dir.exists() else []:
@@ -778,6 +849,7 @@ def main() -> int:
     validate_configs(root, report, workflow_config)
     validate_figures(root, results_dir, report)
     hypothesis_rows = validate_hypotheses(root, results_dir, report)
+    validate_seed_assay_readiness(root, results_dir, workflow_config, report)
 
     if shutil.which("snakemake"):
         add_report(report, "info", "snakemake", "pass", "snakemake is available on PATH.")
