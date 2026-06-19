@@ -44,12 +44,12 @@ Primary test:
 
 Current readiness:
 - seed profile contains 10,006 reviewed PhageHostLearn spot-test pairs, so H1b has an initial-interaction endpoint;
-- Stage 7 writes `spot_interaction_*` screening rows and can use tracked PhageHostLearn RBPbase/Locibase bridge metadata for seed screening features;
-- these are pair-level exact-match checks and are not claim-ready;
+- Stage 7 reports assay-feature coverage and keeps RBPbase/Locibase bridge metadata as seed metadata coverage only;
+- this readiness step does not emit pair-level H1b model-performance rows from bridge metadata;
 - receptor-feature interpretation remains blocked until `results/<profile>/qc/assay_feature_coverage.tsv` shows adequate production RBP/depolymerase/domain evidence, host K/O/ST receptor features, and grouped cold-host/cold-phage/cold-study evaluation with uncertainty analysis.
 
 Output:
-- `results/models/model_comparison.tsv` rows `spot_interaction_*`;
+- `results/<profile>/qc/assay_feature_coverage.tsv` H1b coverage rows;
 - `results/models/hypothesis_summary.tsv` H1 row.
 
 ## H2: Prophages Are an Under-Sampled Reservoir of Capsule-Recognition Proteins

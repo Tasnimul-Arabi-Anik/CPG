@@ -112,6 +112,7 @@ REPORT_COLUMNS = ["severity", "item", "message"]
 
 MISSING_VALUES = {"", "NA", "N/A", "na", "n/a", "None", "none", "-"}
 NON_INFORMATIVE_FEATURE_VALUES = MISSING_VALUES | {"not_assessed", "evidence_rejected"}
+PRODUCTIVE_INFECTION_OBSERVED_VALUES = {"positive", "negative", "inconclusive", "equivocal"}
 
 K_O_FEATURE_SETS = {
     "taxonomy_only": ["species_cluster_id"],
@@ -120,15 +121,6 @@ K_O_FEATURE_SETS = {
     "taxonomy_plus_rbp": ["species_cluster_id", "rbp_module_clusters", "rbp_enzyme_classes"],
 }
 
-SPOT_INTERACTION_FEATURE_SETS = {
-    "taxonomy_only": ["species_cluster_id"],
-    "host_receptor_features": ["K_type", "O_type", "ST", "host_locus_fingerprint_sha256", "host_locus_protein_count_bin"],
-    "phage_receptor_support": ["phage_receptor_support_count_bin", "phage_receptor_support_score_bin"],
-    "host_locus_support": ["host_locus_fingerprint_sha256", "host_locus_protein_count_bin"],
-    "rbp_depolymerase_modules": ["rbp_module_clusters", "rbp_enzyme_classes", "rbp_candidate_count_bin", "phage_receptor_support_count_bin", "phage_receptor_support_score_bin"],
-    "receptor_plus_rbp": ["K_type", "O_type", "ST", "host_locus_fingerprint_sha256", "host_locus_protein_count_bin", "rbp_module_clusters", "rbp_enzyme_classes", "phage_receptor_support_count_bin", "phage_receptor_support_score_bin"],
-    "taxonomy_plus_receptor_rbp": ["species_cluster_id", "K_type", "O_type", "ST", "host_locus_fingerprint_sha256", "host_locus_protein_count_bin", "rbp_module_clusters", "rbp_enzyme_classes", "phage_receptor_support_count_bin", "phage_receptor_support_score_bin"],
-}
 
 COMPATIBILITY_FEATURE_SETS = {
     "receptor_only": ["K_type", "O_type", "ST"],
@@ -373,148 +365,6 @@ def leave_one_out(samples: list[dict[str, str]], target: str, features: list[str
     }
 
 
-def majority_from_counter(counts: Counter[str]) -> str:
-    present = {label: count for label, count in counts.items() if count > 0}
-    if not present:
-        return ""
-    max_count = max(present.values())
-    return sorted(label for label, count in present.items() if count == max_count)[0]
-
-
-def leave_one_out_fast(samples: list[dict[str, str]], target: str, features: list[str]) -> dict[str, object]:
-    eligible = [sample for sample in samples if not is_missing(sample.get(target))]
-    labels = [sample[target] for sample in eligible]
-    global_counts: Counter[str] = Counter(labels)
-    key_counts: dict[tuple[str, ...], Counter[str]] = defaultdict(Counter)
-    key_totals: Counter[tuple[str, ...]] = Counter()
-    for sample in eligible:
-        key = feature_key(sample, features)
-        key_counts[key][sample[target]] += 1
-        key_totals[key] += 1
-
-    predictions = []
-    for sample in eligible:
-        true_label = sample[target]
-        key = feature_key(sample, features)
-        fallback_counts = global_counts.copy()
-        fallback_counts[true_label] -= 1
-        fallback = majority_from_counter(fallback_counts) or majority_label(labels)
-
-        matched_counts = key_counts[key].copy()
-        matched_counts[true_label] -= 1
-        matched_training_count = key_totals[key] - 1
-        if matched_training_count > 0:
-            prediction = majority_from_counter(matched_counts) or fallback
-            used_fallback = False
-        else:
-            prediction = fallback
-            used_fallback = True
-        predictions.append(
-            {
-                "sample": sample,
-                "true_label": true_label,
-                "predicted_label": prediction,
-                "baseline_label": fallback,
-                "matched_training_count": matched_training_count,
-                "used_fallback": used_fallback,
-                "correct": prediction == true_label,
-                "baseline_correct": fallback == true_label,
-            }
-        )
-
-    pred_labels = [row["predicted_label"] for row in predictions]
-    accuracy = sum(1 for row in predictions if row["correct"]) / len(predictions) if predictions else 0.0
-    baseline_accuracy = sum(1 for row in predictions if row["baseline_correct"]) / len(predictions) if predictions else 0.0
-    coverage = sum(1 for row in predictions if not row["used_fallback"]) / len(predictions) if predictions else 0.0
-    status = "ok"
-    if not eligible:
-        status = "no_labeled_samples"
-    elif len(set(labels)) < 2:
-        status = "single_class_uninformative"
-    elif len(eligible) < 3:
-        status = "too_few_samples_interpret_with_caution"
-
-    return {
-        "eligible": eligible,
-        "predictions": predictions,
-        "n_samples": len(eligible),
-        "n_classes": len(set(labels)),
-        "accuracy": accuracy,
-        "baseline_accuracy": baseline_accuracy,
-        "coverage": coverage,
-        "macro_f1": macro_f1(labels, pred_labels) if predictions else 0.0,
-        "status": status,
-    }
-
-
-def grouped_exact_match(samples: list[dict[str, str]], target: str, features: list[str], group_field: str) -> dict[str, object]:
-    eligible = [sample for sample in samples if not is_missing(sample.get(target)) and not is_missing(sample.get(group_field))]
-    labels = [sample[target] for sample in eligible]
-    groups: dict[str, list[dict[str, str]]] = defaultdict(list)
-    for sample in eligible:
-        groups[safe_value(sample.get(group_field, ""))].append(sample)
-
-    predictions = []
-    for group, test_rows in sorted(groups.items()):
-        train_rows = [sample for sample in eligible if safe_value(sample.get(group_field, "")) != group]
-        train_labels = [sample[target] for sample in train_rows]
-        fallback = majority_label(train_labels) or majority_label(labels)
-        key_counts: dict[tuple[str, ...], Counter[str]] = defaultdict(Counter)
-        key_totals: Counter[tuple[str, ...]] = Counter()
-        for train_sample in train_rows:
-            key = feature_key(train_sample, features)
-            key_counts[key][train_sample[target]] += 1
-            key_totals[key] += 1
-        for sample in test_rows:
-            key = feature_key(sample, features)
-            matched_training_count = key_totals[key]
-            if matched_training_count > 0:
-                prediction = majority_from_counter(key_counts[key]) or fallback
-                used_fallback = False
-            else:
-                prediction = fallback
-                used_fallback = True
-            predictions.append(
-                {
-                    "sample": sample,
-                    "true_label": sample[target],
-                    "predicted_label": prediction,
-                    "baseline_label": fallback,
-                    "matched_training_count": matched_training_count,
-                    "used_fallback": used_fallback,
-                    "correct": prediction == sample[target],
-                    "baseline_correct": fallback == sample[target],
-                    "held_out_group": group,
-                }
-            )
-
-    pred_labels = [row["predicted_label"] for row in predictions]
-    accuracy = sum(1 for row in predictions if row["correct"]) / len(predictions) if predictions else 0.0
-    baseline_accuracy = sum(1 for row in predictions if row["baseline_correct"]) / len(predictions) if predictions else 0.0
-    coverage = sum(1 for row in predictions if not row["used_fallback"]) / len(predictions) if predictions else 0.0
-    status = "ok"
-    if not eligible:
-        status = "no_labeled_samples"
-    elif len(set(labels)) < 2:
-        status = "single_class_uninformative"
-    elif len(groups) < 2:
-        status = "insufficient_groups_for_grouped_eval"
-    elif len(eligible) < 3:
-        status = "too_few_samples_interpret_with_caution"
-
-    return {
-        "eligible": eligible,
-        "predictions": predictions,
-        "n_samples": len(eligible),
-        "n_classes": len(set(labels)),
-        "n_groups": len(groups),
-        "accuracy": accuracy,
-        "baseline_accuracy": baseline_accuracy,
-        "coverage": coverage,
-        "macro_f1": macro_f1(labels, pred_labels) if predictions else 0.0,
-        "status": status,
-    }
-
 
 def load_manifest(path: Path) -> dict[str, dict[str, str]]:
     _, rows = read_tsv(path)
@@ -674,74 +524,6 @@ def build_assay_breadth_samples(
                 "spot_positive_fraction_ci95_low": format_float(ci_low),
                 "spot_positive_fraction_ci95_high": format_float(ci_high),
                 "spot_host_range_breadth_bin": spot_breadth_primary_label(tested_count),
-            }
-        )
-    return samples
-
-def build_assay_pair_samples(
-    assay_rows: list[dict[str, str]],
-    manifest: dict[str, dict[str, str]],
-    clusters: dict[str, dict[str, str]],
-    rbp_features: dict[str, dict[str, str]],
-    compatibility: dict[tuple[str, str], dict[str, str]],
-    phage_receptor_support: dict[str, dict[str, str]],
-    host_receptor_support: dict[str, dict[str, str]],
-) -> list[dict[str, str]]:
-    samples: list[dict[str, str]] = []
-    for row in sorted(assay_rows, key=lambda item: item.get("interaction_id", "")):
-        if row.get("tested") != "true":
-            continue
-        if row.get("assay_type") != "spot":
-            continue
-        result = row.get("spot_result", "")
-        if result not in {"positive", "negative"}:
-            continue
-        phage_id = row.get("phage_id", "")
-        host_id = row.get("host_id", "")
-        if is_missing(phage_id) or is_missing(host_id):
-            continue
-
-        phage_manifest = manifest.get(phage_id, {})
-        host_manifest = manifest.get(host_id, {})
-        cluster = clusters.get(phage_id, {})
-        rbp = rbp_features.get(phage_id, {})
-        compat = compatibility.get((phage_id, host_id), {})
-        phage_support = phage_receptor_support.get(phage_id, {})
-        host_support = host_receptor_support.get(host_id, {})
-        samples.append(
-            {
-                "sample_id": row.get("interaction_id", f"{phage_id}|{host_id}|spot"),
-                "phage_genome_id": phage_id,
-                "host_genome_id": host_id,
-                "study_id": row.get("study_id", ""),
-                "panel_id": row.get("panel_id", ""),
-                "study_panel_id": f"{row.get('study_id', '')}|{row.get('panel_id', '')}",
-                "assay_type": row.get("assay_type", ""),
-                "record_type": phage_manifest.get("record_type", "phage"),
-                "species_cluster_id": cluster.get("cluster_id", ""),
-                "representative_id": cluster.get("representative_id", ""),
-                "source": phage_manifest.get("source", ""),
-                "source_group": source_group(phage_manifest),
-                "phage_lifestyle": phage_manifest.get("phage_lifestyle", ""),
-                "host_species": host_manifest.get("host_species", ""),
-                "K_type": compat.get("K_type", "") or host_manifest.get("K_type", ""),
-                "O_type": compat.get("O_type", "") or host_manifest.get("O_type", ""),
-                "ST": compat.get("ST", "") or host_manifest.get("ST", ""),
-                "rbp_module_clusters": rbp.get("rbp_module_clusters", ""),
-                "rbp_enzyme_classes": rbp.get("rbp_enzyme_classes", ""),
-                "rbp_novelty_tiers": rbp.get("rbp_novelty_tiers", ""),
-                "rbp_candidate_count_bin": rbp.get("rbp_candidate_count_bin", "not_assessed"),
-                "rbp_high_confidence_count_bin": rbp.get("rbp_high_confidence_count_bin", "not_assessed"),
-                "phage_receptor_support_status": phage_support.get("phage_receptor_support_status", ""),
-                "phage_receptor_support_count_bin": phage_support.get("phage_receptor_support_count_bin", "not_assessed"),
-                "phage_receptor_support_score_bin": phage_support.get("phage_receptor_support_score_bin", "not_assessed"),
-                "host_receptor_support_status": host_support.get("host_receptor_support_status", ""),
-                "host_locus_fingerprint_sha256": host_support.get("host_locus_fingerprint_sha256", ""),
-                "host_locus_protein_count_bin": host_support.get("host_locus_protein_count_bin", "not_assessed"),
-                "spot_result": result,
-                "productive_infection_result": row.get("productive_infection_result", ""),
-                "outcome_tier": row.get("outcome_tier", ""),
-                "evidence_tier": row.get("evidence_tier", ""),
             }
         )
     return samples
@@ -926,193 +708,6 @@ def add_model_results(
             }
         )
 
-
-def add_assay_pair_screening_results(
-    rows: list[dict[str, str]],
-    feature_rows: list[dict[str, str]],
-    error_rows: list[dict[str, str]],
-    analysis_id: str,
-    feature_set: str,
-    features: list[str],
-    samples: list[dict[str, str]],
-) -> None:
-    result = leave_one_out_fast(samples, "spot_result", features)
-    eligible = result["eligible"]  # type: ignore[assignment]
-    predictions = result["predictions"]  # type: ignore[assignment]
-    feature_keys = {feature_key(sample, features) for sample in eligible}  # type: ignore[arg-type]
-    feature_non_missing = sum(1 for sample in eligible if has_any_feature_value(sample, features))  # type: ignore[arg-type]
-    feature_fraction = feature_non_missing / len(eligible) if eligible else 0.0
-    status = str(result["status"])
-    if status == "ok":
-        if feature_fraction == 0.0 or len(feature_keys) <= 1:
-            status = "blocked_missing_informative_assay_features"
-        else:
-            status = "seed_pair_level_screening_not_claim_ready"
-
-    accuracy = float(result["accuracy"])
-    baseline = float(result["baseline_accuracy"])
-    notes = (
-        "Pair-level exact-match screening baseline on spot-test outcomes only; "
-        "not grouped/cold-split and not a claim-ready H1 result. "
-        f"feature_non_missing_fraction={feature_fraction:.3f}; unique_feature_keys={len(feature_keys)}; "
-        "productive infection remains out of scope."
-    )
-    rows.append(
-        {
-            "analysis_id": analysis_id,
-            "hypothesis": "H1",
-            "task": "predict_spot_interaction",
-            "target": "spot_result",
-            "feature_set": feature_set,
-            "model_type": "pair_level_exact_match_screening_baseline",
-            "n_samples": str(result["n_samples"]),
-            "n_classes": str(result["n_classes"]),
-            "n_features": str(len(features)),
-            "coverage": f"{float(result['coverage']):.3f}",
-            "accuracy": f"{accuracy:.3f}",
-            "macro_f1": f"{float(result['macro_f1']):.3f}",
-            "baseline_accuracy": f"{baseline:.3f}",
-            "delta_vs_baseline": f"{accuracy - baseline:.3f}",
-            "status": status,
-            "notes": notes,
-        }
-    )
-
-    for prediction in predictions:  # type: ignore[assignment]
-        sample = prediction["sample"]
-        error_rows.append(
-            {
-                "analysis_id": analysis_id,
-                "task": "predict_spot_interaction",
-                "target": "spot_result",
-                "feature_set": feature_set,
-                "sample_id": sample.get("sample_id", ""),
-                "phage_genome_id": sample.get("phage_genome_id", ""),
-                "host_genome_id": sample.get("host_genome_id", ""),
-                "true_label": prediction["true_label"],
-                "predicted_label": prediction["predicted_label"],
-                "matched_training_count": str(prediction["matched_training_count"]),
-                "used_fallback": str(prediction["used_fallback"]).lower(),
-                "correct": str(prediction["correct"]).lower(),
-                "features_used": ";".join(f"{feature}={safe_value(sample.get(feature, ''))}" for feature in features),
-                "status": status,
-            }
-        )
-
-    for feature in features:
-        non_missing, unique_count = feature_summary(samples, feature)
-        feature_rows.append(
-            {
-                "analysis_id": analysis_id,
-                "hypothesis": "H1",
-                "task": "predict_spot_interaction",
-                "feature_set": feature_set,
-                "feature": feature,
-                "non_missing_count": str(non_missing),
-                "unique_value_count": str(unique_count),
-                "full_accuracy": f"{accuracy:.3f}",
-                "accuracy_without_feature": "",
-                "delta_accuracy": "",
-                "association_metric": "pair_level_screening_feature_coverage",
-                "association_value": f"{non_missing / len(samples):.3f}" if samples else "0.000",
-                "notes": "Coverage and exact-match screening only; grouped evaluation is required before H1 claims.",
-            }
-        )
-
-
-def add_assay_grouped_results(
-    rows: list[dict[str, str]],
-    feature_rows: list[dict[str, str]],
-    error_rows: list[dict[str, str]],
-    analysis_id: str,
-    feature_set: str,
-    features: list[str],
-    samples: list[dict[str, str]],
-    group_field: str,
-    split_label: str,
-) -> None:
-    result = grouped_exact_match(samples, "spot_result", features, group_field)
-    eligible = result["eligible"]  # type: ignore[assignment]
-    predictions = result["predictions"]  # type: ignore[assignment]
-    feature_keys = {feature_key(sample, features) for sample in eligible}  # type: ignore[arg-type]
-    feature_non_missing = sum(1 for sample in eligible if has_any_feature_value(sample, features))  # type: ignore[arg-type]
-    feature_fraction = feature_non_missing / len(eligible) if eligible else 0.0
-    status = str(result["status"])
-    if status == "ok":
-        if feature_fraction == 0.0 or len(feature_keys) <= 1:
-            status = "blocked_missing_informative_assay_features"
-        else:
-            status = "seed_grouped_screening_not_claim_ready"
-
-    accuracy = float(result["accuracy"])
-    baseline = float(result["baseline_accuracy"])
-    notes = (
-        f"Grouped {split_label} exact-match screening baseline on spot-test outcomes only; "
-        "not claim-ready without production receptor/RBP evidence and uncertainty analysis. "
-        f"groups={result.get('n_groups', 0)}; feature_non_missing_fraction={feature_fraction:.3f}; "
-        f"unique_feature_keys={len(feature_keys)}; productive infection remains out of scope."
-    )
-    rows.append(
-        {
-            "analysis_id": analysis_id,
-            "hypothesis": "H1",
-            "task": "predict_spot_interaction",
-            "target": "spot_result",
-            "feature_set": feature_set,
-            "model_type": f"grouped_exact_match_{split_label}",
-            "n_samples": str(result["n_samples"]),
-            "n_classes": str(result["n_classes"]),
-            "n_features": str(len(features)),
-            "coverage": f"{float(result['coverage']):.3f}",
-            "accuracy": f"{accuracy:.3f}",
-            "macro_f1": f"{float(result['macro_f1']):.3f}",
-            "baseline_accuracy": f"{baseline:.3f}",
-            "delta_vs_baseline": f"{accuracy - baseline:.3f}",
-            "status": status,
-            "notes": notes,
-        }
-    )
-
-    for prediction in predictions:  # type: ignore[assignment]
-        sample = prediction["sample"]
-        error_rows.append(
-            {
-                "analysis_id": analysis_id,
-                "task": "predict_spot_interaction",
-                "target": "spot_result",
-                "feature_set": feature_set,
-                "sample_id": sample.get("sample_id", ""),
-                "phage_genome_id": sample.get("phage_genome_id", ""),
-                "host_genome_id": sample.get("host_genome_id", ""),
-                "true_label": prediction["true_label"],
-                "predicted_label": prediction["predicted_label"],
-                "matched_training_count": str(prediction["matched_training_count"]),
-                "used_fallback": str(prediction["used_fallback"]).lower(),
-                "correct": str(prediction["correct"]).lower(),
-                "features_used": ";".join(f"{feature}={safe_value(sample.get(feature, ''))}" for feature in features) + f";held_out_{group_field}={prediction.get('held_out_group', '')}",
-                "status": status,
-            }
-        )
-
-    for feature in features:
-        non_missing, unique_count = feature_summary(samples, feature)
-        feature_rows.append(
-            {
-                "analysis_id": analysis_id,
-                "hypothesis": "H1",
-                "task": "predict_spot_interaction",
-                "feature_set": feature_set,
-                "feature": feature,
-                "non_missing_count": str(non_missing),
-                "unique_value_count": str(unique_count),
-                "full_accuracy": f"{accuracy:.3f}",
-                "accuracy_without_feature": "",
-                "delta_accuracy": "",
-                "association_metric": f"grouped_{split_label}_feature_coverage",
-                "association_value": f"{non_missing / len(samples):.3f}" if samples else "0.000",
-                "notes": "Grouped screening coverage only; production evidence and uncertainty analysis are required before H1 claims.",
-            }
-        )
 
 
 def add_blocked_test(
@@ -1388,11 +983,15 @@ def has_structural_evidence(row: dict[str, str]) -> bool:
     return any(is_informative_feature_value(value) and value.lower() not in {"absent", "none", "no_structural_evidence"} for value in values)
 
 
-def coverage_state(numerator: int, denominator: int) -> str:
+def coverage_state(detected_count: int, assessed_count: int, denominator: int, rejected_count: int = 0) -> str:
     if denominator <= 0:
         return "not_assessed"
-    if numerator <= 0:
+    if rejected_count > 0 and assessed_count <= 0 and detected_count <= 0:
+        return "evidence_rejected"
+    if assessed_count <= 0:
         return "not_assessed"
+    if detected_count <= 0:
+        return "assessed_zero_detected"
     return "assessed_positive"
 
 
@@ -1458,70 +1057,105 @@ def build_assay_feature_coverage(
     rbp_phages = {row.get("genome_id", "") for row in rbp_rows if not is_missing(row.get("genome_id", ""))}
     domain_phages = {row.get("genome_id", "") for row in rbp_rows + domain_rows if not is_missing(row.get("genome_id", "")) and has_domain_evidence(row)}
     structural_phages = {row.get("genome_id", "") for row in rbp_rows + domain_rows if not is_missing(row.get("genome_id", "")) and has_structural_evidence(row)}
-    host_defense_hosts = row_id_set(host_defense_rows, "host_genome_id")
-    antidefense_phages = row_id_set(phage_antidefense_rows, "phage_genome_id")
+    domain_assessed_phages = {row.get("genome_id", "") for row in domain_rows if not is_missing(row.get("genome_id", ""))}
+    structural_assessed_phages = {row.get("genome_id", "") for row in domain_rows if not is_missing(row.get("genome_id", "")) and any(column in row for column in ["structural_hit", "structural_hit_id", "structural_support", "best_structural_hit"])}
+
+    host_defense_assessed_hosts = row_id_set(host_defense_rows, "host_genome_id")
+    host_defense_detected_hosts = {
+        row.get("host_genome_id", "")
+        for row in host_defense_rows
+        if not is_missing(row.get("host_genome_id", ""))
+        and (
+            parse_int(row.get("host_defense_system_count", "0")) > 0
+            or is_informative_feature_value(row.get("host_defense_types", ""))
+            or is_informative_feature_value(row.get("host_defense_systems", ""))
+        )
+    }
+    antidefense_assessed_phages = row_id_set(phage_antidefense_rows, "phage_genome_id")
+    antidefense_detected_phages = {
+        row.get("phage_genome_id", "")
+        for row in phage_antidefense_rows
+        if not is_missing(row.get("phage_genome_id", ""))
+        and (
+            parse_int(row.get("phage_antidefense_count", "0")) > 0
+            or is_informative_feature_value(row.get("phage_antidefense_targets", ""))
+            or is_informative_feature_value(row.get("phage_antidefense_classes", ""))
+        )
+    }
     phage_receptor_phages = row_id_set(phage_receptor_rows, "phage_genome_id")
     host_receptor_hosts = row_id_set(host_receptor_rows, "host_genome_id")
 
     phage_seq = {phage for phage in assay_phages if is_verified_sequence(phage, manifest, sequence_qc)}
     host_seq = {host for host in assay_hosts if is_verified_sequence(host, manifest, sequence_qc)}
+    sequence_assessed_ids = set(sequence_qc) | phage_seq | host_seq
     k_hosts = {host for host in assay_hosts if is_informative_feature_value(host_metadata.get(host, {}).get("K_type", ""))}
     o_hosts = {host for host in assay_hosts if is_informative_feature_value(host_metadata.get(host, {}).get("O_type", ""))}
     st_hosts = {host for host in assay_hosts if is_informative_feature_value(host_metadata.get(host, {}).get("ST", ""))}
+    # Current source-identity host rows explicitly say K/O/ST are unreviewed. Without a
+    # production typing status, a missing call is not an assessed zero.
+    k_assessed_hosts = set(k_hosts)
+    o_assessed_hosts = set(o_hosts)
+    st_assessed_hosts = set(st_hosts)
 
     rows: list[dict[str, str]] = []
-    add_coverage_row(rows, "unique_assay_phages", "unique_phage", phage_count, phage_count, coverage_state(phage_count, phage_count), "H1b;H3", "Use as denominator for assay-phage feature acquisition.")
-    add_coverage_row(rows, "unique_assay_hosts", "unique_host", host_count, host_count, coverage_state(host_count, host_count), "H1b", "Use as denominator for assay-host feature acquisition.")
-    add_coverage_row(rows, "tested_spot_pairs", "pair", pair_count, pair_count, coverage_state(pair_count, pair_count), "H1b;H3", "Spot outcomes are available for initial-interaction analyses only.")
+    add_coverage_row(rows, "unique_assay_phages", "unique_phage", phage_count, phage_count, coverage_state(phage_count, phage_count, phage_count), "H1b;H3", "Use as denominator for assay-phage feature acquisition.")
+    add_coverage_row(rows, "unique_assay_hosts", "unique_host", host_count, host_count, coverage_state(host_count, host_count, host_count), "H1b", "Use as denominator for assay-host feature acquisition.")
+    add_coverage_row(rows, "tested_spot_pairs", "pair", pair_count, pair_count, coverage_state(pair_count, pair_count, pair_count), "H1b;H3", "Spot outcomes are available for initial-interaction analyses only.")
 
     entity_metrics = [
-        ("phage_sequence_verified", "unique_phage", len(phage_seq), phage_count, "H1b;H3", "Verify or reconstruct assay phage sequences before production annotation."),
-        ("host_sequence_verified", "unique_host", len(host_seq), host_count, "H1b;H4", "Extract/reconstruct assay host genomes and verify checksums before K/O/ST or defense typing."),
-        ("host_K_type", "unique_host", len(k_hosts), host_count, "H1b", "Run reviewed Kaptive/Kleborate-style typing for assay hosts."),
-        ("host_O_type", "unique_host", len(o_hosts), host_count, "H1b", "Run reviewed Kaptive/Kleborate-style typing for assay hosts."),
-        ("host_ST", "unique_host", len(st_hosts), host_count, "H1b;H5", "Run reviewed Kleborate/MLST typing for assay hosts."),
-        ("standardized_phage_annotation", "unique_phage", len(set(assay_phages) & standardized_annotation_phages), phage_count, "H1b;H3", "Run standardized phage annotation for assay phages; bridge GenBank annotations are not counted here."),
-        ("rbp_candidates", "unique_phage", len(set(assay_phages) & rbp_phages), phage_count, "H1b;H3", "Run accepted RBP/depolymerase prediction for assay phages."),
-        ("domain_evidence", "unique_phage", len(set(assay_phages) & domain_phages), phage_count, "H1b;H3", "Add reviewed domain evidence for assay-phage RBP candidates."),
-        ("structural_evidence", "unique_phage", len(set(assay_phages) & structural_phages), phage_count, "H1b;H3", "Add reviewed structural/remote-homology evidence for assay-phage RBP candidates."),
-        ("host_defense_evidence", "unique_host", len(set(assay_hosts) & host_defense_hosts), host_count, "H4;H5", "Run PADLOC/DefenseFinder or reviewed host-defense evidence for assay hosts."),
-        ("phage_counterdefense_evidence", "unique_phage", len(set(assay_phages) & antidefense_phages), phage_count, "H3;H4", "Run reviewed phage anti-defense/counter-defense screening for assay phages."),
+        ("phage_sequence_verified", "unique_phage", len(set(assay_phages) & phage_seq), len(set(assay_phages) & sequence_assessed_ids), phage_count, "H1b;H3", "Verify or reconstruct assay phage sequences before production annotation."),
+        ("host_sequence_verified", "unique_host", len(set(assay_hosts) & host_seq), len(set(assay_hosts) & sequence_assessed_ids), host_count, "H1b;H4", "Extract/reconstruct assay host genomes and verify checksums before K/O/ST or defense typing."),
+        ("host_K_type", "unique_host", len(k_hosts), len(k_assessed_hosts), host_count, "H1b", "Run reviewed Kaptive/Kleborate-style typing for assay hosts."),
+        ("host_O_type", "unique_host", len(o_hosts), len(o_assessed_hosts), host_count, "H1b", "Run reviewed Kaptive/Kleborate-style typing for assay hosts."),
+        ("host_ST", "unique_host", len(st_hosts), len(st_assessed_hosts), host_count, "H1b;H5", "Run reviewed Kleborate/MLST typing for assay hosts."),
+        ("standardized_phage_annotation", "unique_phage", len(set(assay_phages) & standardized_annotation_phages), len(set(assay_phages) & standardized_annotation_phages), phage_count, "H1b;H3", "Run standardized phage annotation for assay phages; bridge GenBank annotations are not counted here."),
+        ("rbp_candidates", "unique_phage", len(set(assay_phages) & rbp_phages), len(set(assay_phages) & rbp_phages), phage_count, "H1b;H3", "Run accepted RBP/depolymerase prediction for assay phages."),
+        ("domain_evidence", "unique_phage", len(set(assay_phages) & domain_phages), len(set(assay_phages) & domain_assessed_phages), phage_count, "H1b;H3", "Add reviewed domain evidence for assay-phage RBP candidates."),
+        ("structural_evidence", "unique_phage", len(set(assay_phages) & structural_phages), len(set(assay_phages) & structural_assessed_phages), phage_count, "H1b;H3", "Add reviewed structural/remote-homology evidence for assay-phage RBP candidates."),
+        ("host_defense_evidence", "unique_host", len(set(assay_hosts) & host_defense_detected_hosts), len(set(assay_hosts) & host_defense_assessed_hosts), host_count, "H4;H5", "Run PADLOC/DefenseFinder or reviewed host-defense evidence for assay hosts."),
+        ("phage_counterdefense_evidence", "unique_phage", len(set(assay_phages) & antidefense_detected_phages), len(set(assay_phages) & antidefense_assessed_phages), phage_count, "H3;H4", "Run reviewed phage anti-defense/counter-defense screening for assay phages."),
     ]
-    for metric, level, numerator, denominator, blockers, action in entity_metrics:
-        add_coverage_row(rows, metric, level, numerator, denominator, coverage_state(numerator, denominator), blockers, action)
+    for metric, level, detected, assessed, denominator, blockers, action in entity_metrics:
+        add_coverage_row(rows, metric, level, detected, denominator, coverage_state(detected, assessed, denominator), blockers, action)
 
     pair_metrics = [
-        ("phage_sequence_verified", "pair", sum(1 for phage, _host in assay_pairs if phage in phage_seq), pair_count, "H1b;H3", "Complete assay-phage sequence verification for every tested pair."),
-        ("host_sequence_verified", "pair", sum(1 for _phage, host in assay_pairs if host in host_seq), pair_count, "H1b;H4", "Complete assay-host sequence verification for every tested pair."),
-        ("host_K_type", "pair", sum(1 for _phage, host in assay_pairs if host in k_hosts), pair_count, "H1b", "Acquire K-type calls for tested hosts."),
-        ("host_O_type", "pair", sum(1 for _phage, host in assay_pairs if host in o_hosts), pair_count, "H1b", "Acquire O-type calls for tested hosts."),
-        ("host_ST", "pair", sum(1 for _phage, host in assay_pairs if host in st_hosts), pair_count, "H1b;H5", "Acquire ST calls for tested hosts."),
-        ("standardized_phage_annotation", "pair", sum(1 for phage, _host in assay_pairs if phage in standardized_annotation_phages), pair_count, "H1b;H3", "Annotate assay phages with standardized production tools."),
-        ("rbp_candidates", "pair", sum(1 for phage, _host in assay_pairs if phage in rbp_phages), pair_count, "H1b;H3", "Predict assay-phage RBP/depolymerase candidates."),
-        ("domain_evidence", "pair", sum(1 for phage, _host in assay_pairs if phage in domain_phages), pair_count, "H1b;H3", "Add domain evidence for assay-phage RBP candidates."),
-        ("structural_evidence", "pair", sum(1 for phage, _host in assay_pairs if phage in structural_phages), pair_count, "H1b;H3", "Add structural evidence for assay-phage RBP candidates."),
-        ("host_defense_evidence", "pair", sum(1 for _phage, host in assay_pairs if host in host_defense_hosts), pair_count, "H4;H5", "Annotate host defense systems for assay hosts."),
-        ("phage_counterdefense_evidence", "pair", sum(1 for phage, _host in assay_pairs if phage in antidefense_phages), pair_count, "H3;H4", "Annotate phage counter-defense features for assay phages."),
+        ("phage_sequence_verified", "pair", sum(1 for phage, _host in assay_pairs if phage in phage_seq), sum(1 for phage, _host in assay_pairs if phage in sequence_assessed_ids), pair_count, "H1b;H3", "Complete assay-phage sequence verification for every tested pair."),
+        ("host_sequence_verified", "pair", sum(1 for _phage, host in assay_pairs if host in host_seq), sum(1 for _phage, host in assay_pairs if host in sequence_assessed_ids), pair_count, "H1b;H4", "Complete assay-host sequence verification for every tested pair."),
+        ("host_K_type", "pair", sum(1 for _phage, host in assay_pairs if host in k_hosts), sum(1 for _phage, host in assay_pairs if host in k_assessed_hosts), pair_count, "H1b", "Acquire K-type calls for tested hosts."),
+        ("host_O_type", "pair", sum(1 for _phage, host in assay_pairs if host in o_hosts), sum(1 for _phage, host in assay_pairs if host in o_assessed_hosts), pair_count, "H1b", "Acquire O-type calls for tested hosts."),
+        ("host_ST", "pair", sum(1 for _phage, host in assay_pairs if host in st_hosts), sum(1 for _phage, host in assay_pairs if host in st_assessed_hosts), pair_count, "H1b;H5", "Acquire ST calls for tested hosts."),
+        ("standardized_phage_annotation", "pair", sum(1 for phage, _host in assay_pairs if phage in standardized_annotation_phages), sum(1 for phage, _host in assay_pairs if phage in standardized_annotation_phages), pair_count, "H1b;H3", "Annotate assay phages with standardized production tools."),
+        ("rbp_candidates", "pair", sum(1 for phage, _host in assay_pairs if phage in rbp_phages), sum(1 for phage, _host in assay_pairs if phage in rbp_phages), pair_count, "H1b;H3", "Predict assay-phage RBP/depolymerase candidates."),
+        ("domain_evidence", "pair", sum(1 for phage, _host in assay_pairs if phage in domain_phages), sum(1 for phage, _host in assay_pairs if phage in domain_assessed_phages), pair_count, "H1b;H3", "Add domain evidence for assay-phage RBP candidates."),
+        ("structural_evidence", "pair", sum(1 for phage, _host in assay_pairs if phage in structural_phages), sum(1 for phage, _host in assay_pairs if phage in structural_assessed_phages), pair_count, "H1b;H3", "Add structural evidence for assay-phage RBP candidates."),
+        ("host_defense_evidence", "pair", sum(1 for _phage, host in assay_pairs if host in host_defense_detected_hosts), sum(1 for _phage, host in assay_pairs if host in host_defense_assessed_hosts), pair_count, "H4;H5", "Annotate host defense systems for assay hosts."),
+        ("phage_counterdefense_evidence", "pair", sum(1 for phage, _host in assay_pairs if phage in antidefense_detected_phages), sum(1 for phage, _host in assay_pairs if phage in antidefense_assessed_phages), pair_count, "H3;H4", "Annotate phage counter-defense features for assay phages."),
     ]
-    for metric, level, numerator, denominator, blockers, action in pair_metrics:
-        add_coverage_row(rows, metric, level, numerator, denominator, coverage_state(numerator, denominator), blockers, action)
+    for metric, level, detected, assessed, denominator, blockers, action in pair_metrics:
+        add_coverage_row(rows, metric, level, detected, denominator, coverage_state(detected, assessed, denominator), blockers, action)
 
     receptor_complete = sum(
         1
         for phage, host in assay_pairs
         if phage in rbp_phages and (host in k_hosts or host in o_hosts)
     )
+    receptor_assessed = sum(
+        1
+        for phage, host in assay_pairs
+        if phage in rbp_phages and (host in k_assessed_hosts or host in o_assessed_hosts)
+    )
     seed_bridge_metadata_coverage = sum(
         1
         for phage, host in assay_pairs
         if phage in phage_receptor_phages and host in host_receptor_hosts
     )
-    defense_complete = sum(1 for phage, host in assay_pairs if phage in antidefense_phages and host in host_defense_hosts)
-    productive_measured = sum(1 for row in tested_spot_rows if is_informative_feature_value(row.get("productive_infection_result", "")) and row.get("productive_infection_result") != "not_measured")
-    add_coverage_row(rows, "receptor_layer_feature_completeness", "pair", receptor_complete, pair_count, coverage_state(receptor_complete, pair_count), "H1b", "Acquire production assay-phage RBP candidates and host K/O calls; seed bridge support is reported separately.")
-    add_coverage_row(rows, "seed_bridge_metadata_coverage", "pair", seed_bridge_metadata_coverage, pair_count, coverage_state(seed_bridge_metadata_coverage, pair_count), "H1b", "RBPbase/Locibase seed bridge metadata can exercise the path, but it is not production K/O or RBP/domain evidence.")
-    add_coverage_row(rows, "defense_counterdefense_feature_completeness", "pair", defense_complete, pair_count, coverage_state(defense_complete, pair_count), "H4", "Acquire host-defense and phage counter-defense evidence for the same tested pairs.")
-    add_coverage_row(rows, "productive_infection_outcomes", "pair", productive_measured, pair_count, coverage_state(productive_measured, pair_count), "H4", "Curate plaque, EOP, propagation, or productive-infection labels; spot tests alone do not satisfy H4.")
+    defense_complete = sum(1 for phage, host in assay_pairs if phage in antidefense_detected_phages and host in host_defense_detected_hosts)
+    defense_assessed = sum(1 for phage, host in assay_pairs if phage in antidefense_assessed_phages and host in host_defense_assessed_hosts)
+    productive_measured = sum(1 for row in tested_spot_rows if row.get("productive_infection_result", "").strip().lower() in PRODUCTIVE_INFECTION_OBSERVED_VALUES)
+    add_coverage_row(rows, "receptor_layer_feature_completeness", "pair", receptor_complete, pair_count, coverage_state(receptor_complete, receptor_assessed, pair_count), "H1b", "Acquire production assay-phage RBP candidates and host K/O calls; seed bridge support is reported separately.")
+    add_coverage_row(rows, "seed_bridge_metadata_coverage", "pair", seed_bridge_metadata_coverage, pair_count, coverage_state(seed_bridge_metadata_coverage, seed_bridge_metadata_coverage, pair_count), "H1b", "RBPbase/Locibase seed bridge metadata can exercise the path, but it is not production K/O or RBP/domain evidence.")
+    add_coverage_row(rows, "defense_counterdefense_feature_completeness", "pair", defense_complete, pair_count, coverage_state(defense_complete, defense_assessed, pair_count), "H4", "Acquire host-defense and phage counter-defense evidence for the same tested pairs.")
+    add_coverage_row(rows, "productive_infection_outcomes", "pair", productive_measured, pair_count, coverage_state(productive_measured, productive_measured, pair_count), "H4", "Curate plaque, EOP, propagation, or productive-infection labels; spot tests alone do not satisfy H4.")
 
     for sample in assay_breadth_samples:
         tested = parse_int(sample.get("tested_host_count", sample.get("spot_tested_host_count", "0")))
@@ -1645,13 +1279,7 @@ def summary_row(
     limited_count = sum(1 for row in rows if row.get("status") and row.get("status") != "ok")
     status, claim_status, action, max_n = summary_status(rows)
     row_statuses = {row.get("status", "") for row in rows}
-    if "seed_grouped_screening_not_claim_ready" in row_statuses:
-        action = "Treat grouped H1b rows as seed screening only; add production K/O/ST and standardized RBP/domain evidence plus uncertainty analysis before interpreting performance."
-    elif "seed_pair_level_screening_not_claim_ready" in row_statuses:
-        action = "Treat H1b rows as seed screening only; add production K/O/ST and standardized RBP/domain evidence, then rerun grouped cold-host/cold-phage/cold-study evaluation."
-    elif "blocked_missing_informative_assay_features" in row_statuses:
-        action = "Add production RBP/depolymerase evidence and host K/O/ST receptor features for the assay pairs, then rerun grouped H1b evaluation."
-    elif "blocked_no_host_range_breadth_labels" in row_statuses:
+    if "blocked_no_host_range_breadth_labels" in row_statuses:
         action = "Curate phage-host assay panels with tested-host denominators and susceptible-host numerators, then rerun Stage 7."
     elif "blocked_feature_not_assessed" in row_statuses:
         action = "Use the descriptive spot-breadth table, but acquire accepted production RBP/depolymerase and counter-defense evidence before testing H3 associations."
@@ -1692,35 +1320,11 @@ def build_hypothesis_summary(
     evidence_path: str,
 ) -> list[dict[str, str]]:
     h1_rows = rows_for(model_rows, "H1")
-    h1_spot_rows = [row for row in h1_rows if row.get("target") == "spot_result"]
-    if h1_spot_rows:
-        preferred_grouped = [
-            row
-            for row in h1_spot_rows
-            if row.get("feature_set") == "receptor_plus_rbp" and row.get("model_type") == "grouped_exact_match_cold_host"
-        ]
-        preferred_grouped.extend(
-            row
-            for row in h1_spot_rows
-            if row.get("feature_set") == "receptor_plus_rbp" and row.get("model_type") == "grouped_exact_match_cold_phage"
-        )
-        h1_primary = first_row(preferred_grouped, first_row([row for row in h1_spot_rows if row.get("feature_set") == "receptor_plus_rbp"], first_row(h1_spot_rows)))
-        h1_metric = parse_float_or_none(h1_primary.get("accuracy", ""))
-        matching_baseline = first_row(
-            [
-                row
-                for row in h1_spot_rows
-                if row.get("feature_set") == "taxonomy_only" and row.get("model_type") == h1_primary.get("model_type")
-            ]
-        )
-        h1_baseline = parse_float_or_none(matching_baseline.get("accuracy", "")) or parse_float_or_none(h1_primary.get("baseline_accuracy", ""))
-        h1_effect = None if h1_metric is None or h1_baseline is None else h1_metric - h1_baseline
-    else:
-        h1_primary = first_row([row for row in h1_rows if row.get("feature_set") == "rbp_depolymerase_modules"])
-        h1_targets = ["K_type", "O_type"]
-        h1_metric = mean_accuracy_for(h1_rows, h1_targets, "rbp_depolymerase_modules")
-        h1_baseline = mean_accuracy_for(h1_rows, h1_targets, "taxonomy_only")
-        h1_effect = mean_delta_between(h1_rows, h1_targets, "rbp_depolymerase_modules", "taxonomy_only")
+    h1_primary = first_row([row for row in h1_rows if row.get("feature_set") == "rbp_depolymerase_modules"])
+    h1_targets = ["K_type", "O_type"]
+    h1_metric = mean_accuracy_for(h1_rows, h1_targets, "rbp_depolymerase_modules")
+    h1_baseline = mean_accuracy_for(h1_rows, h1_targets, "taxonomy_only")
+    h1_effect = mean_delta_between(h1_rows, h1_targets, "rbp_depolymerase_modules", "taxonomy_only")
 
     h4_rows = rows_for(model_rows, "H4")
     h4_primary = first_row([row for row in h4_rows if row.get("feature_set") == "receptor_plus_defense_counterdefense"], first_row(h4_rows))
@@ -1767,8 +1371,8 @@ def build_hypothesis_summary(
     summary = [
         summary_row(
             "H1",
-            "Do RBP/depolymerase and receptor features predict K/O association or pairwise spot interaction better than taxonomy?",
-            "K/O proxy plus pairwise spot-interaction model comparison",
+            "Do RBP/depolymerase features predict K/O association better than taxonomy?",
+            "K/O proxy model comparison; pairwise spot-interaction modeling remains blocked until production receptor features are available",
             evidence_path,
             h1_rows,
             h1_primary,
@@ -1777,7 +1381,7 @@ def build_hypothesis_summary(
             h1_baseline,
             h1_effect,
             "taxonomy_only",
-            "Do not claim RBP superiority unless production receptor/RBP evidence, tested outcomes, grouped evaluation, and real-data metrics outperform taxonomy/genome baselines.",
+            "Do not claim RBP superiority unless production receptor/RBP evidence and leakage-safe pairwise evaluation are implemented in a later analysis.",
         ),
         summary_row(
             "H4",
@@ -1822,7 +1426,6 @@ def build_hypothesis_summary(
 def run_models(
     samples: list[dict[str, str]],
     assay_breadth_samples: list[dict[str, str]],
-    assay_pair_samples: list[dict[str, str]],
     assay_row_count: int,
     h3_min_assessed_phages: int,
     h3_min_feature_groups: int,
@@ -1846,47 +1449,6 @@ def run_models(
                 features,
                 samples,
             )
-
-    if assay_pair_samples:
-        for feature_set, features in SPOT_INTERACTION_FEATURE_SETS.items():
-            add_assay_pair_screening_results(
-                model_rows,
-                feature_rows,
-                error_rows,
-                f"spot_interaction_{feature_set}",
-                feature_set,
-                features,
-                assay_pair_samples,
-            )
-            for split_label, group_field in [
-                ("cold_phage", "phage_genome_id"),
-                ("cold_host", "host_genome_id"),
-                ("cold_study_panel", "study_panel_id"),
-            ]:
-                add_assay_grouped_results(
-                    model_rows,
-                    feature_rows,
-                    error_rows,
-                    f"spot_interaction_{split_label}_{feature_set}",
-                    feature_set,
-                    features,
-                    assay_pair_samples,
-                    group_field,
-                    split_label,
-                )
-    else:
-        add_blocked_test(
-            model_rows,
-            "H1",
-            "spot_interaction_assay_pair_blocker",
-            "predict_spot_interaction",
-            "spot_result",
-            "receptor_plus_rbp",
-            "blocked_assay_pair_required",
-            len(samples),
-            "blocked_no_tested_spot_interaction_labels",
-            "H1b requires tested positive and tested negative assay pairs; metadata-only host links are not pairwise receptor-compatibility labels.",
-        )
 
     add_blocked_test(
         model_rows,
@@ -2021,19 +1583,9 @@ def main() -> int:
         rbp_features,
         phage_counterdefense_by_phage(compatibility_rows),
     )
-    assay_pair_samples = build_assay_pair_samples(
-        assay_rows,
-        manifest,
-        clusters,
-        rbp_features,
-        compatibility_by_pair(compatibility_rows),
-        phage_receptor_support_by_phage(phage_receptor_rows),
-        host_receptor_support_by_host(host_receptor_rows),
-    )
     model_rows, feature_rows, error_rows = run_models(
         samples,
         assay_breadth_samples,
-        assay_pair_samples,
         len(assay_rows),
         args.h3_min_assessed_phages,
         args.h3_min_feature_groups,
@@ -2059,7 +1611,7 @@ def main() -> int:
         report,
         "info",
         "models",
-        f"Built {len(model_rows)} model/test rows, {len(feature_rows)} feature rows, {len(error_rows)} prediction rows, {len(hypothesis_summary_rows)} hypothesis summary rows, and {len(assay_feature_coverage_rows)} assay feature-coverage rows from {len(samples)} metadata-link samples, {len(assay_breadth_samples)} assay-breadth samples, and {len(assay_pair_samples)} assay-pair samples.",
+        f"Built {len(model_rows)} model/test rows, {len(feature_rows)} feature rows, {len(error_rows)} prediction rows, {len(hypothesis_summary_rows)} hypothesis summary rows, and {len(assay_feature_coverage_rows)} assay feature-coverage rows from {len(samples)} metadata-link samples and {len(assay_breadth_samples)} assay-breadth samples.",
     )
 
     assay_feature_coverage_output = Path(args.assay_feature_coverage_output) if args.assay_feature_coverage_output else Path(args.model_comparison_output).parent.parent / "qc" / "assay_feature_coverage.tsv"
