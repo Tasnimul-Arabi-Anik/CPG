@@ -32,6 +32,10 @@ HYPOTHESIS_COLUMNS = [
     "ok_rows",
     "limited_rows",
     "status",
+    "analysis_available",
+    "data_adequate",
+    "claim_status",
+    "claim_supported",
     "notes",
 ]
 INVENTORY_COLUMNS = ["path", "exists", "size_bytes", "row_count", "status", "notes"]
@@ -392,6 +396,30 @@ HYPOTHESIS_TESTS = [
 ]
 
 QUANTITATIVE_TEST_READY_STATUSES = {"ok", "analysis_ready", "analysis_supported"}
+CLAIM_SUPPORTED_STATUSES = {"workflow_supported", "biological_claim_supported", "claim_supported"}
+
+
+def hypothesis_evidence_state(
+    matching_rows: list[dict[str, str]],
+    ok_rows: list[dict[str, str]],
+    fallback_claim_status: str = "data_dependent",
+) -> dict[str, str]:
+    """Separate technical analysis availability from biological claim support."""
+    statuses = {row.get("status", "") for row in matching_rows}
+    claim_status = fallback_claim_status or "data_dependent"
+    analysis_available = "true" if ok_rows else "false"
+    if not matching_rows or not ok_rows:
+        data_adequate = "false"
+    elif claim_status in CLAIM_SUPPORTED_STATUSES:
+        data_adequate = "true"
+    else:
+        data_adequate = "partial"
+    return {
+        "analysis_available": analysis_available,
+        "data_adequate": data_adequate,
+        "claim_status": claim_status,
+        "claim_supported": str(claim_status in CLAIM_SUPPORTED_STATUSES).lower(),
+    }
 
 
 
@@ -731,6 +759,10 @@ def h1_receptor_layer_benchmark_row(root: Path, results_dir: Path) -> dict[str, 
         "ok_rows": "1",
         "limited_rows": "0",
         "status": "pass",
+        "analysis_available": "true",
+        "data_adequate": "partial",
+        "claim_status": "data_dependent",
+        "claim_supported": "false",
         "notes": (
             "H1 receptor-layer benchmark is available from compact PR B outputs; "
             f"pooled_rows={len(h1_pooled)}; split_strategies={split_count}; model_families={model_count}; "
@@ -742,6 +774,8 @@ def h1_receptor_layer_benchmark_row(root: Path, results_dir: Path) -> dict[str, 
 def validate_hypotheses(root: Path, results_dir: Path, report: list[dict[str, str]]) -> list[dict[str, str]]:
     model_path = results_dir / "models/model_comparison.tsv"
     _, model_rows = read_tsv(model_path)
+    _, summary_rows = read_tsv(results_dir / "models/hypothesis_summary.tsv")
+    summary_by_hypothesis = {row.get("hypothesis", ""): row for row in summary_rows}
     output_rows = []
     for hypothesis, required_test, predicate in HYPOTHESIS_TESTS:
         matching = [row for row in model_rows if predicate(row)]
@@ -769,6 +803,8 @@ def validate_hypotheses(root: Path, results_dir: Path, report: list[dict[str, st
                 notes = "assay-dependent test is explicitly blocked: " + ";".join(blocked_statuses)
             else:
                 notes = "quantitative test rows present but current data are insufficient or uninformative"
+        summary_claim_status = summary_by_hypothesis.get(hypothesis, {}).get("claim_status", "data_dependent")
+        evidence_state = hypothesis_evidence_state(matching, ok_rows, summary_claim_status)
         output_rows.append(
             {
                 "hypothesis": hypothesis,
@@ -778,6 +814,7 @@ def validate_hypotheses(root: Path, results_dir: Path, report: list[dict[str, st
                 "ok_rows": str(len(ok_rows)),
                 "limited_rows": str(len(limited)),
                 "status": status,
+                **evidence_state,
                 "notes": notes,
             }
         )

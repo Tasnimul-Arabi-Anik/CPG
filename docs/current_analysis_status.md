@@ -71,7 +71,7 @@ Evidence included:
 | Assay phages represented | 105 |
 | Combined Stage 3 annotation input rows | 8,417 |
 | GenBank bridge prophage CDS rows in combined input | 24 |
-| PHROGs/MMseqs receptor-domain rows | 495 |
+| PHROGs/MMseqs receptor profile-family hit rows | 495 |
 | Phold/Foldseek receptor-like structural rows | 23 |
 
 The 23 Phold-only receptor-like candidates were conservatively triaged:
@@ -124,18 +124,18 @@ Tracked compact benchmark review outputs:
 | Held-out-group bootstrap | 76 |
 | Compact artifact checksum manifest | 7 |
 
-Primary cold-phage-cluster contrasts now separate unordered module identity from ordered architecture proxies:
+Primary cold-phage-cluster contrasts now separate unordered profile-family/structural hit fingerprints from ordered profile-hit proxies:
 
 | Contrast | Model AP | Baseline AP | Delta AP | Bootstrap 95% CI |
 | --- | ---: | ---: | ---: | --- |
-| Unordered domain+structural module identity + K/O vs RBPbase + K/O | 0.190417 | 0.064114 | 0.126303 | [0.053441, 0.215846] |
-| Unordered domain+structural module identity + K/O vs BLASTN nearest-phage + K/O | 0.190417 | 0.195850 | -0.005433 | [-0.076435, 0.047078] |
-| Ordered domain+structural architecture proxy + K/O vs unordered module identity + K/O | 0.060394 | 0.190417 | -0.130023 | [-0.235675, -0.058682] |
-| Ordered domain+structural architecture proxy + K/O vs BLASTN nearest-phage + K/O | 0.060394 | 0.195850 | -0.135456 | [-0.238648, -0.061170] |
+| Unordered PHROG profile-family + structural hit identity + K/O vs RBPbase + K/O | 0.190417 | 0.064114 | 0.126303 | [0.053441, 0.215846] |
+| Unordered PHROG profile-family + structural hit identity + K/O vs BLASTN nearest-phage + K/O | 0.190417 | 0.195850 | -0.005433 | [-0.076435, 0.047078] |
+| Ordered PHROG profile-hit + structural hit proxy + K/O vs unordered profile-family/structural hit identity + K/O | 0.060394 | 0.190417 | -0.130023 | [-0.235675, -0.058682] |
+| Ordered PHROG profile-hit + structural hit proxy + K/O vs BLASTN nearest-phage + K/O | 0.060394 | 0.195850 | -0.135456 | [-0.238648, -0.061170] |
 
-Current interpretation: exact unordered domain+structural module identity signatures improve over RBPbase plus host K/O in cold-phage-cluster evaluation, but they do not robustly outperform BLASTN nearest-phage genome similarity plus host K/O. Ordered per-gene PHROGs/MMseqs architecture proxies were added from existing Prodigal gene order and MMseqs domain coordinates; in the current exact-key rate model they are too sparse under cold-phage/cold-cluster evaluation and underperform unordered module identity signatures. These architecture proxies are not manually curated domain boundaries, C-terminal receptor-recognition architecture, or functional capsule specificity.
+Current interpretation: exact unordered PHROG profile-family plus structural hit identity signatures improve over RBPbase plus host K/O in cold-phage-cluster evaluation, but they do not robustly outperform BLASTN nearest-phage genome similarity plus host K/O. Ordered per-gene PHROGs/MMseqs profile-hit proxies were added from existing Prodigal gene order and MMseqs hit coordinates; in the current exact-key rate model they are too sparse under cold-phage/cold-cluster evaluation and underperform unordered profile-family/structural hit signatures. These profile-hit proxies are not manually curated non-overlapping domains, C-terminal receptor-recognition architecture, or functional capsule specificity.
 
-Cold-K-locus support diagnostics also show that exact receptor/module + K/O models use global-prevalence fallback for all 10,006 cold-K predictions, while the genome-similarity + K/O model uses nearest-phage intermediate fallback for all 10,006 cold-K predictions. Treat the current cold-K result as a fallback-design diagnostic, not a fair novel-receptor generalization test.
+Cold-K-locus support diagnostics also show that exact receptor/profile-hit + K/O models use global-prevalence fallback for all 10,006 cold-K predictions, while the genome-similarity + K/O model uses nearest-phage intermediate fallback for all 10,006 cold-K predictions. Treat the current cold-K result as a fallback-design diagnostic, not a fair novel-receptor generalization test.
 
 ## PR #14: Defense/Counter-Defense Evidence
 
@@ -161,9 +161,9 @@ H3 spot-breadth association rows are now generated from the same evidence layer:
 
 | H3 feature | Assessed phages | Spearman rho versus tested-panel spot-positive fraction | Status |
 | --- | ---: | ---: | --- |
-| Domain module count | 105 / 105 | 0.110 | Exploratory analysis-ready row, claim remains data-dependent |
+| PHROG profile-family hit count | 105 / 105 | 0.110 | Exploratory analysis-ready row, claim remains data-dependent |
 | Structural module count | 105 / 105 | 0.010 | Exploratory analysis-ready row, claim remains data-dependent |
-| Total domain + structural module count | 105 / 105 | 0.106 | Exploratory analysis-ready row, claim remains data-dependent |
+| Total PHROG profile-family + structural hit count | 105 / 105 | 0.106 | Exploratory analysis-ready row, claim remains data-dependent |
 | Explicit anti-defense candidate count | 7 / 105 | NA | Blocked by insufficient coverage and one observed feature value |
 
 Claim boundary: H4 remains `blocked_no_productive_infection_labels`. Stage 7 now records a field-level H4 outcome availability audit in `results/production/models/feature_importance.tsv`: `spot_result` has 10,006 observed initial-interaction outcomes, while `plaque_result`, `productive_infection_result`, `growth_inhibition_result`, and numeric `eop` each have 0 observed productive-outcome values. These evidence tables support coverage auditing and future H4 tests only; they do not demonstrate defense escape or improved prediction. The H3 rows are phage-level spot-test breadth associations only; they do not establish productive-infection breadth, causal breadth mechanisms, or general host-range strategy.
@@ -176,9 +176,9 @@ Latest assay-feature coverage audit correction: `results/production/qc/assay_fea
 
 | Hypothesis | Current status | Reason |
 | --- | --- | --- |
-| H1 receptor compatibility | Exploratory, module-identity signal available but not claim-ready | Exact unordered domain+structural module identity signatures beat RBPbase + K/O but do not robustly beat BLASTN genome-similarity + K/O; ordered per-gene architecture proxies were tested and underperform in cold-phage/cold-cluster splits; novel-K generalization remains fallback-limited. |
+| H1 receptor compatibility | Exploratory profile-family/structural-hit signal available but not claim-ready | Exact unordered PHROG profile-family + structural hit identity signatures beat RBPbase + K/O but do not robustly beat BLASTN genome-similarity + K/O; ordered per-gene profile-hit proxies were tested and underperform in cold-phage/cold-cluster splits; novel-K generalization remains fallback-limited. |
 | H2 prophage receptor reservoir | Quantitative assessed-zero prophage audit row available, claim remains unsupported | One sequence-backed computational prophage now has 24 GenBank bridge CDS rows in Stage 3, but Stage 4 finds zero RBP/depolymerase candidates and the cohort is far too small for a reservoir claim. |
-| H3 breadth versus modularity/counter-defense | Exploratory module-count association rows available, claim remains data-dependent | Domain and total module counts show weak positive phage-level correlations with tested-panel spot-positive fraction (rho 0.110 and 0.106); structural count is near zero (rho 0.010); explicit anti-defense candidate coverage is insufficient at 7/105 phages. |
+| H3 breadth versus modularity/counter-defense | Exploratory profile-hit-count association rows available, claim remains data-dependent | PHROG profile-family and total profile-family/structural hit counts show weak positive phage-level correlations with tested-panel spot-positive fraction (rho 0.110 and 0.106); structural count is near zero (rho 0.010); explicit anti-defense candidate coverage is insufficient at 7/105 phages. |
 | H4 defense/counter-defense improves productive-infection prediction | Blocked | No productive-infection, plaque, propagation, or EOP labels exist. |
 | H5 host lineage/prophage/defense landscape | Data-dependent association summary available | The workflow now summarizes ST versus DefenseFinder burden for 188/200 benchmark hosts across 120 ST groups, but this is association-only and not phage susceptibility or infectivity evidence. |
 | H6 source/ecology novelty | Data-dependent | Requires broader source-balanced atlas and ecological source labels, not database provenance alone. |
@@ -191,11 +191,11 @@ Allowed now:
 
 Allowed now:
 
-> In the current exploratory H1 benchmark, exact unordered receptor module identity signatures improve over RBPbase and are competitive with BLASTN genome-similarity baselines under cold-phage-cluster evaluation, but do not robustly outperform genome similarity; ordered architecture proxies are currently too sparse for cold-phage/cold-cluster prediction.
+> In the current exploratory H1 benchmark, exact unordered receptor profile-family/structural hit signatures improve over RBPbase and are competitive with BLASTN genome-similarity baselines under cold-phage-cluster evaluation, but do not robustly outperform genome similarity; ordered profile-hit proxies are currently too sparse for cold-phage/cold-cluster prediction.
 
 Allowed now:
 
-> In the current exploratory H3 phage-level summary, receptor module counts show only weak association with tested-panel spot-positive breadth, while explicit anti-defense candidate coverage remains insufficient for a counter-defense breadth test.
+> In the current exploratory H3 phage-level summary, receptor profile-hit counts show only weak association with tested-panel spot-positive breadth, while explicit anti-defense candidate coverage remains insufficient for a counter-defense breadth test.
 
 Not allowed now:
 
@@ -213,14 +213,14 @@ Not allowed now:
 
 After the latest production run, the standard hypothesis-coverage audit recognizes the compact H1 receptor-layer benchmark rather than only the older one-sample K/O proxy rows:
 
-| Hypothesis | Coverage audit status | Evidence basis |
-| --- | --- | --- |
-| H1 | pass | 104 pooled receptor-layer benchmark rows across 4 grouped split strategies and 26 model families; claim remains exploratory and spot-test-only. |
-| H2 | pass | The annotated-prophage coverage audit is quantitative and analysis-ready, reporting 0/1 prophages with detected RBP/depolymerase candidates; this does not support a reservoir claim. |
-| H3 | pass | Quantitative receptor-module breadth association rows are analysis-ready; counter-defense subcomponents remain blocked by insufficient coverage. |
-| H4 | warn | Blocked by absence of productive-infection, plaque, propagation, or EOP outcomes. |
-| H5 | pass | ST versus DefenseFinder burden summary. |
-| H6 | pass | Source/cluster novelty prioritization summaries. |
+| Hypothesis | Analysis available | Data adequate | Claim supported | Evidence basis |
+| --- | --- | --- | --- | --- |
+| H1 | true | partial | false | 104 pooled receptor-layer benchmark rows across 4 grouped split strategies and 26 model families; claim remains exploratory and spot-test-only. |
+| H2 | true | partial | false | The annotated-prophage coverage audit is quantitative and analysis-ready, reporting 0/1 prophages with detected RBP/depolymerase candidates; this does not support a reservoir claim. |
+| H3 | true | partial | false | Quantitative receptor profile-hit breadth association rows are analysis-ready; counter-defense subcomponents remain blocked by insufficient coverage. |
+| H4 | false | false | false | Blocked by absence of productive-infection, plaque, propagation, or EOP outcomes. |
+| H5 | true | partial | false | ST versus DefenseFinder burden summary exists, but it is descriptive and population-structure-uncontrolled. |
+| H6 | true | partial | false | Source/cluster novelty prioritization summaries exist, but benchmark source/ecology coverage is insufficient for a claim. |
 
 Goal completion remains incomplete because `G03` and `G05` are still blocking: H4 still lacks productive-infection, plaque, propagation, or EOP outcomes. H2 and H3 now have quantitative analysis-ready rows, but H2 remains too small for a reservoir claim and H3 counter-defense coverage remains limited; claim support remains data-dependent.
 

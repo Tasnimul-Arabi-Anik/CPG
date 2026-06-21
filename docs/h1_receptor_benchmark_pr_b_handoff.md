@@ -48,7 +48,7 @@ The production profile is wired to the H1 inputs needed here: pairwise phage sim
 - primary baseline: `genome_similarity_nearest_phage_host_KO_rate`
 - primary contrast: `AP(receptor_plus_host_KO_rate) - AP(genome_similarity_nearest_phage_host_KO_rate)`
 
-The contract also requires source ablations so Phold/Foldseek signal is not conflated with RBPbase or Pharokka evidence. PR B now includes exact PHROGs/MMseqs domain IDs, Phold/Foldseek structural hit IDs, and ordered per-gene PHROGs/MMseqs architecture proxies from Prodigal gene order plus MMseqs hit coordinates. These are better receptor-feature representations than count bins, but they still do not encode manually curated domain boundaries, C-terminal receptor-recognition architecture, or experimentally validated capsule specificity.
+The contract also requires source ablations so Phold/Foldseek signal is not conflated with RBPbase or Pharokka evidence. PR B now includes exact PHROGs/MMseqs profile-family IDs, Phold/Foldseek structural hit IDs, and ordered per-gene PHROGs/MMseqs profile-hit proxies from Prodigal gene order plus MMseqs hit coordinates. These are better receptor-feature representations than count bins, but they still do not encode manually curated non-overlapping domain boundaries, C-terminal receptor-recognition architecture, or experimentally validated capsule specificity.
 
 ## Reproduction commands
 
@@ -86,7 +86,7 @@ Tracked compact review outputs:
 
 Module identity coverage:
 
-- assay phages with PHROGs/MMseqs receptor-domain module IDs: 105/105
+- assay phages with PHROGs/MMseqs receptor profile-family hit IDs: 105/105
 - assay phages with Phold/Foldseek structural module IDs: 12/105
 - assay phages with at least one module identity signature: 105/105
 
@@ -98,7 +98,7 @@ Primary cold-phage-cluster contrast for the original coarse union feature, `rece
 | fastANI | 0.131389 | 0.188908 | -0.057519 | [-0.136356, 0.010694] |
 | skani | 0.131389 | 0.200487 | -0.069098 | [-0.153840, 0.000397] |
 
-Cold-phage-cluster contrast for exact domain+structural module identity signatures, `domain_structural_module_plus_host_KO_rate - genome_similarity_nearest_phage_host_KO_rate`:
+Cold-phage-cluster contrast for exact PHROG profile-family + structural hit identity signatures, `domain_structural_module_plus_host_KO_rate - genome_similarity_nearest_phage_host_KO_rate`:
 
 | Similarity baseline | Module AP | Baseline AP | Delta AP | Held-out-group bootstrap 95% CI |
 | --- | ---: | ---: | ---: | --- |
@@ -106,9 +106,9 @@ Cold-phage-cluster contrast for exact domain+structural module identity signatur
 | fastANI | 0.203203 | 0.188908 | 0.014295 | [-0.054362, 0.075745] |
 | skani | 0.203203 | 0.200487 | 0.002716 | [-0.056983, 0.064242] |
 
-The exact unordered domain+structural module identity signature is stronger than the RBPbase+K/O baseline in the cold-phage-cluster split (AP 0.190417 versus 0.064114; delta 0.126303; bootstrap CI [0.053441, 0.215846]). It does not robustly outperform BLASTN genome-similarity+K/O (AP 0.190417 versus 0.195850; delta -0.005433; CI [-0.076435, 0.047078]). Ordered domain+structural architecture proxies were also tested and underperform the unordered module identity signature in cold-phage-cluster evaluation (AP 0.060394 versus 0.190417; delta -0.130023; CI [-0.235675, -0.058682]).
+The exact unordered PHROG profile-family + structural hit identity signature is stronger than the RBPbase+K/O baseline in the cold-phage-cluster split (AP 0.190417 versus 0.064114; delta 0.126303; bootstrap CI [0.053441, 0.215846]). It does not robustly outperform BLASTN genome-similarity+K/O (AP 0.190417 versus 0.195850; delta -0.005433; CI [-0.076435, 0.047078]). Ordered PHROG profile-hit + structural hit proxies were also tested and underperform the unordered profile-family/structural hit signature in cold-phage-cluster evaluation (AP 0.060394 versus 0.190417; delta -0.130023; CI [-0.235675, -0.058682]).
 
-Cold-K-locus receptor holdout remains strongly constrained by fallback design. Because exact K/O composite keys are withheld, all cold-K-locus receptor-plus-K/O, unordered module-plus-K/O, and ordered architecture-plus-K/O predictions collapse to global prevalence. The genome-similarity plus K/O model also lacks direct same-K/O support in cold-K-locus folds, but it uses an intermediate nearest-phage marginal-rate fallback rather than global prevalence. The current benchmark therefore supports only this narrow statement: exact unordered receptor module identities improve over RBPbase in this benchmark and are competitive with BLASTN genome-similarity baselines in cold-phage-cluster evaluation, while ordered architecture proxies are currently too sparse for cold-phage/cold-cluster exact-key prediction. These results do not establish robust superiority over genome similarity or novel-K generalization.
+Cold-K-locus receptor holdout remains strongly constrained by fallback design. Because exact K/O composite keys are withheld, all cold-K-locus receptor-plus-K/O, unordered profile-family/structural hit plus K/O, and ordered profile-hit proxy plus K/O predictions collapse to global prevalence. The genome-similarity plus K/O model also lacks direct same-K/O support in cold-K-locus folds, but it uses an intermediate nearest-phage marginal-rate fallback rather than global prevalence. The current benchmark therefore supports only this narrow statement: exact unordered receptor profile-family/structural hit identities improve over RBPbase in this benchmark and are competitive with BLASTN genome-similarity baselines in cold-phage-cluster evaluation, while ordered profile-hit proxies are currently too sparse for cold-phage/cold-cluster exact-key prediction. These results do not establish robust superiority over genome similarity or novel-K generalization.
 
 ## Claim boundary
 
@@ -118,7 +118,7 @@ Allowed wording for this branch:
 
 Not allowed from this branch:
 
-- RBP/depolymerase module architecture outperforms genome similarity; this branch now tests exact domain/structural module identity signatures and ordered per-gene architecture proxies, but the module-vs-genome-similarity CI still overlaps zero and the ordered proxy underperforms in cold-phage/cold-cluster splits;
+- RBP/depolymerase module architecture outperforms genome similarity; this branch now tests exact PHROG profile-family/structural hit identity signatures and ordered per-gene profile-hit proxies, but the profile-hit-vs-genome-similarity CI still overlaps zero and the ordered proxy underperforms in cold-phage/cold-cluster splits;
 - receptor features outperform genome similarity unless the paired held-out-group uncertainty supports that contrast;
 - spot-test positives prove productive infection;
 - any candidate protein binds a specific capsule or has validated depolymerase activity;
