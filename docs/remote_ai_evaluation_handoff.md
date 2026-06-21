@@ -1,5 +1,27 @@
 # Remote AI Evaluation Handoff
 
+## Latest Status Snapshot
+
+Date: 2026-06-21.
+
+Branch: `host-receptor-evidence`.
+
+This file is intended for remote AI or human reviewers who need a compact project state without reading the full repository history.
+
+Latest production workflow status:
+
+- `python scripts/run_workflow.py --config config/workflow.production.yaml` completed 74/74 stages.
+- `results/production/validation/workflow_run_report.tsv` reports no failed stages.
+- `results/production/validation/goal_completion_audit.tsv` says the repository is not yet at the durable-goal definition of done.
+- Blocking reason: H1-H6 all have quantitative rows, but only H6 currently passes the hypothesis-coverage audit; H1-H5 remain warning/data-dependent.
+- `results/production/validation/study_readiness.tsv` has one manuscript-blocking warning: H1-H6 hypothesis tests need stronger ok evidence rows before manuscript-level claims.
+- No stronger biological claim should be made from the passing workflow alone.
+
+What is being pushed now:
+
+- A small workflow-validation robustness fix so malformed or extra-field TSV rows do not crash validation inventory generation.
+- This handoff update, summarizing what the project is doing, what it has produced, and what remains to be done.
+
 ## Purpose
 
 This repository is being built into a reproducible Klebsiella phage comparative genomics study. The main scientific question is whether phage-host spot-test host range is better explained by receptor-layer features, especially RBP/depolymerase module architecture plus host K/O type, than by whole-genome phage taxonomy or genome similarity alone.
@@ -27,6 +49,7 @@ What we have so far:
 - BLASTN, Mash, fastANI, and skani nearest-phage baselines for receptor-layer H1 comparisons.
 - Current exploratory result: receptor-feature unions do not robustly outperform nearest-phage genome-similarity plus host K/O baselines under grouped evaluation.
 - Accepted DefenseFinder host-defense evidence is available for 200/200 assay hosts. Accepted Phold ACR anti-CRISPR evidence is available for 7/105 assay phages and 814/10,006 tested pairs; keyword anti-defense hits remain screening-only and are excluded from compatibility matching.
+- The full production workflow currently runs through all configured stages, but the goal audit still blocks completion because H1-H5 require stronger evidence or endpoints.
 
 What should be done next:
 
@@ -35,6 +58,27 @@ What should be done next:
 - Add a public-scale phage intergenomic similarity/taxonomy baseline such as VIRIDIC before final taxonomy claims; skani is now available as an assay-benchmark robustness baseline.
 - Expand and manually review phage counter-defense evidence; host-defense evidence and sparse Phold ACR anti-CRISPR evidence are now available, but neither makes H4 testable without productive-infection endpoints.
 - Do not claim receptor superiority, capsule specificity, productive infection, or therapeutic utility from the current outputs.
+
+## Current Audit Interpretation
+
+The repository has moved beyond scaffold-only work: it has a real 10,006-row spot-test response layer, production host K/O evidence, phage receptor evidence, host-defense evidence, sparse accepted phage anti-CRISPR candidates, and grouped receptor-layer benchmark outputs.
+
+The current scientific interpretation is intentionally conservative:
+
+- H1 is exploratory: receptor-layer features can be compared against genome-similarity and host K/O baselines, but current receptor-feature unions do not robustly outperform BLASTN, Mash, fastANI, or skani nearest-phage plus host K/O baselines.
+- H2 remains data-dependent: prophage/capsule-recognition reservoir claims require broader prophage evidence and review.
+- H3 remains data-dependent: descriptive spot breadth exists, but feature/breadth associations are not yet claim-ready.
+- H4 remains blocked: productive-infection/plaque/EOP outcomes are absent, so defense/counter-defense compatibility cannot be tested as infection survival.
+- H5 remains data-dependent: host lineage, defense burden, AMR, and virulence associations need broader population support.
+- H6 currently has the strongest support among H1-H6, but novelty and translational-prioritization claims still require careful wording.
+
+The next useful work is not more infrastructure. It is evidence review and targeted data acquisition:
+
+1. Review receptor candidate quality, especially non-Pharokka Phold/Foldseek candidates and PHROGs/MMseqs domain-profile candidates.
+2. Add a public-scale intergenomic similarity/taxonomy baseline such as VIRIDIC before final taxonomy claims.
+3. Expand reviewed phage counter-defense evidence only after defining an endpoint that can test it.
+4. Curate productive-infection, plaque, EOP, or propagation labels if H4 is to become testable.
+5. Keep all conclusions tied to spot-test initial interaction unless stronger endpoints are curated.
 
 ## Current Data Layer
 

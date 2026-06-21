@@ -419,9 +419,20 @@ def read_tsv(path: Path) -> tuple[list[str], list[dict[str, str]]]:
     with path.open(newline="") as handle:
         reader = csv.DictReader(handle, delimiter="\t")
         fieldnames = reader.fieldnames or []
-        rows = [{key: (value or "").strip() for key, value in row.items()} for row in reader]
+        rows = []
+        for row in reader:
+            cleaned: dict[str, str] = {}
+            for key, value in row.items():
+                if key is None:
+                    if value:
+                        cleaned["__extra_fields__"] = "\t".join(str(item) for item in value)
+                    continue
+                if isinstance(value, list):
+                    cleaned[key] = "\t".join(str(item) for item in value).strip()
+                else:
+                    cleaned[key] = (value or "").strip()
+            rows.append(cleaned)
     return fieldnames, rows
-
 
 def write_tsv(path: Path, columns: Iterable[str], rows: Iterable[dict[str, str]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
