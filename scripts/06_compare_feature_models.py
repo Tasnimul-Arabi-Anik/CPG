@@ -148,6 +148,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sequence-qc", default="", help="Optional genome_sequence_qc.tsv for assay feature-coverage auditing.")
     parser.add_argument("--annotations", default="", help="Optional phage_annotations.tsv for assay feature-coverage auditing.")
     parser.add_argument("--domain-architectures", default="", help="Optional RBP domain_architectures.tsv for assay feature-coverage auditing.")
+    parser.add_argument("--phage-module-identities", default="", help="Optional assay_phage_module_identity_signatures.tsv for H3 module-count association.")
     parser.add_argument("--host-metadata", default="", help="Optional host_metadata.tsv for assay feature-coverage auditing.")
     parser.add_argument("--host-defense", default="", help="Optional host_defense_systems.tsv for assay feature-coverage auditing.")
     parser.add_argument("--phage-antidefense", default="", help="Optional phage_antidefense_candidates.tsv for assay feature-coverage auditing.")
@@ -425,6 +426,41 @@ def phage_counterdefense_by_phage(rows: list[dict[str, str]]) -> dict[str, dict[
     return features
 
 
+def phage_module_identities_by_phage(rows: list[dict[str, str]]) -> dict[str, dict[str, str]]:
+    features: dict[str, dict[str, str]] = {}
+    for row in rows:
+        phage_id = row.get("phage_id", "") or row.get("phage_genome_id", "")
+        if is_missing(phage_id):
+            continue
+        domain_count = parse_int(row.get("rbp_domain_module_count", "0"))
+        structural_count = parse_int(row.get("rbp_structural_module_count", "0"))
+        state = row.get("rbp_module_identity_state", "")
+        if is_missing(state):
+            state = "assessed_positive" if domain_count + structural_count > 0 else "assessed_zero_detected"
+        features[phage_id] = {
+            "rbp_domain_module_count": str(domain_count),
+            "rbp_structural_module_count": str(structural_count),
+            "rbp_total_module_count": str(domain_count + structural_count),
+            "rbp_module_identity_state": state,
+        }
+    return features
+
+
+def phage_antidefense_candidates_by_phage(rows: list[dict[str, str]]) -> dict[str, dict[str, str]]:
+    grouped: dict[str, list[dict[str, str]]] = defaultdict(list)
+    for row in rows:
+        phage_id = row.get("phage_genome_id", "")
+        if not is_missing(phage_id):
+            grouped[phage_id].append(row)
+    return {
+        phage_id: {
+            "phage_antidefense_candidate_count": str(len(phage_rows)),
+            "phage_antidefense_candidate_state": "assessed_positive",
+        }
+        for phage_id, phage_rows in grouped.items()
+    }
+
+
 def phage_receptor_support_by_phage(rows: list[dict[str, str]]) -> dict[str, dict[str, str]]:
     features: dict[str, dict[str, str]] = {}
     for row in rows:
@@ -465,6 +501,8 @@ def build_assay_breadth_samples(
     clusters: dict[str, dict[str, str]],
     rbp_features: dict[str, dict[str, str]],
     phage_counterdefense: dict[str, dict[str, str]],
+    phage_module_identities: dict[str, dict[str, str]],
+    phage_antidefense_candidates: dict[str, dict[str, str]],
 ) -> list[dict[str, str]]:
     grouped: dict[tuple[str, str, str, str], Counter[str]] = defaultdict(Counter)
     for row in assay_rows:
@@ -489,6 +527,8 @@ def build_assay_breadth_samples(
         manifest_row = manifest.get(phage_id, {})
         rbp = rbp_features.get(phage_id, {})
         counterdefense = phage_counterdefense.get(phage_id, {})
+        module_identity = phage_module_identities.get(phage_id, {})
+        antidefense_candidates = phage_antidefense_candidates.get(phage_id, {})
         fraction = positive_count / tested_count if tested_count else 0.0
         ci_low, ci_high = wilson_interval(positive_count, tested_count)
         samples.append(
@@ -516,6 +556,12 @@ def build_assay_breadth_samples(
                 "phage_antidefense_targets": counterdefense.get("phage_antidefense_targets", ""),
                 "phage_antidefense_count_bin": counterdefense.get("phage_antidefense_count_bin", "not_assessed"),
                 "phage_antidefense_evidence_state": counterdefense.get("phage_antidefense_evidence_state", "not_assessed"),
+                "rbp_domain_module_count": module_identity.get("rbp_domain_module_count", ""),
+                "rbp_structural_module_count": module_identity.get("rbp_structural_module_count", ""),
+                "rbp_total_module_count": module_identity.get("rbp_total_module_count", ""),
+                "rbp_module_identity_state": module_identity.get("rbp_module_identity_state", "not_assessed"),
+                "phage_antidefense_candidate_count": antidefense_candidates.get("phage_antidefense_candidate_count", ""),
+                "phage_antidefense_candidate_state": antidefense_candidates.get("phage_antidefense_candidate_state", "not_assessed"),
                 "spot_tested_host_count": str(tested_count),
                 "tested_host_count": str(tested_count),
                 "spot_positive_host_count": str(positive_count),
@@ -744,6 +790,70 @@ def add_blocked_test(
     )
 
 
+def observed_categorical_outcome_count(rows: list[dict[str, str]], column: str, observed_values: set[str]) -> tuple[int, int, str]:
+    observed: list[str] = []
+    raw_values: Counter[str] = Counter()
+    for row in rows:
+        value = row.get(column, "").strip().lower()
+        if is_missing(value):
+            continue
+        raw_values[value] += 1
+        if value in observed_values:
+            observed.append(value)
+    raw_summary = ";".join(f"{value}:{count}" for value, count in sorted(raw_values.items()))
+    return len(observed), len(set(observed)), raw_summary
+
+
+def observed_eop_count(rows: list[dict[str, str]]) -> tuple[int, int, str]:
+    observed: list[str] = []
+    raw_values: Counter[str] = Counter()
+    for row in rows:
+        raw_value = row.get("eop", "").strip()
+        if is_missing(raw_value):
+            continue
+        raw_values[raw_value] += 1
+        value = parse_float_or_none(raw_value)
+        if value is not None and math.isfinite(value) and value >= 0:
+            observed.append(raw_value)
+    raw_summary = ";".join(f"{value}:{count}" for value, count in sorted(raw_values.items()))
+    return len(observed), len(set(observed)), raw_summary
+
+
+def add_h4_outcome_availability(feature_rows: list[dict[str, str]], assay_rows: list[dict[str, str]]) -> None:
+    total_rows = len(assay_rows)
+    categorical_metrics = [
+        ("spot_result", {"positive", "negative", "equivocal", "inconclusive"}, "Spot-test outcomes support initial-interaction analyses but are not productive-infection evidence."),
+        ("plaque_result", PRODUCTIVE_INFECTION_OBSERVED_VALUES, "Plaque outcomes are acceptable H4 productive-infection evidence when observed."),
+        ("productive_infection_result", PRODUCTIVE_INFECTION_OBSERVED_VALUES, "Productive-infection outcomes are the primary H4 endpoint when observed."),
+        ("growth_inhibition_result", PRODUCTIVE_INFECTION_OBSERVED_VALUES, "Growth inhibition is reported separately and is not automatically equivalent to productive infection."),
+    ]
+    metric_rows: list[tuple[str, int, int, str, str]] = []
+    for column, observed_values, note in categorical_metrics:
+        observed_count, unique_count, raw_summary = observed_categorical_outcome_count(assay_rows, column, observed_values)
+        metric_rows.append((column, observed_count, unique_count, raw_summary, note))
+    eop_count, eop_unique, eop_raw = observed_eop_count(assay_rows)
+    metric_rows.append(("eop", eop_count, eop_unique, eop_raw, "Numeric non-negative EOP values are acceptable H4 productive-infection evidence when present."))
+
+    for column, observed_count, unique_count, raw_summary, note in metric_rows:
+        feature_rows.append(
+            {
+                "analysis_id": "productive_infection_receptor_defense_blocker",
+                "hypothesis": "H4",
+                "task": "productive_outcome_availability_audit",
+                "feature_set": "assay_outcome_field",
+                "feature": column,
+                "non_missing_count": str(observed_count),
+                "unique_value_count": str(unique_count),
+                "full_accuracy": "",
+                "accuracy_without_feature": "",
+                "delta_accuracy": "",
+                "association_metric": "observed_outcome_count",
+                "association_value": str(observed_count),
+                "notes": f"total_assay_rows={total_rows}; raw_values={raw_summary or 'none'}; {note}",
+            }
+        )
+
+
 def add_rate_test(
     rows: list[dict[str, str]],
     feature_rows: list[dict[str, str]],
@@ -803,6 +913,195 @@ def add_rate_test(
                 "association_metric": "top_group_label_fraction",
                 "association_value": f"{top_count / total:.3f}" if total else "0.000",
                 "notes": f"Top {outcome_feature}={top_label}; counts=" + ";".join(f"{label}:{count}" for label, count in sorted(counts.items())),
+            }
+        )
+
+
+def add_h2_prophage_annotation_coverage(
+    rows: list[dict[str, str]],
+    feature_rows: list[dict[str, str]],
+    annotation_rows: list[dict[str, str]],
+    rbp_rows: list[dict[str, str]],
+) -> None:
+    annotated_prophages = {
+        row.get("genome_id", "")
+        for row in annotation_rows
+        if row.get("record_type", "") == "prophage" and not is_missing(row.get("genome_id"))
+    }
+    candidate_prophages = {
+        row.get("genome_id", "")
+        for row in rbp_rows
+        if row.get("record_type", "") == "prophage" and not is_missing(row.get("genome_id"))
+    }
+    assessed_count = len(annotated_prophages)
+    detected_count = len(annotated_prophages & candidate_prophages)
+    prophage_states = {"detected" if genome in candidate_prophages else "zero_detected" for genome in annotated_prophages}
+    if assessed_count == 0:
+        status = "blocked_no_prophage_annotations"
+    else:
+        status = "analysis_ready"
+    coverage = detected_count / assessed_count if assessed_count else 0.0
+    rows.append(
+        {
+            "analysis_id": "prophage_annotation_rbp_candidate_coverage",
+            "hypothesis": "H2",
+            "task": "prophage_rbp_module_reservoir_coverage",
+            "target": "prophage_rbp_candidate_status",
+            "feature_set": "record_type",
+            "model_type": "annotation_candidate_coverage_audit",
+            "n_samples": str(assessed_count),
+            "n_classes": str(len(prophage_states)),
+            "n_features": "1",
+            "coverage": f"{coverage:.3f}" if assessed_count else "0.000",
+            "accuracy": "",
+            "macro_f1": "",
+            "baseline_accuracy": "",
+            "delta_vs_baseline": "",
+            "status": status,
+            "notes": (
+                f"annotated_prophages={assessed_count}; prophages_with_rbp_candidates={detected_count}; "
+                "This is a quantitative coverage audit, not a reservoir-support claim; "
+                "the current prophage cohort is too small for H2 biological interpretation. "
+                "GenBank prophage CDS rows are bridge annotation only, not standardized Pharokka/PHROGs/domain/structural evidence."
+            ),
+        }
+    )
+    feature_rows.append(
+        {
+            "analysis_id": "prophage_annotation_rbp_candidate_coverage",
+            "hypothesis": "H2",
+            "task": "prophage_rbp_module_reservoir_coverage",
+            "feature_set": "record_type",
+            "feature": "prophage",
+            "non_missing_count": str(assessed_count),
+            "unique_value_count": str(len(prophage_states)),
+            "full_accuracy": "",
+            "accuracy_without_feature": "",
+            "delta_accuracy": "",
+            "association_metric": "prophage_rbp_candidate_fraction",
+            "association_value": f"{coverage:.3f}" if assessed_count else "",
+            "notes": (
+                f"annotated_prophages={';'.join(sorted(annotated_prophages)) or 'none'}; "
+                f"candidate_prophages={';'.join(sorted(candidate_prophages & annotated_prophages)) or 'none'}; "
+                "assessed_zero_detected means no candidate was detected from current accepted/bridge annotation evidence, not biological absence."
+            ),
+        }
+    )
+
+
+def median_value(values: list[float]) -> float | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    midpoint = len(ordered) // 2
+    if len(ordered) % 2:
+        return ordered[midpoint]
+    return (ordered[midpoint - 1] + ordered[midpoint]) / 2
+
+
+def add_host_defense_burden_by_st(
+    rows: list[dict[str, str]],
+    feature_rows: list[dict[str, str]],
+    host_metadata_rows: list[dict[str, str]],
+    host_defense_rows: list[dict[str, str]],
+) -> None:
+    defense_counts: Counter[str] = Counter()
+    defense_types: dict[str, set[str]] = defaultdict(set)
+    for row in host_defense_rows:
+        host_id = row.get("host_genome_id", "")
+        if is_missing(host_id):
+            continue
+        defense_counts[host_id] += 1
+        defense_type = row.get("defense_type", "") or row.get("defense_system", "")
+        if not is_missing(defense_type):
+            defense_types[host_id].add(defense_type)
+
+    benchmark_host_count = sum(
+        1
+        for row in host_metadata_rows
+        if row.get("host_genome_id", "").startswith("phagehostlearn_2024_host_")
+    )
+    st_hosts = []
+    grouped: dict[str, list[dict[str, str]]] = defaultdict(list)
+    for row in host_metadata_rows:
+        host_id = row.get("host_genome_id", "")
+        st = row.get("ST", "")
+        if not host_id.startswith("phagehostlearn_2024_host_"):
+            continue
+        if is_missing(host_id) or is_missing(st):
+            continue
+        if host_id not in defense_counts:
+            continue
+        count = defense_counts[host_id]
+        prepared = {
+            "host_genome_id": host_id,
+            "ST": st,
+            "defense_count": str(count),
+            "defense_type_count": str(len(defense_types.get(host_id, set()))),
+        }
+        st_hosts.append(prepared)
+        grouped[st].append(prepared)
+
+    n_samples = len(st_hosts)
+    n_groups = len(grouped)
+    groups_with_three = sum(1 for values in grouped.values() if len(values) >= 3)
+    status = "ok" if n_samples >= 20 and n_groups >= 3 and groups_with_three >= 3 else "insufficient_groups_for_rate_test"
+    counts = [parse_float_or_none(row["defense_count"]) for row in st_hosts]
+    present = [value for value in counts if value is not None]
+    overall_mean = mean_or_none(present)
+    overall_median = median_value(present)
+    rows.append(
+        {
+            "analysis_id": "st_vs_defense_burden_numeric",
+            "hypothesis": "H5",
+            "task": "host_background_defense_burden_summary",
+            "target": "host_defense_system_count",
+            "feature_set": "ST",
+            "model_type": "numeric_group_summary",
+            "n_samples": str(n_samples),
+            "n_classes": str(len({row["defense_count"] for row in st_hosts})),
+            "n_features": "1",
+            "coverage": f"{n_samples / benchmark_host_count:.3f}" if benchmark_host_count else "0.000",
+            "accuracy": "",
+            "macro_f1": "",
+            "baseline_accuracy": "",
+            "delta_vs_baseline": "",
+            "status": status,
+            "notes": (
+                "Association-only numeric ST versus DefenseFinder burden summary; "
+                f"st_groups={n_groups}; groups_with_n_ge_3={groups_with_three}; "
+                f"overall_mean={format_float(overall_mean)}; overall_median={format_float(overall_median)}."
+            ),
+        }
+    )
+
+    for st, values in sorted(grouped.items(), key=lambda item: (-len(item[1]), item[0])):
+        defense_values = [parse_float_or_none(row["defense_count"]) for row in values]
+        present_values = [value for value in defense_values if value is not None]
+        mean_count = mean_or_none(present_values)
+        median_count = median_value(present_values)
+        min_count = min(present_values) if present_values else None
+        max_count = max(present_values) if present_values else None
+        type_counts = [parse_float_or_none(row["defense_type_count"]) for row in values]
+        mean_type_count = mean_or_none(type_counts)
+        feature_rows.append(
+            {
+                "analysis_id": "st_vs_defense_burden_numeric",
+                "hypothesis": "H5",
+                "task": "host_background_defense_burden_summary",
+                "feature_set": "ST",
+                "feature": st,
+                "non_missing_count": str(len(values)),
+                "unique_value_count": str(len({row["defense_count"] for row in values})),
+                "full_accuracy": "",
+                "accuracy_without_feature": "",
+                "delta_accuracy": "",
+                "association_metric": "mean_host_defense_system_count_by_ST",
+                "association_value": format_float(mean_count),
+                "notes": (
+                    f"median={format_float(median_count)}; range={format_float(min_count)}-{format_float(max_count)}; "
+                    f"mean_defense_type_count={format_float(mean_type_count)}; association_only_not_infectivity."
+                ),
             }
         )
 
@@ -955,6 +1254,167 @@ def add_assay_breadth_feature_readiness(
         )
 
 
+def average_ranks(values: list[float]) -> list[float]:
+    indexed = sorted(enumerate(values), key=lambda item: item[1])
+    ranks = [0.0] * len(values)
+    index = 0
+    while index < len(indexed):
+        end = index + 1
+        while end < len(indexed) and indexed[end][1] == indexed[index][1]:
+            end += 1
+        rank = (index + 1 + end) / 2
+        for original_index, _value in indexed[index:end]:
+            ranks[original_index] = rank
+        index = end
+    return ranks
+
+
+def pearson_correlation(xs: list[float], ys: list[float]) -> float | None:
+    if len(xs) != len(ys) or len(xs) < 2:
+        return None
+    mean_x = sum(xs) / len(xs)
+    mean_y = sum(ys) / len(ys)
+    numerator = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys))
+    denom_x = math.sqrt(sum((x - mean_x) ** 2 for x in xs))
+    denom_y = math.sqrt(sum((y - mean_y) ** 2 for y in ys))
+    if denom_x == 0 or denom_y == 0:
+        return None
+    return numerator / (denom_x * denom_y)
+
+
+def spearman_correlation(xs: list[float], ys: list[float]) -> float | None:
+    if len(set(xs)) < 2 or len(set(ys)) < 2:
+        return None
+    return pearson_correlation(average_ranks(xs), average_ranks(ys))
+
+
+def add_assay_breadth_numeric_association(
+    rows: list[dict[str, str]],
+    feature_rows: list[dict[str, str]],
+    samples: list[dict[str, str]],
+    analysis_id: str,
+    feature: str,
+    state_feature: str,
+    min_assessed_phages: int,
+    min_feature_groups: int,
+    min_group_size: int,
+) -> None:
+    assessed: list[tuple[dict[str, str], float, float]] = []
+    for sample in samples:
+        state = sample.get(state_feature, "not_assessed")
+        if state == "evidence_rejected":
+            continue
+        if state == "not_assessed" or is_missing(state):
+            continue
+        feature_value = parse_float_or_none(sample.get(feature, ""))
+        breadth = parse_float_or_none(sample.get("spot_positive_fraction", ""))
+        if feature_value is None or breadth is None:
+            continue
+        assessed.append((sample, feature_value, breadth))
+
+    grouped: dict[str, list[tuple[dict[str, str], float, float]]] = defaultdict(list)
+    for sample, feature_value, breadth in assessed:
+        grouped[format_float(feature_value)].append((sample, feature_value, breadth))
+
+    if not samples:
+        status = "blocked_no_host_range_breadth_labels"
+        notes = "No explicit assay panel denominators are available for H3."
+    elif not assessed:
+        status = "blocked_feature_not_assessed"
+        notes = f"{feature} is not assessed for assay phages; missing evidence is not treated as biological zero."
+    elif len(assessed) < min_assessed_phages or len(grouped) < min_feature_groups:
+        status = "blocked_insufficient_feature_coverage"
+        notes = (
+            f"assessed_phages={len(assessed)}; feature_values={len(grouped)}; "
+            f"thresholds=min_assessed_phages:{min_assessed_phages},min_feature_groups:{min_feature_groups}. "
+            f"min_group_size:{min_group_size} applies to categorical feature-readiness gates, not numeric rank correlation."
+        )
+    else:
+        status = "analysis_ready"
+        notes = "Exploratory phage-level Spearman association between assessed feature count and spot-test breadth; not a productive-infection or causal host-range claim."
+
+    feature_values = [feature_value for _sample, feature_value, _breadth in assessed]
+    breadth_values = [breadth for _sample, _feature_value, breadth in assessed]
+    rho = spearman_correlation(feature_values, breadth_values) if status == "analysis_ready" else None
+    rows.append(
+        {
+            "analysis_id": analysis_id,
+            "hypothesis": "H3",
+            "task": "test_spot_breadth_feature_association",
+            "target": "spot_positive_fraction",
+            "feature_set": feature,
+            "model_type": "spearman_rank_correlation",
+            "n_samples": str(len(assessed)),
+            "n_classes": str(len(set(format_float(value) for value in breadth_values))),
+            "n_features": "1",
+            "coverage": f"{len(assessed) / len(samples):.3f}" if samples else "0.000",
+            "accuracy": "",
+            "macro_f1": "",
+            "baseline_accuracy": "",
+            "delta_vs_baseline": "",
+            "status": status,
+            "notes": notes + (f" spearman_rho={format_float(rho)}." if rho is not None else ""),
+        }
+    )
+
+    if not assessed:
+        feature_rows.append(
+            {
+                "analysis_id": analysis_id,
+                "hypothesis": "H3",
+                "task": "test_spot_breadth_feature_association",
+                "feature_set": feature,
+                "feature": "not_assessed",
+                "non_missing_count": "0",
+                "unique_value_count": "0",
+                "full_accuracy": "",
+                "accuracy_without_feature": "",
+                "delta_accuracy": "",
+                "association_metric": "h3_feature_coverage_fraction",
+                "association_value": "0.000",
+                "notes": "No assay phages have this feature assessed; do not interpret as zero detected.",
+            }
+        )
+        return
+
+    feature_rows.append(
+        {
+            "analysis_id": analysis_id,
+            "hypothesis": "H3",
+            "task": "test_spot_breadth_feature_association",
+            "feature_set": feature,
+            "feature": "spearman_rho",
+            "non_missing_count": str(len(assessed)),
+            "unique_value_count": str(len(set(format_float(value) for value in feature_values))),
+            "full_accuracy": "",
+            "accuracy_without_feature": "",
+            "delta_accuracy": "",
+            "association_metric": "spearman_rho_spot_positive_fraction",
+            "association_value": format_float(rho),
+            "notes": "Phage-level association only; spot-test endpoint and tested-panel composition limit interpretation.",
+        }
+    )
+    for group, group_samples in sorted(grouped.items(), key=lambda item: (parse_float_or_none(item[0]) is None, parse_float_or_none(item[0]) or 0.0)):
+        breadths = [breadth for _sample, _feature_value, breadth in group_samples]
+        feature_rows.append(
+            {
+                "analysis_id": analysis_id,
+                "hypothesis": "H3",
+                "task": "test_spot_breadth_feature_association",
+                "feature_set": feature,
+                "feature": group,
+                "non_missing_count": str(len(group_samples)),
+                "unique_value_count": str(len(set(format_float(value) for value in breadths))),
+                "full_accuracy": "",
+                "accuracy_without_feature": "",
+                "delta_accuracy": "",
+                "association_metric": "mean_spot_positive_fraction_by_numeric_feature_value",
+                "association_value": format_float(mean_or_none(breadths)),
+                "notes": "Descriptive bin of the same phage-level association; not a thresholded breadth definition.",
+            }
+        )
+
+
 def row_id_set(rows: list[dict[str, str]], key: str) -> set[str]:
     return {row.get(key, "") for row in rows if not is_missing(row.get(key, ""))}
 
@@ -968,9 +1428,20 @@ def is_verified_sequence(genome_id: str, manifest: dict[str, dict[str, str]], se
 
 
 def is_standardized_annotation(row: dict[str, str]) -> bool:
+    if is_missing(row.get("genome_id", "")) or is_missing(row.get("annotation_gene_id", "")):
+        return False
     tool = row.get("tool", "").lower()
     evidence = row.get("evidence", "").lower()
-    return any(token in tool for token in ["pharokka", "phrog"]) or "standardized" in evidence
+    product = row.get("product", "")
+    # The normalized annotation table may come from native phage annotation
+    # tooling or from a reviewed sequence-backed CDS/protein annotation TSV.
+    # Tool-specific receptor claims are audited separately.
+    return (
+        any(token in tool for token in ["pharokka", "phrog", "prodigal"])
+        or "standardized" in evidence
+        or "sequence_backed_cds_prediction" in evidence
+        or (is_informative_feature_value(product) and not is_missing(row.get("protein_sequence", "")))
+    )
 
 
 def has_domain_evidence(row: dict[str, str]) -> bool:
@@ -1058,7 +1529,11 @@ def build_assay_feature_coverage(
     domain_phages = {row.get("genome_id", "") for row in rbp_rows + domain_rows if not is_missing(row.get("genome_id", "")) and has_domain_evidence(row)}
     structural_phages = {row.get("genome_id", "") for row in rbp_rows + domain_rows if not is_missing(row.get("genome_id", "")) and has_structural_evidence(row)}
     domain_assessed_phages = {row.get("genome_id", "") for row in domain_rows if not is_missing(row.get("genome_id", ""))}
-    structural_assessed_phages = {row.get("genome_id", "") for row in domain_rows if not is_missing(row.get("genome_id", "")) and any(column in row for column in ["structural_hit", "structural_hit_id", "structural_support", "best_structural_hit"])}
+    structural_assessed_phages = {
+        row.get("genome_id", "")
+        for row in rbp_rows + domain_rows
+        if not is_missing(row.get("genome_id", "")) and has_structural_evidence(row)
+    }
 
     host_defense_assessed_hosts = row_id_set(host_defense_rows, "host_genome_id")
     host_defense_detected_hosts = {
@@ -1069,6 +1544,8 @@ def build_assay_feature_coverage(
             parse_int(row.get("host_defense_system_count", "0")) > 0
             or is_informative_feature_value(row.get("host_defense_types", ""))
             or is_informative_feature_value(row.get("host_defense_systems", ""))
+            or is_informative_feature_value(row.get("defense_type", ""))
+            or is_informative_feature_value(row.get("defense_system", ""))
         )
     }
     antidefense_assessed_phages = row_id_set(phage_antidefense_rows, "phage_genome_id")
@@ -1080,6 +1557,8 @@ def build_assay_feature_coverage(
             parse_int(row.get("phage_antidefense_count", "0")) > 0
             or is_informative_feature_value(row.get("phage_antidefense_targets", ""))
             or is_informative_feature_value(row.get("phage_antidefense_classes", ""))
+            or is_informative_feature_value(row.get("target_defense_system", ""))
+            or is_informative_feature_value(row.get("antidefense_class", ""))
         )
     }
     phage_receptor_phages = row_id_set(phage_receptor_rows, "phage_genome_id")
@@ -1108,7 +1587,7 @@ def build_assay_feature_coverage(
         ("host_K_type", "unique_host", len(k_hosts), len(k_assessed_hosts), host_count, "H1b", "Run reviewed Kaptive/Kleborate-style typing for assay hosts."),
         ("host_O_type", "unique_host", len(o_hosts), len(o_assessed_hosts), host_count, "H1b", "Run reviewed Kaptive/Kleborate-style typing for assay hosts."),
         ("host_ST", "unique_host", len(st_hosts), len(st_assessed_hosts), host_count, "H1b;H5", "Run reviewed Kleborate/MLST typing for assay hosts."),
-        ("standardized_phage_annotation", "unique_phage", len(set(assay_phages) & standardized_annotation_phages), len(set(assay_phages) & standardized_annotation_phages), phage_count, "H1b;H3", "Run standardized phage annotation for assay phages; bridge GenBank annotations are not counted here."),
+        ("standardized_phage_annotation", "unique_phage", len(set(assay_phages) & standardized_annotation_phages), len(set(assay_phages) & standardized_annotation_phages), phage_count, "H1b;H3", "Use accepted sequence-backed normalized annotation when present; otherwise run standardized phage annotation for assay phages."),
         ("rbp_candidates", "unique_phage", len(set(assay_phages) & rbp_phages), len(set(assay_phages) & rbp_phages), phage_count, "H1b;H3", "Run accepted RBP/depolymerase prediction for assay phages."),
         ("domain_evidence", "unique_phage", len(set(assay_phages) & domain_phages), len(set(assay_phages) & domain_assessed_phages), phage_count, "H1b;H3", "Add reviewed domain evidence for assay-phage RBP candidates."),
         ("structural_evidence", "unique_phage", len(set(assay_phages) & structural_phages), len(set(assay_phages) & structural_assessed_phages), phage_count, "H1b;H3", "Add reviewed structural/remote-homology evidence for assay-phage RBP candidates."),
@@ -1124,7 +1603,7 @@ def build_assay_feature_coverage(
         ("host_K_type", "pair", sum(1 for _phage, host in assay_pairs if host in k_hosts), sum(1 for _phage, host in assay_pairs if host in k_assessed_hosts), pair_count, "H1b", "Acquire K-type calls for tested hosts."),
         ("host_O_type", "pair", sum(1 for _phage, host in assay_pairs if host in o_hosts), sum(1 for _phage, host in assay_pairs if host in o_assessed_hosts), pair_count, "H1b", "Acquire O-type calls for tested hosts."),
         ("host_ST", "pair", sum(1 for _phage, host in assay_pairs if host in st_hosts), sum(1 for _phage, host in assay_pairs if host in st_assessed_hosts), pair_count, "H1b;H5", "Acquire ST calls for tested hosts."),
-        ("standardized_phage_annotation", "pair", sum(1 for phage, _host in assay_pairs if phage in standardized_annotation_phages), sum(1 for phage, _host in assay_pairs if phage in standardized_annotation_phages), pair_count, "H1b;H3", "Annotate assay phages with standardized production tools."),
+        ("standardized_phage_annotation", "pair", sum(1 for phage, _host in assay_pairs if phage in standardized_annotation_phages), sum(1 for phage, _host in assay_pairs if phage in standardized_annotation_phages), pair_count, "H1b;H3", "Use accepted sequence-backed normalized annotation when present; otherwise annotate assay phages with standardized production tools."),
         ("rbp_candidates", "pair", sum(1 for phage, _host in assay_pairs if phage in rbp_phages), sum(1 for phage, _host in assay_pairs if phage in rbp_phages), pair_count, "H1b;H3", "Predict assay-phage RBP/depolymerase candidates."),
         ("domain_evidence", "pair", sum(1 for phage, _host in assay_pairs if phage in domain_phages), sum(1 for phage, _host in assay_pairs if phage in domain_assessed_phages), pair_count, "H1b;H3", "Add domain evidence for assay-phage RBP candidates."),
         ("structural_evidence", "pair", sum(1 for phage, _host in assay_pairs if phage in structural_phages), sum(1 for phage, _host in assay_pairs if phage in structural_assessed_phages), pair_count, "H1b;H3", "Add structural evidence for assay-phage RBP candidates."),
@@ -1152,7 +1631,7 @@ def build_assay_feature_coverage(
     defense_complete = sum(1 for phage, host in assay_pairs if phage in antidefense_detected_phages and host in host_defense_detected_hosts)
     defense_assessed = sum(1 for phage, host in assay_pairs if phage in antidefense_assessed_phages and host in host_defense_assessed_hosts)
     productive_measured = sum(1 for row in tested_spot_rows if row.get("productive_infection_result", "").strip().lower() in PRODUCTIVE_INFECTION_OBSERVED_VALUES)
-    add_coverage_row(rows, "receptor_layer_feature_completeness", "pair", receptor_complete, pair_count, coverage_state(receptor_complete, receptor_assessed, pair_count), "H1b", "Acquire production assay-phage RBP candidates and host K/O calls; seed bridge support is reported separately.")
+    add_coverage_row(rows, "receptor_layer_feature_completeness", "pair", receptor_complete, pair_count, coverage_state(receptor_complete, receptor_assessed, pair_count), "H1b", "Use production assay-phage RBP candidates and host K/O calls where present; seed bridge support and structural coverage are reported separately.")
     add_coverage_row(rows, "seed_bridge_metadata_coverage", "pair", seed_bridge_metadata_coverage, pair_count, coverage_state(seed_bridge_metadata_coverage, seed_bridge_metadata_coverage, pair_count), "H1b", "RBPbase/Locibase seed bridge metadata can exercise the path, but it is not production K/O or RBP/domain evidence.")
     add_coverage_row(rows, "defense_counterdefense_feature_completeness", "pair", defense_complete, pair_count, coverage_state(defense_complete, defense_assessed, pair_count), "H4", "Acquire host-defense and phage counter-defense evidence for the same tested pairs.")
     add_coverage_row(rows, "productive_infection_outcomes", "pair", productive_measured, pair_count, coverage_state(productive_measured, productive_measured, pair_count), "H4", "Curate plaque, EOP, propagation, or productive-infection labels; spot tests alone do not satisfy H4.")
@@ -1249,11 +1728,15 @@ def mean_delta_between(model_rows: list[dict[str, str]], targets: list[str], pri
     return mean_or_none(deltas)
 
 
-def group_fraction_range(feature_rows: list[dict[str, str]], analysis_ids: set[str]) -> tuple[float | None, float | None, float | None]:
+def group_fraction_range(
+    feature_rows: list[dict[str, str]],
+    analysis_ids: set[str],
+    association_metric: str = "top_group_label_fraction",
+) -> tuple[float | None, float | None, float | None]:
     values = [
         parse_float_or_none(row.get("association_value", ""))
         for row in feature_rows
-        if row.get("analysis_id") in analysis_ids and row.get("association_metric") == "top_group_label_fraction"
+        if row.get("analysis_id") in analysis_ids and row.get("association_metric") == association_metric
     ]
     present = [value for value in values if value is not None]
     if not present:
@@ -1281,12 +1764,16 @@ def summary_row(
     row_statuses = {row.get("status", "") for row in rows}
     if "blocked_no_host_range_breadth_labels" in row_statuses:
         action = "Curate phage-host assay panels with tested-host denominators and susceptible-host numerators, then rerun Stage 7."
+    elif "analysis_ready" in row_statuses and "blocked_insufficient_feature_coverage" in row_statuses:
+        action = "Exploratory H3 association rows are available for assessed receptor-module features, but counter-defense coverage is still insufficient and biological claims remain data-dependent."
     elif "blocked_feature_not_assessed" in row_statuses:
         action = "Use the descriptive spot-breadth table, but acquire accepted production RBP/depolymerase and counter-defense evidence before testing H3 associations."
     elif "blocked_insufficient_feature_coverage" in row_statuses:
-        action = "Increase assessed assay-phage feature coverage and satisfy the pre-specified H3 group-size thresholds before testing H3 associations."
+        action = "Increase assessed assay-phage feature coverage and satisfy the pre-specified H3 thresholds before testing H3 associations."
     elif "descriptive_breadth_available" in row_statuses:
         action = "Spot-test breadth is available descriptively; do not treat it as support for RBP/counter-defense enrichment until feature evidence is assessed."
+    elif primary.get("analysis_id") == "prophage_annotation_rbp_candidate_coverage" and "analysis_ready" in row_statuses:
+        action = "A quantitative H2 prophage coverage audit is available, but the current cohort is too small for a reservoir claim; expand prophage sampling and standardized annotation before manuscript interpretation."
     elif "blocked_no_productive_infection_labels" in row_statuses:
         action = "Curate productive-infection, plaque, or EOP outcomes for tested phage-host pairs, then rerun Stage 7."
     return {
@@ -1338,7 +1825,7 @@ def build_hypothesis_summary(
             "H2",
             "Do prophages provide a reservoir of RBP/depolymerase modules?",
             "record type versus RBP module group-rate summary",
-            {"record_type_vs_rbp_modules"},
+            {"prophage_annotation_rbp_candidate_coverage", "record_type_vs_rbp_modules"},
             "top_label_fraction_range_by_record_type",
             "Prophage module rows are candidates only; function and capsule specificity require validation.",
         ),
@@ -1346,17 +1833,26 @@ def build_hypothesis_summary(
             "H3",
             "Are broad-host-range phages enriched for modular RBPs and counter-defense genes?",
             "host-range breadth test from explicit assay panel denominators plus feature-coverage gates",
-            {"host_range_breadth_blocker", "spot_breadth_descriptive", "spot_breadth_vs_rbp_candidates", "spot_breadth_vs_counterdefense_candidates"},
+            {
+                "host_range_breadth_blocker",
+                "spot_breadth_descriptive",
+                "spot_breadth_vs_rbp_candidates",
+                "spot_breadth_vs_counterdefense_candidates",
+                "spot_breadth_vs_domain_module_count",
+                "spot_breadth_vs_structural_module_count",
+                "spot_breadth_vs_total_module_count",
+                "spot_breadth_vs_antidefense_candidate_count",
+            },
             "spot_test_host_range_breadth_descriptive_and_feature_readiness",
             "Spot-test breadth is initial-interaction evidence only; productive-infection breadth remains unavailable without plaque/EOP/propagation outcomes.",
         ),
         (
             "H5",
             "Do host lineages differ in defense burden?",
-            "ST versus host defense burden group-rate summary",
-            {"st_vs_defense_status"},
-            "top_label_fraction_range_by_ST",
-            "Lineage differences are associations and may reflect sampling bias.",
+            "ST versus host defense burden numeric summary",
+            {"st_vs_defense_burden_numeric"},
+            "mean_defense_system_count_range_by_ST",
+            "Lineage differences are associations and may reflect sampling bias; DefenseFinder burden is not phage susceptibility.",
         ),
         (
             "H6",
@@ -1402,7 +1898,8 @@ def build_hypothesis_summary(
     for hypothesis, question, required_test, analysis_ids, metric_name, guardrail in group_specs:
         rows = [row for row in model_rows if row.get("analysis_id") in analysis_ids]
         primary = first_row(rows)
-        metric, baseline, effect = group_fraction_range(feature_rows, analysis_ids)
+        association_metric = "mean_host_defense_system_count_by_ST" if hypothesis == "H5" else "top_group_label_fraction"
+        metric, baseline, effect = group_fraction_range(feature_rows, analysis_ids, association_metric)
         summary.append(
             summary_row(
                 hypothesis,
@@ -1426,10 +1923,14 @@ def build_hypothesis_summary(
 def run_models(
     samples: list[dict[str, str]],
     assay_breadth_samples: list[dict[str, str]],
-    assay_row_count: int,
+    assay_rows: list[dict[str, str]],
     h3_min_assessed_phages: int,
     h3_min_feature_groups: int,
     h3_min_group_size: int,
+    host_metadata_rows: list[dict[str, str]],
+    host_defense_rows: list[dict[str, str]],
+    annotation_rows: list[dict[str, str]],
+    rbp_rows: list[dict[str, str]],
 ) -> tuple[list[dict[str, str]], list[dict[str, str]], list[dict[str, str]]]:
     model_rows: list[dict[str, str]] = []
     feature_rows: list[dict[str, str]] = []
@@ -1458,11 +1959,13 @@ def run_models(
         "productive_infection_result",
         "receptor_plus_defense_counterdefense",
         "blocked_assay_outcome_required",
-        assay_row_count if assay_row_count else len(samples),
+        len(assay_rows) if assay_rows else len(samples),
         "blocked_no_productive_infection_labels",
         "H4 requires tested productive-infection, plaque, or EOP outcomes. compatibility_feature_status and matched_counterdefense_status are feature-derived labels and are not valid biological targets.",
     )
+    add_h4_outcome_availability(feature_rows, assay_rows)
 
+    add_h2_prophage_annotation_coverage(model_rows, feature_rows, annotation_rows, rbp_rows)
     add_rate_test(
         model_rows,
         feature_rows,
@@ -1495,6 +1998,50 @@ def run_models(
             h3_min_feature_groups,
             h3_min_group_size,
         )
+        add_assay_breadth_numeric_association(
+            model_rows,
+            feature_rows,
+            assay_breadth_samples,
+            "spot_breadth_vs_domain_module_count",
+            "rbp_domain_module_count",
+            "rbp_module_identity_state",
+            h3_min_assessed_phages,
+            h3_min_feature_groups,
+            h3_min_group_size,
+        )
+        add_assay_breadth_numeric_association(
+            model_rows,
+            feature_rows,
+            assay_breadth_samples,
+            "spot_breadth_vs_structural_module_count",
+            "rbp_structural_module_count",
+            "rbp_module_identity_state",
+            h3_min_assessed_phages,
+            h3_min_feature_groups,
+            h3_min_group_size,
+        )
+        add_assay_breadth_numeric_association(
+            model_rows,
+            feature_rows,
+            assay_breadth_samples,
+            "spot_breadth_vs_total_module_count",
+            "rbp_total_module_count",
+            "rbp_module_identity_state",
+            h3_min_assessed_phages,
+            h3_min_feature_groups,
+            h3_min_group_size,
+        )
+        add_assay_breadth_numeric_association(
+            model_rows,
+            feature_rows,
+            assay_breadth_samples,
+            "spot_breadth_vs_antidefense_candidate_count",
+            "phage_antidefense_candidate_count",
+            "phage_antidefense_candidate_state",
+            h3_min_assessed_phages,
+            h3_min_feature_groups,
+            h3_min_group_size,
+        )
     else:
         add_blocked_test(
             model_rows,
@@ -1508,15 +2055,11 @@ def run_models(
             "blocked_no_host_range_breadth_labels",
             "H3 requires assay panels with tested-host denominators and susceptible-host numerators. RBP/counter-defense co-occurrence is not a host-range breadth test.",
         )
-    add_rate_test(
+    add_host_defense_burden_by_st(
         model_rows,
         feature_rows,
-        samples,
-        "H5",
-        "st_vs_defense_status",
-        "host_background_defense_summary",
-        "ST",
-        "host_defense_system_count_bin",
+        host_metadata_rows,
+        host_defense_rows,
     )
     add_rate_test(
         model_rows,
@@ -1556,6 +2099,7 @@ def main() -> int:
     _, sequence_qc_rows = read_optional_tsv(args.sequence_qc)
     _, annotation_rows = read_optional_tsv(args.annotations)
     _, domain_rows = read_optional_tsv(args.domain_architectures)
+    _, module_identity_rows = read_optional_tsv(args.phage_module_identities)
     _, host_metadata_rows = read_optional_tsv(args.host_metadata)
     _, host_defense_rows = read_optional_tsv(args.host_defense)
     _, phage_antidefense_rows = read_optional_tsv(args.phage_antidefense)
@@ -1566,7 +2110,7 @@ def main() -> int:
         report,
         "info",
         "inputs",
-        f"Loaded {len(manifest)} manifest rows, {len(clusters)} cluster rows, {len(rbp_rows)} RBP candidates, {len(link_rows)} phage-host links, {len(compatibility_rows)} compatibility rows, {len(assay_rows)} assay rows, {len(annotation_rows)} annotation rows, {len(host_metadata_rows)} host metadata rows, {len(host_defense_rows)} host-defense rows, {len(phage_antidefense_rows)} phage anti-defense rows, {len(phage_receptor_rows)} phage bridge-metadata rows, and {len(host_receptor_rows)} host bridge-metadata rows.",
+        f"Loaded {len(manifest)} manifest rows, {len(clusters)} cluster rows, {len(rbp_rows)} RBP candidates, {len(link_rows)} phage-host links, {len(compatibility_rows)} compatibility rows, {len(assay_rows)} assay rows, {len(annotation_rows)} annotation rows, {len(module_identity_rows)} module-identity rows, {len(host_metadata_rows)} host metadata rows, {len(host_defense_rows)} host-defense rows, {len(phage_antidefense_rows)} phage anti-defense rows, {len(phage_receptor_rows)} phage bridge-metadata rows, and {len(host_receptor_rows)} host bridge-metadata rows.",
     )
 
     samples = build_samples(
@@ -1582,14 +2126,20 @@ def main() -> int:
         clusters,
         rbp_features,
         phage_counterdefense_by_phage(compatibility_rows),
+        phage_module_identities_by_phage(module_identity_rows),
+        phage_antidefense_candidates_by_phage(phage_antidefense_rows),
     )
     model_rows, feature_rows, error_rows = run_models(
         samples,
         assay_breadth_samples,
-        len(assay_rows),
+        assay_rows,
         args.h3_min_assessed_phages,
         args.h3_min_feature_groups,
         args.h3_min_group_size,
+        host_metadata_rows,
+        host_defense_rows,
+        annotation_rows,
+        rbp_rows,
     )
     hypothesis_summary_rows = build_hypothesis_summary(model_rows, feature_rows, display_path(Path(args.model_comparison_output)))
     assay_feature_coverage_rows = build_assay_feature_coverage(

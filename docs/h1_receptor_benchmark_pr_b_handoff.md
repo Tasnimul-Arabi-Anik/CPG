@@ -48,7 +48,7 @@ The production profile is wired to the H1 inputs needed here: pairwise phage sim
 - primary baseline: `genome_similarity_nearest_phage_host_KO_rate`
 - primary contrast: `AP(receptor_plus_host_KO_rate) - AP(genome_similarity_nearest_phage_host_KO_rate)`
 
-The contract also requires source ablations so Phold/Foldseek signal is not conflated with RBPbase or Pharokka evidence. PR B now includes exact PHROGs/MMseqs domain IDs and Phold/Foldseek structural hit IDs as module-identity signatures. These are a better receptor-feature representation than count bins, but they still do not encode domain order, domain boundaries, C-terminal receptor-recognition architecture, or experimentally validated capsule specificity.
+The contract also requires source ablations so Phold/Foldseek signal is not conflated with RBPbase or Pharokka evidence. PR B now includes exact PHROGs/MMseqs profile-family IDs, Phold/Foldseek structural hit IDs, and ordered per-gene PHROGs/MMseqs profile-hit proxies from Prodigal gene order plus MMseqs hit coordinates. These are better receptor-feature representations than count bins, but they still do not encode manually curated non-overlapping domain boundaries, C-terminal receptor-recognition architecture, or experimentally validated capsule specificity.
 
 ## Reproduction commands
 
@@ -70,23 +70,23 @@ The H1 matrix and grouped benchmark scripts were rerun locally on this branch.
 Generated large ignored outputs:
 
 - `results/production/model_inputs/receptor_layer_pairwise_features.tsv`: 10,006 rows
-- `results/production/models/receptor_layer_model_comparison.tsv`: 460 fold-level rows
-- `results/production/models/receptor_layer_out_of_fold_predictions.tsv`: 920,552 prediction rows
+- `results/production/models/receptor_layer_model_comparison.tsv`: 520 fold-level rows
+- `results/production/models/receptor_layer_out_of_fold_predictions.tsv`: 1,040,624 prediction rows
 
 Tracked compact review outputs:
 
 - `results/production/receptor_features/assay_phage_receptor_feature_coverage.tsv`: 105 rows
 - `results/production/receptor_features/assay_phage_module_identity_signatures.tsv`: 105 rows
 - `results/production/receptor_features/assay_phage_cluster_assignments.tsv`: 105 rows
-- `results/production/models/receptor_layer_model_pooled_summary.tsv`: 92 rows
-- `results/production/models/receptor_layer_support_diagnostics.tsv`: 460 rows
-- `results/production/models/receptor_layer_feature_source_ablation.tsv`: 60 rows
-- `results/production/models/receptor_layer_group_bootstrap_delta.tsv`: 60 rows
+- `results/production/models/receptor_layer_model_pooled_summary.tsv`: 104 rows
+- `results/production/models/receptor_layer_support_diagnostics.tsv`: 520 rows
+- `results/production/models/receptor_layer_feature_source_ablation.tsv`: 76 rows
+- `results/production/models/receptor_layer_group_bootstrap_delta.tsv`: 76 rows
 - `results/production/models/benchmark_run_manifest.tsv`: checksum manifest for the compact review artifacts
 
 Module identity coverage:
 
-- assay phages with PHROGs/MMseqs receptor-domain module IDs: 105/105
+- assay phages with PHROGs/MMseqs receptor profile-family hit IDs: 105/105
 - assay phages with Phold/Foldseek structural module IDs: 12/105
 - assay phages with at least one module identity signature: 105/105
 
@@ -98,7 +98,7 @@ Primary cold-phage-cluster contrast for the original coarse union feature, `rece
 | fastANI | 0.131389 | 0.188908 | -0.057519 | [-0.136356, 0.010694] |
 | skani | 0.131389 | 0.200487 | -0.069098 | [-0.153840, 0.000397] |
 
-Cold-phage-cluster contrast for exact domain+structural module identity signatures, `domain_structural_module_plus_host_KO_rate - genome_similarity_nearest_phage_host_KO_rate`:
+Cold-phage-cluster contrast for exact PHROG profile-family + structural hit identity signatures, `domain_structural_module_plus_host_KO_rate - genome_similarity_nearest_phage_host_KO_rate`:
 
 | Similarity baseline | Module AP | Baseline AP | Delta AP | Held-out-group bootstrap 95% CI |
 | --- | ---: | ---: | ---: | --- |
@@ -106,9 +106,9 @@ Cold-phage-cluster contrast for exact domain+structural module identity signatur
 | fastANI | 0.203203 | 0.188908 | 0.014295 | [-0.054362, 0.075745] |
 | skani | 0.203203 | 0.200487 | 0.002716 | [-0.056983, 0.064242] |
 
-The exact domain+structural module identity signature is much stronger than the RBPbase+K/O baseline in the cold-phage-cluster split (AP 0.203203 versus 0.071841; delta 0.131362; bootstrap CI [0.068376, 0.209580]). It does not yet robustly outperform genome-similarity+K/O baselines because the paired held-out-group bootstrap intervals for those contrasts overlap zero.
+The exact unordered PHROG profile-family + structural hit identity signature is stronger than the RBPbase+K/O baseline in the cold-phage-cluster split (AP 0.190417 versus 0.064114; delta 0.126303; bootstrap CI [0.053441, 0.215846]). It does not robustly outperform BLASTN genome-similarity+K/O (AP 0.190417 versus 0.195850; delta -0.005433; CI [-0.076435, 0.047078]). Ordered PHROG profile-hit + structural hit proxies were also tested and underperform the unordered profile-family/structural hit signature in cold-phage-cluster evaluation (AP 0.060394 versus 0.190417; delta -0.130023; CI [-0.235675, -0.058682]).
 
-Cold-K-locus receptor holdout remains strongly constrained by fallback design. Because exact K/O composite keys are withheld, all cold-K-locus receptor-plus-K/O and module-plus-K/O predictions collapse to global prevalence. The genome-similarity plus K/O model also lacks direct same-K/O support in cold-K-locus folds, but it uses an intermediate nearest-phage marginal-rate fallback rather than global prevalence. The current benchmark therefore supports only this narrow statement: exact receptor module identities improve over RBPbase in this benchmark and are competitive with genome-similarity baselines in cold-phage-cluster evaluation, but they do not yet establish robust superiority over genome similarity or novel-K generalization.
+Cold-K-locus receptor holdout remains strongly constrained by fallback design. Because exact K/O composite keys are withheld, all cold-K-locus receptor-plus-K/O, unordered profile-family/structural hit plus K/O, and ordered profile-hit proxy plus K/O predictions collapse to global prevalence. The genome-similarity plus K/O model also lacks direct same-K/O support in cold-K-locus folds, but it uses an intermediate nearest-phage marginal-rate fallback rather than global prevalence. The current benchmark therefore supports only this narrow statement: exact unordered receptor profile-family/structural hit identities improve over RBPbase in this benchmark and are competitive with BLASTN genome-similarity baselines in cold-phage-cluster evaluation, while ordered profile-hit proxies are currently too sparse for cold-phage/cold-cluster exact-key prediction. These results do not establish robust superiority over genome similarity or novel-K generalization.
 
 ## Claim boundary
 
@@ -118,7 +118,7 @@ Allowed wording for this branch:
 
 Not allowed from this branch:
 
-- RBP/depolymerase module architecture outperforms genome similarity; this branch now tests exact domain/structural module identity signatures, but not full domain-order architecture, and the module-vs-genome-similarity CI still overlaps zero;
+- RBP/depolymerase module architecture outperforms genome similarity; this branch now tests exact PHROG profile-family/structural hit identity signatures and ordered per-gene profile-hit proxies, but the profile-hit-vs-genome-similarity CI still overlaps zero and the ordered proxy underperforms in cold-phage/cold-cluster splits;
 - receptor features outperform genome similarity unless the paired held-out-group uncertainty supports that contrast;
 - spot-test positives prove productive infection;
 - any candidate protein binds a specific capsule or has validated depolymerase activity;

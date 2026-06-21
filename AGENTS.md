@@ -67,6 +67,19 @@ Always organize the analysis into these layers:
    - Keep figure source data in results/.
    - Update docs/methods.md when tools or thresholds change.
 
+## Execution Guardrails
+
+No infrastructure-only PRs. Do not add new planners, audits, schemas, dashboards, wrappers, or workflow layers unless a current real-data analysis cannot proceed without them.
+
+Prioritize, in order:
+
+1. accepted external-tool evidence;
+2. scientifically valid comparisons;
+3. new outcome or validation data;
+4. compact reviewable results.
+
+When evidence comes from PHROGs/MMseqs profile matches, describe it as profile-family or homology-fingerprint evidence unless overlapping hits have been resolved into non-overlapping biological domains. Do not call current ordered profile-hit strings true RBP architecture.
+
 ## Coding Rules
 
 - Use Python for data tables, parsing, statistics, and figure source generation.

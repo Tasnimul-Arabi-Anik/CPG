@@ -251,7 +251,12 @@ def normalize_host_defense(path_text: str, known_hosts: set[str], report: list[d
 
 def normalize_explicit_antidefense(path_text: str, report: list[dict[str, str]]) -> list[dict[str, str]]:
     if is_missing(path_text):
-        add_report(report, "info", "phage_antidefense", "No explicit phage anti-defense table supplied; annotation inference will be used.")
+        add_report(
+            report,
+            "info",
+            "phage_antidefense",
+            "No explicit phage anti-defense table supplied; annotation keyword screening will be reported but excluded from compatibility matching.",
+        )
         return []
     path = Path(path_text)
     if not path.exists():
@@ -329,7 +334,7 @@ def infer_antidefense_from_annotations(annotations: list[dict[str, str]]) -> lis
                 "evidence_type": "annotation_keyword_inference",
                 "evidence_source": row.get("tool", "annotation"),
                 "confidence_score": "0.500",
-                "notes": "inferred from annotation text; requires validation",
+                "notes": "screening-only annotation keyword hit; excluded from compatibility matching unless supported by explicit reviewed evidence",
             }
         )
     return inferred
@@ -439,9 +444,14 @@ def main() -> int:
         explicit_anti = normalize_explicit_antidefense(args.phage_antidefense_input, report)
         inferred_anti = infer_antidefense_from_annotations(annotations)
         if inferred_anti:
-            add_report(report, "info", "phage_antidefense", f"Inferred {len(inferred_anti)} phage anti-defense candidates from annotation text.")
+            add_report(
+                report,
+                "info",
+                "phage_antidefense",
+                f"Screened {len(inferred_anti)} annotation-keyword phage anti-defense candidates; these rows are not accepted counter-defense evidence.",
+            )
         phage_antidefense = merge_antidefense_rows(explicit_anti, inferred_anti)
-        compatibility = build_compatibility_features(links, host_defense, phage_antidefense)
+        compatibility = build_compatibility_features(links, host_defense, explicit_anti)
         add_report(report, "info", "compatibility", f"Built {len(compatibility)} compatibility feature rows.")
 
         write_tsv(Path(args.host_defense_output), HOST_DEFENSE_COLUMNS, host_defense)

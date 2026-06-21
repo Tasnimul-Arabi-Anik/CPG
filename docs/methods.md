@@ -435,7 +435,7 @@ python scripts/build_blastn_pairwise_similarity.py \
 
 ## Stage 3: Annotation and Pangenome Interface
 
-The annotation script consumes the Stage 1 manifest, Stage 2 cluster table, and optional Pharokka/PHROGs-style gene annotation rows. It writes normalized gene annotations, deterministic provisional gene clusters, and a wide pangenome count matrix. Hypothetical proteins are retained.
+The annotation script consumes the Stage 1 manifest, Stage 2 cluster table, and optional Pharokka/PHROGs-style gene annotation rows. It writes normalized gene annotations, deterministic provisional gene clusters, and a wide pangenome count matrix. Hypothetical proteins are retained. Accepted annotation rows are retained when their `genome_id` is present in the Stage 1 manifest even if that genome is absent from Stage 2 clusters; in that case `species_cluster_id` and `representative_id` are left blank and the row notes record that the annotation was retained without a Stage 2 cluster. This lets reviewed sequence-backed annotation evidence remain usable without pretending that missing local FASTA files passed sequence QC or assigning unsupported taxonomy clusters.
 
 Implemented command:
 
@@ -471,6 +471,19 @@ python scripts/build_ncbi_genbank_cds_annotation_input.py \
   --base-input data/metadata/external_evidence/genbank_cds_annotations.tsv \
   --output data/metadata/external_evidence/genbank_cds_annotations.tsv \
   --report-output data/metadata/external_evidence/ncbi_genbank_cds_annotations_report.tsv
+```
+
+For the current production profile, the Stage 3 annotation input is a no-network merge of the accepted assay-phage CDS rows plus the already parsed NTUH-K2044 prophage CDS rows. This keeps the prophage visible to H2 audits while preserving the claim boundary that those prophage annotations are GenBank bridge evidence, not standardized Pharokka/PHROGs/domain/structural evidence.
+
+```bash
+python scripts/build_ncbi_genbank_cds_annotation_input.py \
+  --manifest data/metadata/source_manifests/klebsiella_prophages.tsv \
+  --base-input data/metadata/production_evidence/phagehostlearn_prodigal_cds_annotations.tsv \
+  --parsed-input data/metadata/external_evidence/genbank_cds_annotations.tsv \
+  --parsed-genome-id NTUH-K2044_PhiSpy_pp1_NC_012731.1_2098066_2113724 \
+  --skip-fetch \
+  --output data/metadata/production_evidence/phagehostlearn_plus_prophage_cds_annotations.tsv \
+  --report-output data/metadata/production_evidence/phagehostlearn_plus_prophage_cds_annotations_report.tsv
 ```
 
 ## Stage 4: RBP/Depolymerase Candidate Prioritization
@@ -566,7 +579,7 @@ Optional PADLOC/DefenseFinder-style and phage anti-defense schemas are documente
 
 ## Stage 7: Feature-Set Model Comparison
 
-The generic model comparison script consumes phage clusters, RBP/depolymerase candidates, phage-host links, compatibility features, optional phage/host bridge metadata, and canonical phage-host assay rows when available. It writes transparent leave-one-out categorical baselines for K/O association proxies, group summaries for prophage RBP reservoirs, host background defense burden, exploratory novelty context, assay-derived spot-test breadth, and assay-feature coverage. A separate frozen H1 receptor benchmark (`scripts/run_receptor_layer_model_comparison.py`) consumes production receptor evidence, exact PHROGs/MMseqs and Phold/Foldseek module-identity signatures, host K/O evidence, and genome-similarity baselines to evaluate spot-test interaction under grouped splits. In the current benchmark, exact domain+structural module identities improve over RBPbase plus host K/O but do not robustly outperform genome-similarity plus host K/O baselines; H1 therefore remains exploratory rather than claim-supported. H3 retains tested-host denominators, positive spot-test counts, continuous spot-positive fractions, and Wilson intervals for the observed tested panel; these are initial-interaction summaries only. H4 remains explicitly blocked until productive-infection, plaque, EOP, or propagation outcomes are curated.
+The generic model comparison script consumes phage clusters, RBP/depolymerase candidates, phage-host links, compatibility features, optional phage/host bridge metadata, and canonical phage-host assay rows when available. It writes transparent leave-one-out categorical baselines for K/O association proxies, group summaries for prophage RBP reservoirs, host background defense burden, exploratory novelty context, assay-derived spot-test breadth, and assay-feature coverage. H2 now includes an explicit prophage annotation coverage audit: annotated prophages are counted separately from prophages with detected RBP/depolymerase candidates so bridge-annotated, zero-candidate prophages are not silently omitted. A separate frozen H1 receptor benchmark (`scripts/run_receptor_layer_model_comparison.py`) consumes production receptor evidence, exact PHROGs/MMseqs profile-family and Phold/Foldseek hit-identity signatures, ordered per-gene PHROGs/MMseqs profile-hit proxies, host K/O evidence, and genome-similarity baselines to evaluate spot-test interaction under grouped splits. In the current benchmark, exact unordered PHROG profile-family + structural hit identities improve over RBPbase plus host K/O but do not robustly outperform BLASTN genome-similarity plus host K/O; ordered profile-hit proxies underperform in cold-phage/cold-cluster splits; H1 therefore remains exploratory rather than claim-supported. H3 retains tested-host denominators, positive spot-test counts, continuous spot-positive fractions, and Wilson intervals for the observed tested panel; these are initial-interaction summaries only. H4 remains explicitly blocked until productive-infection, plaque, EOP, or propagation outcomes are curated. To make that blocker quantitative, Stage 7 writes `productive_outcome_availability_audit` rows to `feature_importance.tsv` for `spot_result`, `plaque_result`, `productive_infection_result`, `growth_inhibition_result`, and `eop`; spot-test rows are counted separately from productive-outcome fields.
 
 Implemented command:
 

@@ -267,6 +267,7 @@ def normalize_annotations(
     annotations: list[dict[str, str]] = []
     seen_annotation_gene_ids: set[str] = set()
     skipped_unknown = 0
+    retained_unclustered = 0
     duplicate_gene_ids = 0
 
     for index, row in enumerate(raw_rows, start=2):
@@ -275,9 +276,11 @@ def normalize_annotations(
         if is_missing(genome_id) or is_missing(gene_id):
             add_report(report, "warning", f"annotation_row_{index}", "Skipped row with missing genome_id or gene_id.")
             continue
-        if genome_id not in clusters_by_genome:
+        if genome_id not in manifest_by_genome:
             skipped_unknown += 1
             continue
+        if genome_id not in clusters_by_genome:
+            retained_unclustered += 1
 
         annotation_gene_id = f"{genome_id}|{gene_id}"
         if annotation_gene_id in seen_annotation_gene_ids:
@@ -285,7 +288,7 @@ def normalize_annotations(
             annotation_gene_id = f"{annotation_gene_id}|duplicate_{index}"
         seen_annotation_gene_ids.add(annotation_gene_id)
 
-        cluster_row = clusters_by_genome[genome_id]
+        cluster_row = clusters_by_genome.get(genome_id, {})
         manifest_row = manifest_by_genome.get(genome_id, {})
         product = row.get("product", "") or "hypothetical protein"
         phrog_category = row.get("phrog_category", "")
@@ -321,7 +324,7 @@ def normalize_annotations(
                 "gene_cluster_id": "",
                 "gene_cluster_key": gene_cluster_key,
                 "gene_cluster_source": gene_cluster_source,
-                "notes": "OK",
+                "notes": "OK" if cluster_row else "retained_manifest_annotation_without_stage2_cluster",
             }
         )
 
@@ -330,7 +333,17 @@ def normalize_annotations(
             report,
             "warning",
             "annotation_input",
-            f"Skipped {skipped_unknown} annotation rows whose genome_id was not present in Stage 2 clusters.",
+            f"Skipped {skipped_unknown} annotation rows whose genome_id was not present in the Stage 1 manifest.",
+        )
+    if retained_unclustered:
+        add_report(
+            report,
+            "warning",
+            "annotation_input",
+            (
+                f"Retained {retained_unclustered} annotation rows for manifest genomes absent from "
+                "Stage 2 clusters; species_cluster_id and representative_id were left blank."
+            ),
         )
     if duplicate_gene_ids:
         add_report(
@@ -421,7 +434,8 @@ def main() -> int:
         _, raw_annotations = load_annotation_input(args.annotation_input, report)
         annotations = normalize_annotations(raw_annotations, manifest_by_genome, clusters_by_genome, report)
         annotations, gene_clusters = build_gene_clusters(annotations)
-        pangenome_columns, pangenome_rows = build_pangenome_matrix(annotations, gene_clusters, genome_order)
+        pangenome_genome_order = sorted(set(genome_order) | {row["genome_id"] for row in annotations})
+        pangenome_columns, pangenome_rows = build_pangenome_matrix(annotations, gene_clusters, pangenome_genome_order)
 
         add_report(
             report,

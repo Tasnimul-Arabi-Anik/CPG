@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -46,6 +47,8 @@ MATRIX_COLUMNS = [
     "rbpbase_boundary_reviewed_candidate_count",
     "rbp_domain_module_count",
     "rbp_domain_module_signature",
+    "rbp_ordered_domain_architecture_signature",
+    "rbp_ordered_domain_structural_architecture_signature",
     "rbp_structural_module_count",
     "rbp_structural_module_signature",
     "rbp_domain_structural_module_signature",
@@ -67,6 +70,8 @@ MODULE_SUMMARY_COLUMNS = [
     "phage_id",
     "rbp_domain_module_count",
     "rbp_domain_module_signature",
+    "rbp_ordered_domain_architecture_signature",
+    "rbp_ordered_domain_structural_architecture_signature",
     "rbp_structural_module_count",
     "rbp_structural_module_signature",
     "rbp_domain_structural_module_signature",
@@ -81,7 +86,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--kaptive", default="data/metadata/production_evidence/kaptive_ko_typing.tsv")
     parser.add_argument("--kleborate", default="data/metadata/production_evidence/kleborate_host_features.tsv")
     parser.add_argument("--phage-features", default="results/production/receptor_features/assay_phage_receptor_feature_coverage.tsv")
-    parser.add_argument("--clusters", default="results/production/clusters/phage_clusters.tsv")
+    parser.add_argument("--clusters", default="results/production/receptor_features/assay_phage_cluster_assignments.tsv")
     parser.add_argument("--candidates", default="results/production/rbp_depolymerase/candidates.tsv")
     parser.add_argument("--domain-evidence", default="data/metadata/production_evidence/rbp_domain_evidence.tsv")
     parser.add_argument("--structural-evidence", default="data/metadata/production_evidence/rbp_structural_evidence.tsv")
@@ -89,7 +94,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--summary-output", default="results/production/model_inputs/receptor_layer_pairwise_feature_summary.tsv")
     parser.add_argument("--readiness-output", default="results/production/model_inputs/receptor_layer_pairwise_model_readiness.tsv")
     parser.add_argument("--module-summary-output", default="results/production/receptor_features/assay_phage_module_identity_signatures.tsv")
-    parser.add_argument("--report-output", default="PILOT_REPORT.md")
+    parser.add_argument("--report-output", default="results/production/model_inputs/receptor_layer_pairwise_report.md")
     return parser.parse_args()
 
 
@@ -122,6 +127,13 @@ def first_nonmissing(values: list[str]) -> str:
     return "NA"
 
 
+def to_int(value: str) -> int:
+    try:
+        return int(float(value or 0))
+    except ValueError:
+        return 0
+
+
 def phage_from_annotation_gene_id(annotation_gene_id: str) -> str:
     if "|" in annotation_gene_id:
         return annotation_gene_id.split("|", 1)[0]
@@ -135,10 +147,56 @@ def compact_signature(prefix: str, values: set[str]) -> str:
     return f"{prefix}:" + "+".join(cleaned)
 
 
+def gene_id_from_annotation_gene_id(annotation_gene_id: str) -> str:
+    if "|" in annotation_gene_id:
+        return annotation_gene_id.split("|", 1)[1]
+    return annotation_gene_id
+
+
+def gene_order_key(annotation_gene_id: str) -> tuple[int, str]:
+    gene_id = gene_id_from_annotation_gene_id(annotation_gene_id)
+    match = re.search(r"(\d+)$", gene_id)
+    return (int(match.group(1)) if match else 10**9, gene_id)
+
+
+def ordered_domain_architecture_signature(gene_domains: dict[str, list[tuple[int, int, str]]]) -> str:
+    if not gene_domains:
+        return "ordered_domain_architecture:none"
+    segments: list[str] = []
+    for annotation_gene_id in sorted(gene_domains, key=gene_order_key):
+        ordered_hits = sorted(gene_domains[annotation_gene_id], key=lambda hit: (hit[0], hit[1], hit[2]))
+        domains = ">".join(domain_id for _start, _end, domain_id in ordered_hits if present(domain_id))
+        if domains:
+            segments.append(f"{gene_id_from_annotation_gene_id(annotation_gene_id)}[{domains}]")
+    if not segments:
+        return "ordered_domain_architecture:none"
+    return "ordered_domain_architecture:" + ";".join(segments)
+
+
+def ordered_structural_architecture_signature(gene_structural_hits: dict[str, set[str]]) -> str:
+    if not gene_structural_hits:
+        return "ordered_structural_architecture:none"
+    segments: list[str] = []
+    for annotation_gene_id in sorted(gene_structural_hits, key=gene_order_key):
+        hits = "+".join(sorted(hit for hit in gene_structural_hits[annotation_gene_id] if present(hit)))
+        if hits:
+            segments.append(f"{gene_id_from_annotation_gene_id(annotation_gene_id)}[{hits}]")
+    if not segments:
+        return "ordered_structural_architecture:none"
+    return "ordered_structural_architecture:" + ";".join(segments)
+
+
+def combined_ordered_architecture_signature(
+    gene_domains: dict[str, list[tuple[int, int, str]]],
+    gene_structural_hits: dict[str, set[str]],
+) -> str:
+    return ordered_domain_architecture_signature(gene_domains) + "|" + ordered_structural_architecture_signature(gene_structural_hits)
+
+
 def build_report(path: Path, summary: list[dict[str, str]], readiness: list[dict[str, str]], args: argparse.Namespace) -> None:
     values = {row["metric"]: row["value"] for row in summary}
     model_state = next((row["status"] for row in readiness if row["readiness_item"] == "receptor_layer_pairwise_matrix"), "unknown")
-    section = f"""\n\n## Receptor-Layer Pairwise Feature Matrix\n\nA tested-pair feature matrix was built from reviewed PhageHostLearn spot assays, host K/O/ST evidence, full-set phage receptor-feature coverage, and phage species-cluster labels. Exact RBPbase CDS matches and boundary-reviewed RBPbase candidates are retained as separate feature columns. Matrix: `{args.matrix_output}`. Rows: {values.get('tested_spot_pairs', '0')}; spot-positive: {values.get('spot_positive_pairs', '0')}; spot-negative: {values.get('spot_negative_pairs', '0')}. Pair rows with complete host receptor features and phage receptor features: {values.get('pairs_complete_for_receptor_features', '0')}. Pair rows with a phage cluster/taxonomy baseline label: {values.get('pairs_with_taxonomy_baseline', '0')}.\n\nReadiness: `{model_state}`. This matrix is the receptor-layer modeling input. Cold-phage, cold-host, cold-cluster, and study/panel grouping columns are included to prevent naive random-pair leakage.\n\nClaim boundary: this matrix prepares an H1 receptor-layer test. It does not claim RBP/depolymerase features outperform taxonomy, and it does not address productive infection or defense/counter-defense compatibility.\n"""
+    section = f"""\n\n## Receptor-Layer Pairwise Feature Matrix\n\nA tested-pair feature matrix was built from reviewed PhageHostLearn spot assays, host K/O/ST evidence, full-set phage receptor-feature coverage, and phage species-cluster labels. Exact RBPbase CDS matches and boundary-reviewed RBPbase candidates are retained as separate feature columns. Matrix: `{args.matrix_output}`. Rows: {values.get('tested_spot_pairs', '0')}; spot-positive: {values.get('spot_positive_pairs', '0')}; spot-negative: {values.get('spot_negative_pairs', '0')}. Pair rows with complete host receptor features and phage receptor features: {values.get('pairs_complete_for_receptor_features', '0')}. Pair rows with a phage cluster/taxonomy baseline label: {values.get('pairs_with_taxonomy_baseline', '0')}.\n\nReadiness: `{model_state}`. This matrix is the receptor-layer modeling input. Cold-phage, cold-host, cold-cluster, and study/panel grouping columns are included to prevent naive random-pair leakage.\n\nClaim boundary: this matrix prepares an H1 receptor-layer test. Ordered PHROGs/MMseqs profile-hit strings are derived from existing Prodigal gene order and MMseqs/PHROGs hit coordinates; they are transfer-limited architecture proxies, not resolved biological domains or functional capsule-specificity calls. It does not claim RBP/depolymerase features outperform taxonomy, and it does not address productive infection or defense/counter-defense compatibility.\n"""
     text = path.read_text(encoding="utf-8") if path.exists() else ""
     marker = "\n## Receptor-Layer Pairwise Feature Matrix\n"
     if marker in text:
@@ -166,27 +224,43 @@ def main() -> int:
 
     domain_modules_by_phage: dict[str, set[str]] = defaultdict(set)
     structural_modules_by_phage: dict[str, set[str]] = defaultdict(set)
+    domain_architecture_by_phage: dict[str, dict[str, list[tuple[int, int, str]]]] = defaultdict(lambda: defaultdict(list))
+    structural_architecture_by_phage: dict[str, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
     for row in domain_evidence:
-        phage = phage_from_annotation_gene_id(row.get("annotation_gene_id", ""))
+        annotation_gene_id = row.get("annotation_gene_id", "")
+        phage = phage_from_annotation_gene_id(annotation_gene_id)
         domain_id = row.get("domain_id", "")
-        if present(phage) and present(domain_id):
+        if present(phage) and present(annotation_gene_id) and present(domain_id):
             domain_modules_by_phage[phage].add(domain_id)
+            domain_architecture_by_phage[phage][annotation_gene_id].append(
+                (to_int(row.get("start_aa", "0")), to_int(row.get("end_aa", "0")), domain_id)
+            )
     for row in structural_evidence:
-        phage = phage_from_annotation_gene_id(row.get("annotation_gene_id", ""))
+        annotation_gene_id = row.get("annotation_gene_id", "")
+        phage = phage_from_annotation_gene_id(annotation_gene_id)
         hit_id = row.get("structural_hit_id", "")
         hit_name = row.get("structural_hit_name", "")
         structural_id = hit_id if present(hit_id) else hit_name
-        if present(phage) and present(structural_id):
+        if present(phage) and present(annotation_gene_id) and present(structural_id):
             structural_modules_by_phage[phage].add(structural_id)
+            structural_architecture_by_phage[phage][annotation_gene_id].add(structural_id)
 
     cluster_by_phage: dict[str, str] = {}
     representative_by_phage: dict[str, str] = {}
     for row in cluster_rows:
-        phage = row.get("genome_id", "")
+        phage = row.get("genome_id", "") or row.get("phage_id", "")
         if not phage:
             continue
-        cluster_by_phage.setdefault(phage, row.get("cluster_id", ""))
-        representative_by_phage.setdefault(phage, row.get("representative_id", ""))
+        cluster_by_phage.setdefault(
+            phage,
+            row.get("cluster_id", "")
+            or row.get("phage_species_cluster_id", "")
+            or row.get("split_group_phage_cluster", ""),
+        )
+        representative_by_phage.setdefault(
+            phage,
+            row.get("representative_id", "") or row.get("phage_representative_id", ""),
+        )
     for row in candidates:
         phage = row.get("genome_id", "")
         if not phage:
@@ -200,6 +274,11 @@ def main() -> int:
         structural_modules = structural_modules_by_phage.get(phage, set())
         domain_signature = compact_signature("domain", domain_modules)
         structural_signature = compact_signature("structural", structural_modules)
+        ordered_domain_signature = ordered_domain_architecture_signature(domain_architecture_by_phage.get(phage, {}))
+        ordered_domain_structural_signature = combined_ordered_architecture_signature(
+            domain_architecture_by_phage.get(phage, {}),
+            structural_architecture_by_phage.get(phage, {}),
+        )
         pf = phage_features.get(phage, {})
         phage_receptor_ready = pf.get("phage_side_receptor_feature_state") in {"assessed_positive", "assessed_zero_detected"}
         if domain_modules or structural_modules:
@@ -213,11 +292,13 @@ def main() -> int:
                 "phage_id": phage,
                 "rbp_domain_module_count": str(len(domain_modules)),
                 "rbp_domain_module_signature": domain_signature,
+                "rbp_ordered_domain_architecture_signature": ordered_domain_signature,
+                "rbp_ordered_domain_structural_architecture_signature": ordered_domain_structural_signature,
                 "rbp_structural_module_count": str(len(structural_modules)),
                 "rbp_structural_module_signature": structural_signature,
                 "rbp_domain_structural_module_signature": domain_signature + "|" + structural_signature,
                 "rbp_module_identity_state": module_identity_state,
-                "claim_boundary": "PHROGs/MMseqs and Phold/Foldseek module identity signature for H1 benchmarking only; not functional capsule specificity or full domain-order architecture.",
+                "claim_boundary": "PHROGs/MMseqs and Phold/Foldseek module identity and ordered PHROGs/MMseqs architecture proxy for H1 benchmarking only; not functional capsule specificity, manually curated domain boundaries, or C-terminal receptor-recognition architecture.",
             }
         )
 
@@ -239,6 +320,11 @@ def main() -> int:
         structural_modules = structural_modules_by_phage.get(phage, set())
         domain_signature = compact_signature("domain", domain_modules)
         structural_signature = compact_signature("structural", structural_modules)
+        ordered_domain_signature = ordered_domain_architecture_signature(domain_architecture_by_phage.get(phage, {}))
+        ordered_domain_structural_signature = combined_ordered_architecture_signature(
+            domain_architecture_by_phage.get(phage, {}),
+            structural_architecture_by_phage.get(phage, {}),
+        )
         combined_module_signature = domain_signature + "|" + structural_signature
         if domain_modules or structural_modules:
             module_identity_state = "assessed_positive"
@@ -285,6 +371,8 @@ def main() -> int:
                 "rbpbase_boundary_reviewed_candidate_count": pf.get("rbpbase_boundary_reviewed_candidate_count", pf.get("rbpbase_candidate_count", "0")),
                 "rbp_domain_module_count": str(len(domain_modules)),
                 "rbp_domain_module_signature": domain_signature,
+                "rbp_ordered_domain_architecture_signature": ordered_domain_signature,
+                "rbp_ordered_domain_structural_architecture_signature": ordered_domain_structural_signature,
                 "rbp_structural_module_count": str(len(structural_modules)),
                 "rbp_structural_module_signature": structural_signature,
                 "rbp_domain_structural_module_signature": combined_module_signature,
@@ -309,6 +397,11 @@ def main() -> int:
     taxonomy_pairs = sum(1 for row in rows if row["taxonomy_baseline_state"] == "available")
     module_identity_pairs = sum(1 for row in rows if row["rbp_module_identity_state"] == "assessed_positive")
     module_assessed_pairs = sum(1 for row in rows if row["rbp_module_identity_state"] in {"assessed_positive", "assessed_zero_detected"})
+    ordered_domain_architecture_pairs = sum(
+        1
+        for row in rows
+        if row["rbp_ordered_domain_architecture_signature"] != "ordered_domain_architecture:none"
+    )
     summary = [
         {"metric": "tested_spot_pairs", "value": str(len(rows)), "interpretation": "Reviewed tested spot-assay phage-host pairs included in the feature matrix."},
         {"metric": "spot_positive_pairs", "value": str(outcome_counts.get("positive", 0)), "interpretation": "Spot-positive initial interaction rows."},
@@ -318,8 +411,9 @@ def main() -> int:
         {"metric": "pairs_with_host_KO", "value": str(host_feature_pairs), "interpretation": "Pair rows whose host has K and O locus evidence."},
         {"metric": "pairs_with_phage_receptor_features", "value": str(phage_feature_pairs), "interpretation": "Pair rows whose phage has assessed receptor-feature evidence."},
         {"metric": "pairs_with_taxonomy_baseline", "value": str(taxonomy_pairs), "interpretation": "Pair rows whose phage has a species-cluster/taxonomy baseline label."},
-        {"metric": "pairs_with_module_identity_evidence", "value": str(module_identity_pairs), "interpretation": "Pair rows whose phage has at least one PHROGs/MMseqs domain or Phold/Foldseek structural module identity."},
+        {"metric": "pairs_with_module_identity_evidence", "value": str(module_identity_pairs), "interpretation": "Pair rows whose phage has at least one PHROGs/MMseqs profile-family hit or Phold/Foldseek structural hit identity."},
         {"metric": "pairs_with_module_identity_assessed", "value": str(module_assessed_pairs), "interpretation": "Pair rows whose phage has module identity evidence assessed as positive or zero detected."},
+        {"metric": "pairs_with_ordered_domain_architecture_evidence", "value": str(ordered_domain_architecture_pairs), "interpretation": "Pair rows whose phage has ordered per-gene PHROGs/MMseqs profile-hit strings from existing hit coordinates; this is not resolved biological-domain architecture."},
         {"metric": "pairs_complete_for_receptor_features", "value": str(pair_states.get("complete_for_receptor_layer", 0)), "interpretation": "Pair rows with spot outcome, host K/O, and assessed phage receptor features."},
         {"metric": "pairs_missing_taxonomy_baseline", "value": str(len(rows) - taxonomy_pairs), "interpretation": "Pair rows missing a phage species-cluster baseline label; keep missingness explicit."},
     ]

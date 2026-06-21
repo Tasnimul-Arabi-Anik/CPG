@@ -1,0 +1,13 @@
+severity	item	message
+info	defensefinder_version	Using DefenseFinder version 3.0.0
+info	archive_sha256	2859cfd259216608c41cfd0fda2a4a0659e17e61adf2fe856454a622e4200358
+info	archive_sha256_check	expected=2859cfd259216608c41cfd0fda2a4a0659e17e61adf2fe856454a622e4200358; observed=2859cfd259216608c41cfd0fda2a4a0659e17e61adf2fe856454a622e4200358
+info	source_host_rows	215
+info	assay_host_rows	200
+info	assay_host_filter	200 hosts from data/metadata/assay_source_exports/reviewed_klebsiella_phage_host_assays.tsv
+info	extracted_fastas	200
+info	completed_or_reused_runs	200
+info	hosts_with_defense_systems	200
+info	normalized_system_rows	2758
+info	failed_or_missing_runs	0
+info	command_template	/tmp/cpg_defensefinder_env/bin/defense-finder run <host.fasta> -o <run_dir> -w 8 --preserve-raw

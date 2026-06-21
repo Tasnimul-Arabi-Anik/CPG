@@ -102,9 +102,9 @@ Primary test:
 - first retain continuous panel breadth values (`tested_host_count`, `spot_positive_host_count`, `spot_positive_fraction`, Wilson interval for the observed tested-panel spot-positive proportion, `study_id`, and `panel_id`); then compare modularity and anti-defense burden only after feature coverage is actually assessed and minimum group-size thresholds are satisfied.
 
 Current readiness:
-- panel-based spot-test breadth values are available from the reviewed PhageHostLearn subset in the seed profile; these represent initial-interaction breadth only.
-- Stage 7 reports `descriptive_breadth_available` plus `blocked_feature_not_assessed` for current RBP/counter-defense association rows when assay-phage features have not actually been assessed.
-- biological H3 claims remain blocked until production RBP/depolymerase modularity and explicit counter-defense evidence are available for the assay phages.
+- panel-based spot-test breadth values are available from the reviewed PhageHostLearn subset; these represent initial-interaction breadth only.
+- PR #12 adds production receptor evidence and PR #14 adds explicit counter-defense candidate evidence for 7/105 assay phages.
+- current counter-defense coverage is insufficient for a claim-ready H3 association analysis, and spot-test breadth is not productive-infection breadth.
 
 Alternative explanation:
 - broad host range may reflect laboratory testing depth rather than biology.
@@ -132,7 +132,8 @@ Primary test:
 - compare receptor-only, defense-only, counter-defense-only, receptor-plus-defense, and receptor-plus-defense/counter-defense models against observed assay outcomes.
 
 Current readiness:
-- blocked until productive-infection labels exist. `compatibility_feature_status` and `matched_counterdefense_status` are not biological outcomes because they are constructed from the same features being modeled.
+- PR #14 adds host-defense evidence for 200/200 assay hosts and explicit Phold ACR candidates for 7/105 assay phages.
+- H4 remains blocked until productive-infection labels exist. `compatibility_feature_status` and `matched_counterdefense_status` are not biological outcomes because they are constructed from the same features being modeled.
 
 Expected result:
 - defense/counter-defense features may explain some receptor-compatible failures, but a robust null result is allowed.
@@ -161,7 +162,8 @@ Primary test:
 - lineage-level association tests between host background, prophage content, and defense burden.
 
 Current readiness:
-- separate host-population analysis; not a phage infectivity claim.
+- PR #14 adds a numeric association-only summary of ST versus DefenseFinder burden for 188/200 PhageHostLearn benchmark hosts across 120 ST groups.
+- This satisfies a bounded H5 technical summary for the benchmark host set, but it is not phage susceptibility, infectivity, prophage-carriage, or public-scale lineage evidence.
 
 Alternative explanation:
 - public genome collections may overrepresent outbreaks or specific surveillance projects.
@@ -169,7 +171,7 @@ Alternative explanation:
 Output:
 - `results/host_features/host_metadata.tsv`
 - `results/defense_systems/host_defense_systems.tsv`
-- `results/models/model_comparison.tsv` (`st_vs_defense_status` summary)
+- `results/models/model_comparison.tsv` (`st_vs_defense_burden_numeric` summary)
 - Figure 6.
 
 ## H6: Novel RBP Candidates Are Enriched in Under-Sampled Ecological Sources or Singleton Clusters

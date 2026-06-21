@@ -57,6 +57,25 @@ workflow_runner:
   smoke_test_config: config/workflow.mock.yaml
   runner_schema: docs/workflow_runner.md
 
+production_evidence_status:
+  manifest: data/metadata/production_evidence/production_tool_run_manifest.tsv
+  tracked_normalized_evidence:
+    - data/metadata/production_evidence/phagehostlearn_prodigal_cds_annotations.tsv
+    - data/metadata/production_evidence/phagehostlearn_plus_prophage_cds_annotations.tsv
+    - data/metadata/production_evidence/rbp_domain_evidence.tsv
+    - data/metadata/production_evidence/rbp_structural_evidence.tsv
+    - data/metadata/production_evidence/kaptive_ko_typing.tsv
+    - data/metadata/production_evidence/kleborate_host_features.tsv
+    - data/metadata/production_evidence/host_defense_systems.tsv
+    - data/metadata/production_evidence/phage_antidefense_candidates.tsv
+  local_generated_native_outputs:
+    - results/production/pharokka_assay_phages/
+    - results/production/phold_assay_phages/
+    - results/production/host_defense/defensefinder/
+  not_yet_run:
+    - viridic
+    - padloc
+
 planned_tools:
   phage_annotation:
     primary: pharokka
@@ -72,7 +91,9 @@ planned_tools:
     alternative_host_defense: padloc
 
 notes:
-  - Specialized bioinformatics tools are listed as planned tools and should be added to environment files only when their workflow stage is implemented.
+  - The default workflow validates tracked normalized production evidence and does not require heavy external bioinformatics tools in CI.
+  - Pharokka, Phold/Foldseek, Kaptive, Kleborate, and DefenseFinder are required to regenerate the current production evidence from raw inputs.
+  - VIRIDIC and PADLOC remain not-yet-run for this repository; current similarity and defense evidence should not be described as VIRIDIC or PADLOC output.
 
 tool_audit:
   default_version_timeout_seconds: 10
@@ -102,7 +123,7 @@ tool_audit:
       version_args: ["--version"]
       required_for_current_workflow: false
       install_hint: mamba install -c bioconda mash
-      notes: Planned external similarity tool; current workflow accepts precomputed pairwise tables.
+      notes: Optional screening tool; current benchmark similarity evidence uses tracked BLASTN, fastANI, and skani tables, not Mash.
 
     - tool_id: viridic
       stage: dereplication
@@ -111,7 +132,7 @@ tool_audit:
       version_args: ["--version"]
       required_for_current_workflow: false
       install_hint: install/run VIRIDIC separately and provide pairwise TSV output
-      notes: Planned external similarity tool; not required for schema smoke tests.
+      notes: Not yet run for this repository; required only for future atlas-scale VIRIDIC similarity claims.
 
     - tool_id: pharokka
       stage: annotation_pangenome
@@ -120,7 +141,7 @@ tool_audit:
       version_args: ["--version"]
       required_for_current_workflow: false
       install_hint: mamba install -c bioconda pharokka
-      notes: Planned annotation source for Stage 3 optional annotation input.
+      notes: Local native Pharokka 1.9.1 runs completed for 105 assay phages; native outputs are under ignored results/production and tracked normalized evidence is summarized separately.
 
     - tool_id: phold
       stage: rbp_depolymerase
@@ -129,7 +150,7 @@ tool_audit:
       version_args: ["--version"]
       required_for_current_workflow: false
       install_hint: install Phold in a compatible environment and provide structural evidence TSV
-      notes: Planned structural evidence source for RBP/depolymerase prioritization.
+      notes: Local Phold 1.2.5/Foldseek 10.941cd33 runs completed for 105 assay phages; tracked normalized receptor and ACR candidate subsets are configured as production evidence.
 
     - tool_id: kleborate
       stage: host_features
@@ -138,7 +159,7 @@ tool_audit:
       version_args: ["--version"]
       required_for_current_workflow: false
       install_hint: mamba install -c bioconda kleborate
-      notes: Planned source for Stage 5 optional Kleborate input.
+      notes: Tracked Kleborate 3.2.4 production evidence exists for 188 assay hosts; command availability is not required for CI validation of normalized evidence.
 
     - tool_id: kaptive
       stage: host_features
@@ -147,7 +168,7 @@ tool_audit:
       version_args: ["--version"]
       required_for_current_workflow: false
       install_hint: mamba install -c bioconda kaptive
-      notes: Planned source for Stage 5 optional Kaptive input.
+      notes: Tracked Kaptive 3.2.1 production evidence exists for 200 assay hosts; command availability is not required for CI validation of normalized evidence.
 
     - tool_id: defensefinder
       stage: defense_counterdefense
@@ -156,7 +177,7 @@ tool_audit:
       version_args: ["--version"]
       required_for_current_workflow: false
       install_hint: install DefenseFinder and provide host defense TSV output
-      notes: Planned source for Stage 6 optional host defense input.
+      notes: Tracked DefenseFinder 3.0.0 production evidence exists for 200 assay hosts; command availability is not required for CI validation of normalized evidence.
 
     - tool_id: padloc
       stage: defense_counterdefense
@@ -165,5 +186,5 @@ tool_audit:
       version_args: ["--version"]
       required_for_current_workflow: false
       install_hint: install PADLOC separately and provide host defense TSV output
-      notes: Alternative planned source for Stage 6 optional host defense input.
+      notes: Alternative host-defense tool not yet run; current defense evidence is DefenseFinder only.
 

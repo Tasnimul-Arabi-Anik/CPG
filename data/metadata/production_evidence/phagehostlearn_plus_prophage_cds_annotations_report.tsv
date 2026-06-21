@@ -1,0 +1,4 @@
+severity	item	message
+info	base_input	Loaded 8393 existing annotation rows from data/metadata/production_evidence/phagehostlearn_prodigal_cds_annotations.tsv.
+info	manifest	Skipped GenBank fetching by request.
+info	parsed_input	Loaded 24 parsed annotation row(s) from data/metadata/external_evidence/genbank_cds_annotations.tsv.

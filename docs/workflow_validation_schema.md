@@ -10,7 +10,7 @@ One row per required workflow output with existence, row count, required-column 
 
 ### `results/validation/hypothesis_coverage.tsv`
 
-One row per main hypothesis H1-H6. Each row records whether the detailed quantitative model or group-summary rows currently represent the hypothesis in `results/models/model_comparison.tsv`.
+One row per main hypothesis H1-H6. Each row records whether detailed quantitative model or group-summary rows currently represent the hypothesis in `results/models/model_comparison.tsv`. The `status` column is a technical coverage state only. Use `analysis_available`, `data_adequate`, `claim_status`, and `claim_supported` to distinguish an available analysis from adequate data and manuscript-safe claim support.
 
 ### `results/validation/output_inventory.tsv`
 

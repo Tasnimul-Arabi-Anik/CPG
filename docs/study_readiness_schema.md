@@ -44,7 +44,7 @@ Audited areas include dataset curation, source readiness, source query/template/
 
 ## Interpretation
 
-A mock workflow can pass readiness using bundled fixture data. A real workflow should not be treated as manuscript-ready while requirements remain `fail` or blocking. Warning rows with `blocking_for_manuscript=true` are manuscript blockers even if the row is not an outright schema or workflow failure. In particular, an empty audited sample table, blocked rows in `results/qc/sample_support_by_hypothesis.tsv`, empty biological output tables, missing real source manifests, or only limited H1-H6 tests mean the repository is a validated scaffold rather than a populated biological study.
+A mock workflow can pass readiness using bundled fixture data. A real workflow should not be treated as manuscript-ready while requirements remain `fail` or blocking. Warning rows with `blocking_for_manuscript=true` are manuscript blockers even if the row is not an outright schema or workflow failure. A warning row for H4 caused solely by absent productive-infection/plaque/EOP outcomes is non-blocking for the current dry-lab benchmark/resource endpoint when H4 is explicitly scoped as future work, but it remains blocking for any defense/counter-defense productive-infection claim. Empty audited sample tables, blocked rows in `results/qc/sample_support_by_hypothesis.tsv`, empty biological output tables, missing real source manifests, or other limited H1-H6 tests mean the repository is a validated scaffold rather than a populated biological study.
 
 
 ## Acquisition and Evidence Planning Checks

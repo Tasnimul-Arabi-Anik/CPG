@@ -4,6 +4,8 @@ This repository is a reproducible seed-data workflow for a Klebsiella phage comp
 
 ## Current Review Position
 
+For the latest stacked PR evidence summary, see `docs/current_analysis_status.md`. That file records the current PR #12/#13/#14 stack, benchmark counts, H1 result boundary, defense/counter-defense coverage, and next merge order.
+
 The workflow now uses base/profile workflow inheritance: `config/workflow.base.yaml` contains shared stage wiring, `workflow.mock.yaml`, `workflow.seed.yaml`, and `workflow.production.yaml` are thin overlays, and `workflow.yaml` aliases the seed profile. The run report records profile, evidence class, resolved config checksum, git commit, and run start time. Production profile execution is fail-closed until production evidence and assay outcomes are populated.
 
 The repository is ready for technical review of the workflow design, data contracts, mock analysis path, and seed real-data path. It now contains a reviewed PhageHostLearn spot-test outcome layer, but it is not yet ready for manuscript-level biological interpretation because production feature evidence is incomplete.

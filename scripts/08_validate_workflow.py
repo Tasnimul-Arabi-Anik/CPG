@@ -32,6 +32,10 @@ HYPOTHESIS_COLUMNS = [
     "ok_rows",
     "limited_rows",
     "status",
+    "analysis_available",
+    "data_adequate",
+    "claim_status",
+    "claim_supported",
     "notes",
 ]
 INVENTORY_COLUMNS = ["path", "exists", "size_bytes", "row_count", "status", "notes"]
@@ -384,12 +388,39 @@ REQUIRED_FIGURES = [
 
 HYPOTHESIS_TESTS = [
     ("H1", "K/O prediction model comparison", lambda row: row.get("hypothesis") == "H1" and row.get("task") in {"predict_K_type", "predict_O_type"}),
-    ("H2", "prophage RBP module reservoir summary", lambda row: row.get("analysis_id") == "record_type_vs_rbp_modules"),
+    ("H2", "prophage RBP module reservoir summary", lambda row: row.get("analysis_id") in {"prophage_annotation_rbp_candidate_coverage", "record_type_vs_rbp_modules"}),
     ("H3", "host-range breadth association from explicit assay panel labels", lambda row: row.get("analysis_id") in {"host_range_breadth_blocker", "spot_breadth_descriptive", "spot_breadth_vs_rbp_candidates", "spot_breadth_vs_counterdefense_candidates"} or row.get("target") in {"host_range_breadth", "spot_positive_fraction"}),
     ("H4", "productive-infection model comparison requires explicit assay outcome labels", lambda row: row.get("hypothesis") == "H4" and (row.get("analysis_id") == "productive_infection_receptor_defense_blocker" or row.get("target") == "productive_infection_result")),
-    ("H5", "host background versus defense burden summary", lambda row: row.get("analysis_id") == "st_vs_defense_status"),
+    ("H5", "host background versus defense burden summary", lambda row: row.get("analysis_id") in {"st_vs_defense_status", "st_vs_defense_burden_numeric"}),
     ("H6", "source and cluster novelty prioritization summary", lambda row: row.get("analysis_id") in {"source_vs_rbp_novelty", "cluster_size_vs_rbp_novelty"}),
 ]
+
+QUANTITATIVE_TEST_READY_STATUSES = {"ok", "analysis_ready", "analysis_supported"}
+CLAIM_SUPPORTED_STATUSES = {"workflow_supported", "biological_claim_supported", "claim_supported"}
+
+
+def hypothesis_evidence_state(
+    matching_rows: list[dict[str, str]],
+    ok_rows: list[dict[str, str]],
+    fallback_claim_status: str = "data_dependent",
+) -> dict[str, str]:
+    """Separate technical analysis availability from biological claim support."""
+    statuses = {row.get("status", "") for row in matching_rows}
+    claim_status = fallback_claim_status or "data_dependent"
+    analysis_available = "true" if ok_rows else "false"
+    if not matching_rows or not ok_rows:
+        data_adequate = "false"
+    elif claim_status in CLAIM_SUPPORTED_STATUSES:
+        data_adequate = "true"
+    else:
+        data_adequate = "partial"
+    return {
+        "analysis_available": analysis_available,
+        "data_adequate": data_adequate,
+        "claim_status": claim_status,
+        "claim_supported": str(claim_status in CLAIM_SUPPORTED_STATUSES).lower(),
+    }
+
 
 
 def parse_args() -> argparse.Namespace:
@@ -405,13 +436,25 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def clean_tsv_value(value: str | list[str] | None) -> str:
+    if isinstance(value, list):
+        return ";".join((item or "").strip() for item in value)
+    return (value or "").strip()
+
+
 def read_tsv(path: Path) -> tuple[list[str], list[dict[str, str]]]:
     if not path.exists():
         return [], []
     with path.open(newline="") as handle:
         reader = csv.DictReader(handle, delimiter="\t")
         fieldnames = reader.fieldnames or []
-        rows = [{key: (value or "").strip() for key, value in row.items()} for row in reader]
+        rows = []
+        for row in reader:
+            cleaned = {key: clean_tsv_value(value) for key, value in row.items() if key is not None}
+            extra_fields = row.get(None)
+            if extra_fields:
+                cleaned["__extra_fields__"] = clean_tsv_value(extra_fields)
+            rows.append(cleaned)
     return fieldnames, rows
 
 
@@ -427,6 +470,13 @@ def write_tsv(path: Path, columns: Iterable[str], rows: Iterable[dict[str, str]]
 
 def add_report(report: list[dict[str, str]], severity: str, item: str, status: str, message: str) -> None:
     report.append({"severity": severity, "item": item, "status": status, "message": message})
+
+
+def parse_int(value: str) -> int:
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return 0
 
 def resolve_path(root: Path, value: str) -> Path:
     path = Path(value)
@@ -675,20 +725,77 @@ def validate_figures(root: Path, results_dir: Path, report: list[dict[str, str]]
         add_report(report, "warning", "figures_data", "warn", "Figures with empty source data: " + ";".join(empty))
 
 
+def h1_receptor_layer_benchmark_row(root: Path, results_dir: Path) -> dict[str, str] | None:
+    readiness_path = results_dir / "models/receptor_layer_model_readiness.tsv"
+    pooled_path = results_dir / "models/receptor_layer_model_pooled_summary.tsv"
+    if not readiness_path.exists() or not pooled_path.exists():
+        return None
+    _readiness_columns, readiness_rows = read_tsv(readiness_path)
+    _pooled_columns, pooled_rows = read_tsv(pooled_path)
+    h1_ready = [
+        row for row in readiness_rows
+        if row.get("readiness_item") == "H1_receptor_layer_model_comparison"
+        and row.get("status") == "quantitative_test_available_claim_not_final"
+    ]
+    h1_pooled = [
+        row for row in pooled_rows
+        if row.get("hypothesis") == "H1_spot_interaction_receptor_layer"
+        and parse_int(row.get("prediction_rows", "0")) > 0
+        and parse_int(row.get("positive_rows", "0")) > 0
+        and parse_int(row.get("negative_rows", "0")) > 0
+        and row.get("split_strategy")
+        and row.get("model_name")
+    ]
+    if not h1_ready or not h1_pooled:
+        return None
+    split_count = len({row.get("split_strategy", "") for row in h1_pooled})
+    model_count = len({row.get("model_name", "") for row in h1_pooled})
+    max_predictions = max(parse_int(row.get("prediction_rows", "0")) for row in h1_pooled)
+    return {
+        "hypothesis": "H1",
+        "required_test": "pairwise spot-interaction receptor-layer benchmark with grouped splits",
+        "evidence_path": display_path(root, pooled_path) + ";" + display_path(root, readiness_path),
+        "matching_rows": str(len(h1_pooled)),
+        "ok_rows": "1",
+        "limited_rows": "0",
+        "status": "pass",
+        "analysis_available": "true",
+        "data_adequate": "partial",
+        "claim_status": "data_dependent",
+        "claim_supported": "false",
+        "notes": (
+            "H1 receptor-layer benchmark is available from compact PR B outputs; "
+            f"pooled_rows={len(h1_pooled)}; split_strategies={split_count}; model_families={model_count}; "
+            f"max_prediction_rows={max_predictions}; claim remains exploratory and spot-test-only."
+        ),
+    }
+
+
 def validate_hypotheses(root: Path, results_dir: Path, report: list[dict[str, str]]) -> list[dict[str, str]]:
     model_path = results_dir / "models/model_comparison.tsv"
     _, model_rows = read_tsv(model_path)
+    _, summary_rows = read_tsv(results_dir / "models/hypothesis_summary.tsv")
+    summary_by_hypothesis = {row.get("hypothesis", ""): row for row in summary_rows}
     output_rows = []
     for hypothesis, required_test, predicate in HYPOTHESIS_TESTS:
         matching = [row for row in model_rows if predicate(row)]
-        ok_rows = [row for row in matching if row.get("status") == "ok"]
-        limited = [row for row in matching if row.get("status") and row.get("status") != "ok"]
+        if hypothesis == "H1":
+            benchmark_row = h1_receptor_layer_benchmark_row(root, results_dir)
+            if benchmark_row is not None:
+                output_rows.append(benchmark_row)
+                continue
+        ok_rows = [row for row in matching if row.get("status") in QUANTITATIVE_TEST_READY_STATUSES]
+        limited = [row for row in matching if row.get("status") and row.get("status") not in QUANTITATIVE_TEST_READY_STATUSES]
         if not matching:
             status = "fail"
             notes = "no matching quantitative test rows"
         elif ok_rows:
             status = "pass"
-            notes = "quantitative test rows present with at least one ok status"
+            ready_statuses = sorted({row.get("status", "") for row in ok_rows})
+            blocked_statuses = sorted({row.get("status", "") for row in matching if row.get("status", "").startswith("blocked_")})
+            notes = "quantitative test rows present with ready status: " + ";".join(ready_statuses)
+            if blocked_statuses:
+                notes += "; blocked subcomponents remain: " + ";".join(blocked_statuses)
         else:
             status = "warn"
             blocked_statuses = sorted({row.get("status", "") for row in matching if row.get("status", "").startswith("blocked_")})
@@ -696,6 +803,8 @@ def validate_hypotheses(root: Path, results_dir: Path, report: list[dict[str, st
                 notes = "assay-dependent test is explicitly blocked: " + ";".join(blocked_statuses)
             else:
                 notes = "quantitative test rows present but current data are insufficient or uninformative"
+        summary_claim_status = summary_by_hypothesis.get(hypothesis, {}).get("claim_status", "data_dependent")
+        evidence_state = hypothesis_evidence_state(matching, ok_rows, summary_claim_status)
         output_rows.append(
             {
                 "hypothesis": hypothesis,
@@ -705,6 +814,7 @@ def validate_hypotheses(root: Path, results_dir: Path, report: list[dict[str, st
                 "ok_rows": str(len(ok_rows)),
                 "limited_rows": str(len(limited)),
                 "status": status,
+                **evidence_state,
                 "notes": notes,
             }
         )
@@ -715,7 +825,7 @@ def validate_hypotheses(root: Path, results_dir: Path, report: list[dict[str, st
     elif warnings:
         add_report(report, "warning", "hypothesis_coverage", "warn", "Tests exist but current data are limited for: " + ";".join(warnings))
     else:
-        add_report(report, "info", "hypothesis_coverage", "pass", "All H1-H6 have quantitative tests with ok status rows.")
+        add_report(report, "info", "hypothesis_coverage", "pass", "All H1-H6 have quantitative tests with ok or analysis-ready status rows.")
     return output_rows
 
 

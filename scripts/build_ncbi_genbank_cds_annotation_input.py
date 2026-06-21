@@ -46,6 +46,22 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--manifest", required=True, help="Source manifest TSV with genome_id and accession columns.")
     parser.add_argument("--base-input", default="", help="Optional existing annotation TSV to prepend.")
+    parser.add_argument(
+        "--parsed-input",
+        default="",
+        help="Optional existing parsed Stage 3 annotation TSV to append without fetching.",
+    )
+    parser.add_argument(
+        "--parsed-genome-id",
+        action="append",
+        default=[],
+        help="Genome ID to retain from --parsed-input. May be supplied multiple times; when absent all parsed rows are retained.",
+    )
+    parser.add_argument(
+        "--skip-fetch",
+        action="store_true",
+        help="Do not fetch GenBank records from --manifest; useful when only combining existing parsed rows.",
+    )
     parser.add_argument("--output", required=True, help="Output combined annotation TSV.")
     parser.add_argument("--report-output", required=True, help="Output report TSV.")
     parser.add_argument("--retmax", type=int, default=0, help="Optional maximum manifest rows to process; 0 means all.")
@@ -254,6 +270,33 @@ def manifest_records(path: Path, retmax: int) -> list[dict[str, str]]:
     return records[:retmax] if retmax > 0 else records
 
 
+def append_parsed_rows(args: argparse.Namespace, rows: list[dict[str, str]], report: list[dict[str, str]]) -> None:
+    if not args.parsed_input:
+        return
+    _, parsed_rows = read_tsv(Path(args.parsed_input))
+    selected_ids = set(args.parsed_genome_id or [])
+    retained = 0
+    for row in parsed_rows:
+        genome_id = row.get("genome_id", "")
+        if selected_ids and genome_id not in selected_ids:
+            continue
+        prepared = dict(row)
+        prepared["evidence"] = prepared.get("evidence", "") or "preparsed GenBank CDS bridge annotation"
+        prepared["tool"] = prepared.get("tool", "") or "build_ncbi_genbank_cds_annotation_input.py --parsed-input"
+        note = prepared.get("notes", "")
+        boundary = "Appended from existing parsed CDS TSV; bridge annotation only, not standardized Pharokka/PHROGs evidence."
+        prepared["notes"] = f"{note}; {boundary}" if note else boundary
+        rows.append(prepared)
+        retained += 1
+    report.append(
+        {
+            "severity": "info" if retained else "warning",
+            "item": "parsed_input",
+            "message": f"Loaded {retained} parsed annotation row(s) from {args.parsed_input}.",
+        }
+    )
+
+
 def main() -> int:
     args = parse_args()
     report: list[dict[str, str]] = []
@@ -263,16 +306,20 @@ def main() -> int:
         rows.extend(base_rows)
         report.append({"severity": "info", "item": "base_input", "message": f"Loaded {len(base_rows)} existing annotation rows from {args.base_input}."})
     try:
-        records = manifest_records(Path(args.manifest), args.retmax)
-        report.append({"severity": "info", "item": "manifest", "message": f"Loaded {len(records)} accession-backed manifest rows."})
-        for record in records:
-            accession = record["accession"]
-            genome_id = record["genome_id"]
-            text = fetch_genbank(accession, args)
-            parsed = parse_genbank(genome_id, accession, text)
-            rows.extend(parsed)
-            severity = "info" if parsed else "warning"
-            report.append({"severity": severity, "item": genome_id, "message": f"Fetched {accession} and parsed {len(parsed)} CDS rows."})
+        if args.skip_fetch:
+            report.append({"severity": "info", "item": "manifest", "message": "Skipped GenBank fetching by request."})
+        else:
+            records = manifest_records(Path(args.manifest), args.retmax)
+            report.append({"severity": "info", "item": "manifest", "message": f"Loaded {len(records)} accession-backed manifest rows."})
+            for record in records:
+                accession = record["accession"]
+                genome_id = record["genome_id"]
+                text = fetch_genbank(accession, args)
+                parsed = parse_genbank(genome_id, accession, text)
+                rows.extend(parsed)
+                severity = "info" if parsed else "warning"
+                report.append({"severity": severity, "item": genome_id, "message": f"Fetched {accession} and parsed {len(parsed)} CDS rows."})
+        append_parsed_rows(args, rows, report)
     except Exception as exc:  # noqa: BLE001 - report network/parser failures in TSV form
         report.append({"severity": "error", "item": "ncbi_genbank_cds", "message": str(exc)})
     rows, duplicates = deduplicate_rows(rows)
