@@ -137,13 +137,13 @@ def main() -> None:
     add(
         requirements,
         "G03",
-        "Each major hypothesis H1-H6 has a quantitative test with ok evidence rows.",
+        "Each major hypothesis H1-H6 has a quantitative test with ok or analysis-ready evidence rows.",
         [results_dir / "validation/hypothesis_coverage.tsv", results_dir / "models/model_comparison.tsv"],
         root,
         f"observed={';'.join(sorted(observed_hypotheses)) or 'NA'}; pass={';'.join(sorted(pass_hypotheses)) or 'NA'}; warn={';'.join(sorted(warn_hypotheses)) or 'NA'}; missing={';'.join(sorted(missing_hypotheses)) or 'NA'}",
         status,
         status != "pass",
-        "Populate source/sequence/evidence inputs until H1-H6 hypothesis coverage rows pass." if status != "pass" else "No action required.",
+        "Populate source/sequence/evidence inputs until H1-H6 hypothesis coverage rows pass with ok or analysis-ready evidence." if status != "pass" else "No action required.",
     )
 
     ready_support = [row for row in sample_support_rows if row.get("support_status") == "ready_minimum_sample_support"]

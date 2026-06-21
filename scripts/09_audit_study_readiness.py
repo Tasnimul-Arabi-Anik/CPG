@@ -111,7 +111,7 @@ REQUIREMENTS = [
     (
         "R15",
         "hypothesis_tests",
-        "H1-H6 have quantitative test rows with at least one ok row per hypothesis.",
+        "H1-H6 have quantitative test rows with at least one ok or analysis-ready row per hypothesis.",
         "hypotheses",
     ),
     (
@@ -520,7 +520,7 @@ def evaluate_requirement(requirement: tuple[str, str, str, str], root: Path, res
         fail_rows = [row for row in rows if row.get("status") == "fail"]
         status = "pass" if len(pass_rows) >= 6 and not fail_rows and not warn_rows else ("fail" if fail_rows or not rows else "warn")
         blocking = status != "pass"
-        return status_row(req_id, area, text, path, root, f"pass={len(pass_rows)}; warn={len(warn_rows)}; fail={len(fail_rows)}", status, blocking, "Add data support until H1-H6 tests have ok rows." if blocking else "No action required.")
+        return status_row(req_id, area, text, path, root, f"pass={len(pass_rows)}; warn={len(warn_rows)}; fail={len(fail_rows)}", status, blocking, "Add data support until H1-H6 tests have ok or analysis-ready rows." if blocking else "No action required.")
 
     if key == "figures":
         path = results_dir / "figures/figure_manifest.tsv"

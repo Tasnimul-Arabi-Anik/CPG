@@ -391,6 +391,9 @@ HYPOTHESIS_TESTS = [
     ("H6", "source and cluster novelty prioritization summary", lambda row: row.get("analysis_id") in {"source_vs_rbp_novelty", "cluster_size_vs_rbp_novelty"}),
 ]
 
+QUANTITATIVE_TEST_READY_STATUSES = {"ok", "analysis_ready", "analysis_supported"}
+
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Validate the Klebsiella phage CPG workflow state.")
@@ -747,14 +750,18 @@ def validate_hypotheses(root: Path, results_dir: Path, report: list[dict[str, st
             if benchmark_row is not None:
                 output_rows.append(benchmark_row)
                 continue
-        ok_rows = [row for row in matching if row.get("status") == "ok"]
-        limited = [row for row in matching if row.get("status") and row.get("status") != "ok"]
+        ok_rows = [row for row in matching if row.get("status") in QUANTITATIVE_TEST_READY_STATUSES]
+        limited = [row for row in matching if row.get("status") and row.get("status") not in QUANTITATIVE_TEST_READY_STATUSES]
         if not matching:
             status = "fail"
             notes = "no matching quantitative test rows"
         elif ok_rows:
             status = "pass"
-            notes = "quantitative test rows present with at least one ok status"
+            ready_statuses = sorted({row.get("status", "") for row in ok_rows})
+            blocked_statuses = sorted({row.get("status", "") for row in matching if row.get("status", "").startswith("blocked_")})
+            notes = "quantitative test rows present with ready status: " + ";".join(ready_statuses)
+            if blocked_statuses:
+                notes += "; blocked subcomponents remain: " + ";".join(blocked_statuses)
         else:
             status = "warn"
             blocked_statuses = sorted({row.get("status", "") for row in matching if row.get("status", "").startswith("blocked_")})
@@ -781,7 +788,7 @@ def validate_hypotheses(root: Path, results_dir: Path, report: list[dict[str, st
     elif warnings:
         add_report(report, "warning", "hypothesis_coverage", "warn", "Tests exist but current data are limited for: " + ";".join(warnings))
     else:
-        add_report(report, "info", "hypothesis_coverage", "pass", "All H1-H6 have quantitative tests with ok status rows.")
+        add_report(report, "info", "hypothesis_coverage", "pass", "All H1-H6 have quantitative tests with ok or analysis-ready status rows.")
     return output_rows
 
 

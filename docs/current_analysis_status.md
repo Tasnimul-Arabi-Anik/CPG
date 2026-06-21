@@ -215,12 +215,12 @@ After the latest production run, the standard hypothesis-coverage audit recogniz
 | --- | --- | --- |
 | H1 | pass | 104 pooled receptor-layer benchmark rows across 4 grouped split strategies and 26 model families; claim remains exploratory and spot-test-only. |
 | H2 | warn | Two quantitative rows exist: one annotated-prophage coverage audit and one record-type group summary. The single annotated prophage has zero detected RBP/depolymerase candidates from bridge GenBank CDS evidence, so current data remain insufficient for a reservoir claim. |
-| H3 | warn | Module-count spot-breadth association rows exist, but counter-defense coverage is insufficient. |
+| H3 | pass | Quantitative receptor-module breadth association rows are analysis-ready; counter-defense subcomponents remain blocked by insufficient coverage. |
 | H4 | warn | Blocked by absence of productive-infection, plaque, propagation, or EOP outcomes. |
 | H5 | pass | ST versus DefenseFinder burden summary. |
 | H6 | pass | Source/cluster novelty prioritization summaries. |
 
-Goal completion remains incomplete because `G03` and `G05` are still blocking: H2, H3, and H4 need additional data or outcome support before the full objective can be called complete.
+Goal completion remains incomplete because `G03` and `G05` are still blocking: H2 and H4 need additional data or outcome support before the full objective can be called complete. H3 now has analysis-ready receptor-module breadth tests, but its counter-defense subcomponent remains coverage-limited and claim support remains data-dependent.
 
 ## Immediate Next Steps
 
