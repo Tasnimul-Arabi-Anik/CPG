@@ -24,7 +24,7 @@ What we have so far:
 
 - A reviewed assay layer with 10,006 tested spot-test pairs, 333 spot-positive and 9,673 spot-negative, across 105 phages and 200 hosts.
 - Host K/O typing coverage for the assay hosts and phage receptor-feature evidence from RBPbase, Pharokka, and mapped Phold/Foldseek outputs.
-- BLASTN, Mash, and fastANI nearest-phage baselines for receptor-layer H1 comparisons.
+- BLASTN, Mash, fastANI, and skani nearest-phage baselines for receptor-layer H1 comparisons.
 - Current exploratory result: receptor-feature unions do not robustly outperform nearest-phage genome-similarity plus host K/O baselines under grouped evaluation.
 - No accepted host-defense or phage anti-defense evidence. Keyword anti-defense hits are screening-only and are excluded from compatibility matching.
 
@@ -32,7 +32,7 @@ What should be done next:
 
 - Keep H4 blocked until productive-infection/plaque/EOP outcomes and accepted host-defense plus phage-counter-defense evidence exist.
 - Review the mapped Phold/Foldseek receptor candidates, especially the high-priority non-Pharokka rows, for structural quality and synteny.
-- Add a phage-appropriate intergenomic similarity/taxonomy baseline such as VIRIDIC or skani if feasible.
+- Add a public-scale phage intergenomic similarity/taxonomy baseline such as VIRIDIC before final taxonomy claims; skani is now available as an assay-benchmark robustness baseline.
 - Add accepted DefenseFinder/PADLOC host-defense outputs and curated phage anti-defense evidence only after the receptor-layer endpoint and claim boundary are stable.
 - Do not claim receptor superiority, capsule specificity, productive infection, or therapeutic utility from the current outputs.
 
@@ -101,6 +101,7 @@ Model families include:
 - BLASTN nearest-phage genome-similarity rates.
 - Mash nearest-phage genome-similarity rates in a separate robustness run.
 - fastANI nearest-phage genome-similarity rates in a separate robustness run.
+- skani nearest-phage genome-similarity rates in a separate robustness run.
 - RBPbase/Pharokka/Phold receptor-feature rate models.
 - Receptor plus host K/O models.
 - Combined receptor plus host K/O plus cluster models.
@@ -167,6 +168,24 @@ fastANI robustness check:
 - Interpretation: fastANI is slightly weaker than the current BLASTN baseline in AP but stronger than Mash in cold phage and cold cluster. The receptor union still does not robustly outperform fastANI nearest-phage plus host K/O.
 
 
+
+skani robustness check:
+
+- skani version: 0.3.2 via a temporary local `/tmp/cpg_skani_env` environment for this run.
+- skani settings: `triangle --small-genomes --full-matrix`, 105 assay phage FASTAs, 64 threads, 5,460 pairwise rows.
+- skani nonzero ANI/AF pairs: 709.
+- skani nearest-phage plus host K/O AP values:
+  - Cold phage: 0.200487.
+  - Cold phage cluster: 0.199395.
+  - Cold K-locus: 0.134923.
+  - Cold host: 0.251055.
+- Boundary-reviewed receptor union vs skani nearest-phage plus host K/O:
+  - Cold phage delta AP: -0.057586, group CI95 [-0.123690, 0.014245].
+  - Cold phage cluster delta AP: -0.058755, group CI95 [-0.142537, 0.013434].
+  - Cold K-locus delta AP: -0.106874, group CI95 [-0.160754, -0.072415].
+  - Cold host delta AP: -0.152923, group CI95 [-0.202979, -0.096113].
+- Interpretation: skani is the strongest of the current ANI/k-mer robustness baselines in pooled AP, and the receptor union still does not robustly outperform skani nearest-phage plus host K/O.
+
 ## Defense/Counter-Defense Boundary
 
 Stage 6 now treats annotation-keyword anti-defense hits as screening-only candidates. These rows may be written to `phage_antidefense_candidates.tsv` for review, but they are excluded from accepted compatibility matching unless an explicit reviewed phage anti-defense input table is supplied. This prevents generic methyltransferase, recombinase, repair, or similar annotation strings from being counted as demonstrated counter-defense capacity.
@@ -197,6 +216,10 @@ Generated outputs are under `results/`, which is ignored by Git. Key local outpu
 - `results/production/models/mash_similarity/mash_vs_blastn_similarity_baseline_summary.tsv`
 - `results/production/models/fastani_similarity/receptor_layer_model_pooled_summary.tsv`
 - `results/production/models/fastani_similarity/receptor_layer_group_bootstrap_delta.tsv`
+- `data/metadata/production_evidence/phage_skani_similarity.tsv`
+- `data/metadata/production_evidence/phage_skani_similarity_report.tsv`
+- `results/production/models/skani_similarity/receptor_layer_model_pooled_summary.tsv`
+- `results/production/models/skani_similarity/receptor_layer_group_bootstrap_delta.tsv`
 - `results/production/receptor_features/receptor_source_reconciliation.tsv`
 - `results/production/receptor_features/receptor_source_reconciliation_missing_rbpbase.tsv`
 - `results/production/receptor_features/receptor_source_reconciliation_summary.tsv`
@@ -219,6 +242,7 @@ python scripts/reconcile_receptor_feature_sources.py
 python scripts/review_missing_rbpbase_exact_matches.py --threads 16
 python scripts/build_mash_pairwise_similarity.py --threads 16
 python scripts/build_fastani_pairwise_similarity.py --threads 64
+python scripts/build_skani_pairwise_similarity.py --threads 64 --skani-command /tmp/cpg_skani_env/bin/skani --output data/metadata/production_evidence/phage_skani_similarity.tsv --report-output data/metadata/production_evidence/phage_skani_similarity_report.tsv
 python -m py_compile scripts/*.py
 git diff --check
 ```
@@ -230,12 +254,13 @@ python scripts/build_receptor_layer_pairwise_matrix.py
 python scripts/run_receptor_layer_model_comparison.py
 python scripts/run_receptor_layer_model_comparison.py --genome-similarity results/production/phage_similarity/mash_pairwise_similarity.tsv --model-output results/production/models/mash_similarity/receptor_layer_model_comparison.tsv --summary-output results/production/models/mash_similarity/receptor_layer_model_summary.tsv --prediction-output results/production/models/mash_similarity/receptor_layer_out_of_fold_predictions.tsv --pooled-summary-output results/production/models/mash_similarity/receptor_layer_model_pooled_summary.tsv --ablation-output results/production/models/mash_similarity/receptor_layer_feature_source_ablation.tsv --group-bootstrap-output results/production/models/mash_similarity/receptor_layer_group_bootstrap_delta.tsv --delta-output results/production/models/mash_similarity/receptor_layer_model_delta_summary.tsv --readiness-output results/production/models/mash_similarity/receptor_layer_model_readiness.tsv --report-output results/production/models/mash_similarity/receptor_layer_model_report.md
 python scripts/run_receptor_layer_model_comparison.py --genome-similarity results/production/phage_similarity/fastani_pairwise_similarity.tsv --model-output results/production/models/fastani_similarity/receptor_layer_model_comparison.tsv --summary-output results/production/models/fastani_similarity/receptor_layer_model_summary.tsv --prediction-output results/production/models/fastani_similarity/receptor_layer_out_of_fold_predictions.tsv --pooled-summary-output results/production/models/fastani_similarity/receptor_layer_model_pooled_summary.tsv --ablation-output results/production/models/fastani_similarity/receptor_layer_feature_source_ablation.tsv --group-bootstrap-output results/production/models/fastani_similarity/receptor_layer_group_bootstrap_delta.tsv --delta-output results/production/models/fastani_similarity/receptor_layer_model_delta_summary.tsv --readiness-output results/production/models/fastani_similarity/receptor_layer_model_readiness.tsv --report-output results/production/models/fastani_similarity/receptor_layer_model_report.md
+python scripts/run_receptor_layer_model_comparison.py --genome-similarity data/metadata/production_evidence/phage_skani_similarity.tsv --model-output results/production/models/skani_similarity/receptor_layer_model_comparison.tsv --summary-output results/production/models/skani_similarity/receptor_layer_model_summary.tsv --prediction-output results/production/models/skani_similarity/receptor_layer_out_of_fold_predictions.tsv --pooled-summary-output results/production/models/skani_similarity/receptor_layer_model_pooled_summary.tsv --ablation-output results/production/models/skani_similarity/receptor_layer_feature_source_ablation.tsv --group-bootstrap-output results/production/models/skani_similarity/receptor_layer_group_bootstrap_delta.tsv --delta-output results/production/models/skani_similarity/receptor_layer_model_delta_summary.tsv --readiness-output results/production/models/skani_similarity/receptor_layer_model_readiness.tsv --report-output results/production/models/skani_similarity/receptor_layer_model_report.md
 ```
 
 ## What Should Be Reviewed Next
 
 1. Review whether boundary-reviewed RBPbase candidate counts should become the default RBPbase feature for H1, while preserving exact-match columns for auditability.
-2. Add a more publication-standard phage taxonomy/similarity baseline such as VIRIDIC or skani. Mash and fastANI have now been added as robustness baselines, but they are not a replacement for VIRIDIC-style phage intergenomic similarity.
+2. Add a public-scale phage taxonomy/similarity baseline such as VIRIDIC before final taxonomy claims. Mash, fastANI, and skani are now available as assay-benchmark robustness baselines, but they are not a replacement for VIRIDIC-style public-scale phage intergenomic similarity.
 3. Review the 23 accepted mapped Phold/Foldseek structural-evidence rows, prioritizing the 8 high-priority non-Pharokka candidates, for confidence, coverage, synteny, product specificity, and overlap with RBPbase/Pharokka evidence.
 4. Keep H4 blocked until productive-infection outcomes and accepted defense/counter-defense evidence exist.
 5. Add accepted host-defense and phage-counter-defense evidence only after the receptor-layer benchmark is stable and the endpoint question is explicit.
@@ -252,5 +277,5 @@ Do not claim yet:
 
 Allowed current claim:
 
-Within the PhageHostLearn spot-test benchmark, the repository now supports an exploratory receptor-layer comparison with grouped splits and conservative claim boundaries. Current receptor summaries do not robustly outperform BLASTN, Mash, or fastANI nearest-phage plus host K/O baselines.
+Within the PhageHostLearn spot-test benchmark, the repository now supports an exploratory receptor-layer comparison with grouped splits and conservative claim boundaries. Current receptor summaries do not robustly outperform BLASTN, Mash, fastANI, or skani nearest-phage plus host K/O baselines.
 

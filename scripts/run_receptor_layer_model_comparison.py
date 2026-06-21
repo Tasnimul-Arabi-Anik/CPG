@@ -784,6 +784,8 @@ def build_delta_summary(
 
 def genome_similarity_label(path: Path) -> str:
     text = str(path).lower()
+    if "skani" in text:
+        return "skani"
     if "fastani" in text:
         return "fastANI"
     if "mash" in text:
@@ -797,6 +799,8 @@ def genome_similarity_label(path: Path) -> str:
         method = first.get("method", "").lower()
     except Exception:
         method = ""
+    if "skani" in method:
+        return "skani"
     if "fastani" in method:
         return "fastANI"
     if "mash" in method:

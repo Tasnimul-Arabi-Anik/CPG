@@ -1,0 +1,7 @@
+severity	item	message
+info	skani_version	skani 0.3.2
+info	input_fastas	105
+info	pairwise_rows	5460
+info	nonzero_skani_pairs	709
+info	skani_command	/tmp/cpg_skani_env/bin/skani triangle --small-genomes --full-matrix -t 64 -l /home/ai-pc/Work/CPG/results/production/phage_similarity/skani/assay_phage_fastas.txt -o /home/ai-pc/Work/CPG/results/production/phage_similarity/skani/assay_phages_skani_ani.tsv
+warning	coverage_semantics	coverage_percent is minimum bidirectional skani aligned fraction, not VIRIDIC intergenomic similarity coverage.
