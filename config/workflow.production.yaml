@@ -26,8 +26,8 @@ inputs:
   annotation_input: data/metadata/production_evidence/phagehostlearn_prodigal_cds_annotations.tsv
   domain_evidence: data/metadata/production_evidence/rbp_domain_evidence.tsv
   structural_evidence: data/metadata/production_evidence/rbp_structural_evidence.tsv
-  host_defense_input: ''
-  phage_antidefense_input: ''
+  host_defense_input: data/metadata/production_evidence/host_defense_systems.tsv
+  phage_antidefense_input: data/metadata/production_evidence/phage_antidefense_candidates.tsv
   kleborate_input: data/metadata/production_evidence/kleborate_host_features.tsv
   kaptive_input: data/metadata/production_evidence/kaptive_ko_typing.tsv
 outputs:

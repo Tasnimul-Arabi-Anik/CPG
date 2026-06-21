@@ -1069,6 +1069,8 @@ def build_assay_feature_coverage(
             parse_int(row.get("host_defense_system_count", "0")) > 0
             or is_informative_feature_value(row.get("host_defense_types", ""))
             or is_informative_feature_value(row.get("host_defense_systems", ""))
+            or is_informative_feature_value(row.get("defense_type", ""))
+            or is_informative_feature_value(row.get("defense_system", ""))
         )
     }
     antidefense_assessed_phages = row_id_set(phage_antidefense_rows, "phage_genome_id")
@@ -1080,6 +1082,8 @@ def build_assay_feature_coverage(
             parse_int(row.get("phage_antidefense_count", "0")) > 0
             or is_informative_feature_value(row.get("phage_antidefense_targets", ""))
             or is_informative_feature_value(row.get("phage_antidefense_classes", ""))
+            or is_informative_feature_value(row.get("target_defense_system", ""))
+            or is_informative_feature_value(row.get("antidefense_class", ""))
         )
     }
     phage_receptor_phages = row_id_set(phage_receptor_rows, "phage_genome_id")
