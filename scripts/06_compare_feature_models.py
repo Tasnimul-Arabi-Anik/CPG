@@ -938,10 +938,6 @@ def add_h2_prophage_annotation_coverage(
     prophage_states = {"detected" if genome in candidate_prophages else "zero_detected" for genome in annotated_prophages}
     if assessed_count == 0:
         status = "blocked_no_prophage_annotations"
-    elif detected_count == 0:
-        status = "prophage_annotations_assessed_zero_rbp_candidates"
-    elif assessed_count < 3:
-        status = "blocked_insufficient_prophage_cohort"
     else:
         status = "analysis_ready"
     coverage = detected_count / assessed_count if assessed_count else 0.0
@@ -964,6 +960,8 @@ def add_h2_prophage_annotation_coverage(
             "status": status,
             "notes": (
                 f"annotated_prophages={assessed_count}; prophages_with_rbp_candidates={detected_count}; "
+                "This is a quantitative coverage audit, not a reservoir-support claim; "
+                "the current prophage cohort is too small for H2 biological interpretation. "
                 "GenBank prophage CDS rows are bridge annotation only, not standardized Pharokka/PHROGs/domain/structural evidence."
             ),
         }
@@ -1774,10 +1772,8 @@ def summary_row(
         action = "Increase assessed assay-phage feature coverage and satisfy the pre-specified H3 thresholds before testing H3 associations."
     elif "descriptive_breadth_available" in row_statuses:
         action = "Spot-test breadth is available descriptively; do not treat it as support for RBP/counter-defense enrichment until feature evidence is assessed."
-    elif "prophage_annotations_assessed_zero_rbp_candidates" in row_statuses:
-        action = "Expand the prophage cohort and run standardized Pharokka/PHROGs plus domain/structural annotation before making an H2 reservoir claim."
-    elif "blocked_insufficient_prophage_cohort" in row_statuses:
-        action = "Increase the reviewed prophage cohort before testing prophage RBP/depolymerase reservoir enrichment."
+    elif primary.get("analysis_id") == "prophage_annotation_rbp_candidate_coverage" and "analysis_ready" in row_statuses:
+        action = "A quantitative H2 prophage coverage audit is available, but the current cohort is too small for a reservoir claim; expand prophage sampling and standardized annotation before manuscript interpretation."
     elif "blocked_no_productive_infection_labels" in row_statuses:
         action = "Curate productive-infection, plaque, or EOP outcomes for tested phage-host pairs, then rerun Stage 7."
     return {

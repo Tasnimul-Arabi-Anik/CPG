@@ -175,7 +175,7 @@ Latest assay-feature coverage audit correction: `results/production/qc/assay_fea
 | Hypothesis | Current status | Reason |
 | --- | --- | --- |
 | H1 receptor compatibility | Exploratory, module-identity signal available but not claim-ready | Exact unordered domain+structural module identity signatures beat RBPbase + K/O but do not robustly beat BLASTN genome-similarity + K/O; ordered per-gene architecture proxies were tested and underperform in cold-phage/cold-cluster splits; novel-K generalization remains fallback-limited. |
-| H2 prophage receptor reservoir | Explicit assessed-zero prophage audit row available, claim remains blocked | One sequence-backed computational prophage now has 24 GenBank bridge CDS rows in Stage 3, but Stage 4 finds zero RBP/depolymerase candidates and the cohort is far too small for a reservoir claim. |
+| H2 prophage receptor reservoir | Quantitative assessed-zero prophage audit row available, claim remains unsupported | One sequence-backed computational prophage now has 24 GenBank bridge CDS rows in Stage 3, but Stage 4 finds zero RBP/depolymerase candidates and the cohort is far too small for a reservoir claim. |
 | H3 breadth versus modularity/counter-defense | Exploratory module-count association rows available, claim remains data-dependent | Domain and total module counts show weak positive phage-level correlations with tested-panel spot-positive fraction (rho 0.110 and 0.106); structural count is near zero (rho 0.010); explicit anti-defense candidate coverage is insufficient at 7/105 phages. |
 | H4 defense/counter-defense improves productive-infection prediction | Blocked | No productive-infection, plaque, propagation, or EOP labels exist. |
 | H5 host lineage/prophage/defense landscape | Data-dependent association summary available | The workflow now summarizes ST versus DefenseFinder burden for 188/200 benchmark hosts across 120 ST groups, but this is association-only and not phage susceptibility or infectivity evidence. |
@@ -214,13 +214,13 @@ After the latest production run, the standard hypothesis-coverage audit recogniz
 | Hypothesis | Coverage audit status | Evidence basis |
 | --- | --- | --- |
 | H1 | pass | 104 pooled receptor-layer benchmark rows across 4 grouped split strategies and 26 model families; claim remains exploratory and spot-test-only. |
-| H2 | warn | Two quantitative rows exist: one annotated-prophage coverage audit and one record-type group summary. The single annotated prophage has zero detected RBP/depolymerase candidates from bridge GenBank CDS evidence, so current data remain insufficient for a reservoir claim. |
+| H2 | pass | The annotated-prophage coverage audit is quantitative and analysis-ready, reporting 0/1 prophages with detected RBP/depolymerase candidates; this does not support a reservoir claim. |
 | H3 | pass | Quantitative receptor-module breadth association rows are analysis-ready; counter-defense subcomponents remain blocked by insufficient coverage. |
 | H4 | warn | Blocked by absence of productive-infection, plaque, propagation, or EOP outcomes. |
 | H5 | pass | ST versus DefenseFinder burden summary. |
 | H6 | pass | Source/cluster novelty prioritization summaries. |
 
-Goal completion remains incomplete because `G03` and `G05` are still blocking: H2 and H4 need additional data or outcome support before the full objective can be called complete. H3 now has analysis-ready receptor-module breadth tests, but its counter-defense subcomponent remains coverage-limited and claim support remains data-dependent.
+Goal completion remains incomplete because `G03` and `G05` are still blocking: H4 still lacks productive-infection, plaque, propagation, or EOP outcomes. H2 and H3 now have quantitative analysis-ready rows, but H2 remains too small for a reservoir claim and H3 counter-defense coverage remains limited; claim support remains data-dependent.
 
 ## Immediate Next Steps
 
