@@ -202,6 +202,21 @@ Not allowed now:
 
 > Spot-test positives demonstrate productive infection or therapeutic suitability.
 
+## Current Goal Audit Snapshot
+
+After the latest production run, the standard hypothesis-coverage audit recognizes the compact H1 receptor-layer benchmark rather than only the older one-sample K/O proxy rows:
+
+| Hypothesis | Coverage audit status | Evidence basis |
+| --- | --- | --- |
+| H1 | pass | 92 pooled receptor-layer benchmark rows across 4 grouped split strategies and 23 model families; claim remains exploratory and spot-test-only. |
+| H2 | warn | Quantitative row exists, but current data lack a sufficient prophage cohort for a reservoir claim. |
+| H3 | warn | Module-count spot-breadth association rows exist, but counter-defense coverage is insufficient. |
+| H4 | warn | Blocked by absence of productive-infection, plaque, propagation, or EOP outcomes. |
+| H5 | pass | ST versus DefenseFinder burden summary. |
+| H6 | pass | Source/cluster novelty prioritization summaries. |
+
+Goal completion remains incomplete because `G03` and `G05` are still blocking: H2, H3, and H4 need additional data or outcome support before the full objective can be called complete.
+
 ## Immediate Next Steps
 
 1. Review and merge PR #12.

@@ -440,6 +440,13 @@ def write_tsv(path: Path, columns: Iterable[str], rows: Iterable[dict[str, str]]
 def add_report(report: list[dict[str, str]], severity: str, item: str, status: str, message: str) -> None:
     report.append({"severity": severity, "item": item, "status": status, "message": message})
 
+
+def parse_int(value: str) -> int:
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return 0
+
 def resolve_path(root: Path, value: str) -> Path:
     path = Path(value)
     return path if path.is_absolute() else root / path
@@ -687,12 +694,59 @@ def validate_figures(root: Path, results_dir: Path, report: list[dict[str, str]]
         add_report(report, "warning", "figures_data", "warn", "Figures with empty source data: " + ";".join(empty))
 
 
+def h1_receptor_layer_benchmark_row(root: Path, results_dir: Path) -> dict[str, str] | None:
+    readiness_path = results_dir / "models/receptor_layer_model_readiness.tsv"
+    pooled_path = results_dir / "models/receptor_layer_model_pooled_summary.tsv"
+    if not readiness_path.exists() or not pooled_path.exists():
+        return None
+    _readiness_columns, readiness_rows = read_tsv(readiness_path)
+    _pooled_columns, pooled_rows = read_tsv(pooled_path)
+    h1_ready = [
+        row for row in readiness_rows
+        if row.get("readiness_item") == "H1_receptor_layer_model_comparison"
+        and row.get("status") == "quantitative_test_available_claim_not_final"
+    ]
+    h1_pooled = [
+        row for row in pooled_rows
+        if row.get("hypothesis") == "H1_spot_interaction_receptor_layer"
+        and parse_int(row.get("prediction_rows", "0")) > 0
+        and parse_int(row.get("positive_rows", "0")) > 0
+        and parse_int(row.get("negative_rows", "0")) > 0
+        and row.get("split_strategy")
+        and row.get("model_name")
+    ]
+    if not h1_ready or not h1_pooled:
+        return None
+    split_count = len({row.get("split_strategy", "") for row in h1_pooled})
+    model_count = len({row.get("model_name", "") for row in h1_pooled})
+    max_predictions = max(parse_int(row.get("prediction_rows", "0")) for row in h1_pooled)
+    return {
+        "hypothesis": "H1",
+        "required_test": "pairwise spot-interaction receptor-layer benchmark with grouped splits",
+        "evidence_path": display_path(root, pooled_path) + ";" + display_path(root, readiness_path),
+        "matching_rows": str(len(h1_pooled)),
+        "ok_rows": "1",
+        "limited_rows": "0",
+        "status": "pass",
+        "notes": (
+            "H1 receptor-layer benchmark is available from compact PR B outputs; "
+            f"pooled_rows={len(h1_pooled)}; split_strategies={split_count}; model_families={model_count}; "
+            f"max_prediction_rows={max_predictions}; claim remains exploratory and spot-test-only."
+        ),
+    }
+
+
 def validate_hypotheses(root: Path, results_dir: Path, report: list[dict[str, str]]) -> list[dict[str, str]]:
     model_path = results_dir / "models/model_comparison.tsv"
     _, model_rows = read_tsv(model_path)
     output_rows = []
     for hypothesis, required_test, predicate in HYPOTHESIS_TESTS:
         matching = [row for row in model_rows if predicate(row)]
+        if hypothesis == "H1":
+            benchmark_row = h1_receptor_layer_benchmark_row(root, results_dir)
+            if benchmark_row is not None:
+                output_rows.append(benchmark_row)
+                continue
         ok_rows = [row for row in matching if row.get("status") == "ok"]
         limited = [row for row in matching if row.get("status") and row.get("status") != "ok"]
         if not matching:
