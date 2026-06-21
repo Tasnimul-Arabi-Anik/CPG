@@ -1,0 +1,3 @@
+severity	item	message
+info	domain_evidence	normalized_rows=495; input=data/metadata/production_evidence/phrogs_profile_receptor_domain_input.tsv; format=generic_tsv
+info	structural_evidence	no input supplied; preserved existing output because --overwrite-empty was not set: data/metadata/production_evidence/rbp_structural_evidence.tsv
