@@ -4,7 +4,7 @@ This document separates the current reproducible bridge workflow from the produc
 
 ## Current Position
 
-The repository currently supports reviewed source curation, accession-backed metadata, sequence-fetch review packets, production benchmark receptor evidence for the PhageHostLearn assay phages, host K/O typing evidence for the assay hosts, phage genome-similarity baselines, DefenseFinder host-defense evidence, explicit Phold ACR candidate evidence, figure source generation, and claim audits. The latest cross-PR status is summarized in `docs/current_analysis_status.md`.
+The repository currently supports reviewed source curation, accession-backed metadata, sequence-fetch review packets, production benchmark receptor evidence for the PhageHostLearn assay phages, host K/O typing evidence for the assay hosts, phage genome-similarity baselines, DefenseFinder host-defense evidence, explicit Phold ACR candidate evidence, figure source generation, and claim audits. The latest cross-PR status is summarized in `docs/current_analysis_status.md`, and the tracked production tool/evidence manifest is `data/metadata/production_evidence/production_tool_run_manifest.tsv`.
 
 The current workflow is useful for controlled development and early real-data unlocks. It is not yet the final standardized comparative-genomics pipeline.
 

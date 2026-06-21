@@ -25,6 +25,25 @@ The working biological hypothesis is a two-filter model:
 
 The current validated assay endpoint is spot-test interaction only. Spot positivity is treated as initial interaction evidence, not productive infection.
 
+## Production Tool/Evidence Visibility
+
+Tracked normalized production evidence is under `data/metadata/production_evidence/`. The compact tool-run manifest is `data/metadata/production_evidence/production_tool_run_manifest.tsv`; it distinguishes accepted tracked TSVs from native output directories that are generated locally under ignored `results/production/` paths.
+
+Current established-tool status:
+
+| Tool/layer | Current status |
+| --- | --- |
+| Pharokka | Local native runs completed for 105 assay phages; native outputs are ignored under `results/production/pharokka_assay_phages/`. |
+| Phold/Foldseek | Local native runs completed for 105 assay phages; tracked normalized receptor and ACR candidate subsets are configured. |
+| Kaptive | Tracked production K/O typing exists for 200 assay hosts. |
+| Kleborate | Tracked production host feature evidence exists for 188 assay hosts. |
+| DefenseFinder | Tracked production host-defense evidence exists for 200 assay hosts. |
+| BLASTN/fastANI/skani | Tracked benchmark genome-similarity baselines exist for the 105 assay phages. |
+| VIRIDIC | Not run; do not describe current similarity evidence as VIRIDIC. |
+| PADLOC | Not run; current host-defense evidence is DefenseFinder-only. |
+
+The default CI path validates tracked normalized evidence and mock/seed workflows. It does not install or rerun the heavy external tools.
+
 ## Assay Outcome Layer
 
 The reviewed PhageHostLearn benchmark assay layer contains:

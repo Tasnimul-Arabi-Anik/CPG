@@ -14,7 +14,7 @@ Start with `config/source_queries.yaml` and `results/qc/source_query_plan.tsv` t
 
 ## Reviewer Handoff
 
-For another AI or collaborator reviewing the repository, start with `docs/reviewer_handoff.md` and `docs/current_analysis_status.md`. Reviewed source rows can be proposed with `.github/ISSUE_TEMPLATE/source-curation.yml`. It explains the expected real/mock workflow states, current biological blockers, validation commands, and claim boundaries. The machine-readable claim boundary is written to `results/validation/claim_support_audit.tsv` by the workflow.
+For another AI or collaborator reviewing the repository, start with `docs/reviewer_handoff.md`, `docs/current_analysis_status.md`, and `data/metadata/production_evidence/production_tool_run_manifest.tsv`. Reviewed source rows can be proposed with `.github/ISSUE_TEMPLATE/source-curation.yml`. These files explain the expected real/mock workflow states, current biological blockers, validation commands, production evidence provenance, and claim boundaries. The machine-readable claim boundary is written to `results/validation/claim_support_audit.tsv` by the workflow.
 
 ## Workflow Stages
 
@@ -28,9 +28,11 @@ For another AI or collaborator reviewing the repository, start with `docs/review
 8. Figure generation
 9. Manuscript methods and interpretation
 
-## Current Seed Assay Layer
+## Current Benchmark Evidence Layer
 
 The seed profile imports 10,006 reviewed PhageHostLearn spot-test phage-host outcomes: 333 spot-positive and 9,673 tested spot-negative pairs. Blank matrix cells remain untested, and `productive_infection_result` remains `not_measured`. These rows support initial-interaction and descriptive panel-breadth audits, not productive-infection or therapeutic claims.
+
+The production profile has tracked normalized benchmark evidence for the same assay set, including receptor-feature inputs, Kaptive/Kleborate host typing, genome-similarity baselines, DefenseFinder host-defense calls, and explicit Phold ACR candidates. Native heavy-tool output directories under `results/production/` are generated locally and ignored by Git; the tracked summary of what was run, what is normalized, and what remains absent is `data/metadata/production_evidence/production_tool_run_manifest.tsv`.
 
 The Stage 7 output `results/<profile>/qc/assay_feature_coverage.tsv` measures how much of that assay matrix has sequence, K/O/ST, RBP, domain, structural, defense, and counter-defense evidence. Missing analysis is reported as `not_assessed`, never as biological zero.
 
