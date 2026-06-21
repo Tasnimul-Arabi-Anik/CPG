@@ -42,6 +42,8 @@ Phage receptor-side evidence:
   - 2 strong same-phage hits.
   - 23 have RBPbase `xgb_score >= 0.9`.
   - Interpretation: mostly start/stop or gene-boundary differences, not biological absence.
+- Boundary-reviewed RBPbase feature count used in regenerated local matrix: 274 candidates.
+- Exact and boundary-reviewed RBPbase features are kept as separate model columns.
 - Pharokka receptor-like keyword rows: 213.
 - Phold/Foldseek receptor-like feature rows: 236.
 - Non-Pharokka Phold/Foldseek receptor-like rows: 23.
@@ -79,16 +81,26 @@ Primary current comparison:
 - Primary split: cold phage cluster.
 - Metric: tie-aware pooled out-of-fold average precision.
 
-Current result:
+Current result after adding boundary-reviewed RBPbase features:
 
-- Cold phage cluster delta AP: -0.054783.
-- Group bootstrap CI95: [-0.144584, 0.037596].
-- Cold K-locus delta AP: -0.105792.
-- Group bootstrap CI95: [-0.165037, -0.061338].
+- Boundary-reviewed RBPbase vs exact RBPbase:
+  - Cold phage delta AP: +0.020282, group CI95 [0.007731, 0.044222].
+  - Cold phage cluster delta AP: +0.019078, group CI95 [0.001008, 0.054781].
+  - Cold host delta AP: -0.004975, group CI95 [-0.019879, 0.007144].
+  - Cold K-locus delta AP: 0.000000.
+- Boundary-reviewed receptor union vs exact receptor union:
+  - Cold phage cluster delta AP: -0.000427, group CI95 [-0.025381, 0.023545].
+  - Cold phage delta AP: +0.008034, group CI95 [-0.014805, 0.028508].
+  - No robust improvement over exact-union receptor features.
+- Boundary-reviewed receptor union vs BLASTN nearest-phage plus host K/O:
+  - Cold phage cluster delta AP: -0.055210, group CI95 [-0.136977, 0.025160].
+  - Cold K-locus delta AP: -0.105792, group CI95 [-0.159033, -0.071987].
+  - Cold host delta AP: -0.160134, group CI95 [-0.211350, -0.103932].
+  - Cold phage delta AP: -0.044059, group CI95 [-0.117824, 0.037105].
 
 Current interpretation:
 
-The receptor-feature summary does not currently outperform the BLASTN nearest-phage plus host K/O baseline in the PhageHostLearn spot-test benchmark. This is an exploratory benchmark result, not an independent external validation.
+Boundary review corrects RBPbase undercounting and modestly improves the RBPbase-only feature in cold-phage and cold-cluster splits. It does not make the receptor-feature union outperform the BLASTN nearest-phage plus host K/O baseline in the PhageHostLearn spot-test benchmark. This remains an exploratory benchmark result, not an independent external validation.
 
 ## Locally Generated Outputs
 
@@ -130,16 +142,11 @@ python scripts/run_receptor_layer_model_comparison.py
 
 ## What Should Be Reviewed Next
 
-1. Check that exact RBPbase CDS matching is not being treated as complete RBPbase evidence. The BLASTP review shows 27 source RBPbase candidates were missed only because exact CDS boundaries differ.
-2. Add or review boundary-adjusted RBPbase feature columns separately from exact-match columns.
-3. Re-run the H1 grouped benchmark with:
-   - exact RBPbase features;
-   - boundary-reviewed RBPbase features;
-   - Pharokka and Phold ablations;
-   - genome-similarity plus host K/O baseline.
+1. Review whether boundary-reviewed RBPbase candidate counts should become the default RBPbase feature for H1, while preserving exact-match columns for auditability.
+2. Add manuscript-grade phage similarity/taxonomy baselines such as VIRIDIC, Mash/skani/ANI, or another defensible established method.
+3. Review the 8 high-priority non-Pharokka Phold/Foldseek receptor-like candidates manually for confidence, coverage, synteny, product specificity, and overlap with RBPbase/Pharokka evidence.
 4. Keep H4 blocked until productive-infection outcomes and accepted defense/counter-defense evidence exist.
-5. Add manuscript-grade phage similarity/taxonomy baselines such as VIRIDIC, Mash/skani/ANI, or another defensible established method.
-6. Review the 8 high-priority non-Pharokka Phold/Foldseek receptor-like candidates manually for confidence, coverage, synteny, product specificity, and overlap with RBPbase/Pharokka evidence.
+5. Add accepted host-defense and phage-counter-defense evidence only after the receptor-layer benchmark is stable and the endpoint question is explicit.
 
 ## Unsupported Claims
 
