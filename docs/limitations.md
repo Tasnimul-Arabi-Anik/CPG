@@ -6,6 +6,7 @@ Known limitations to track:
 
 - Public phage-host metadata may be incomplete or inconsistent.
 - The current seed profile includes reviewed PhageHostLearn spot-test outcomes, which support initial-interaction and panel-breadth screening only. They do not support productive-infection, plaque, EOP, or defense/counter-defense prediction claims.
+- Local PhageHostLearn sources currently available in this repository contain spot-test matrix values and genome archives, but no plaque, EOP, propagation, or productive-infection outcome table. H4 therefore requires an additional curated productive-infection endpoint source before any defense/counter-defense prediction test is valid.
 - PhageHostLearn RBPbase/Locibase bridge metadata are useful for seed screening coverage, but they are not production structural/domain annotation, Kaptive/Kleborate K/O/ST typing, or functional receptor validation.
 - Isolation host, reported host, prophage resident host, and predicted host relationships must not be treated as tested susceptible or resistant outcomes.
 - Current local BLASTN pairwise similarity evidence is a conservative initial baseline; comprehensive species-like clustering still requires reviewed all-vs-all similarity across the expanded public phage/prophage dataset, preferably with VIRIDIC, Mash, or an equivalent documented method.
