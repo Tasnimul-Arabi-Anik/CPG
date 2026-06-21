@@ -61,6 +61,7 @@ production_evidence_status:
   manifest: data/metadata/production_evidence/production_tool_run_manifest.tsv
   tracked_normalized_evidence:
     - data/metadata/production_evidence/phagehostlearn_prodigal_cds_annotations.tsv
+    - data/metadata/production_evidence/phagehostlearn_plus_prophage_cds_annotations.tsv
     - data/metadata/production_evidence/rbp_domain_evidence.tsv
     - data/metadata/production_evidence/rbp_structural_evidence.tsv
     - data/metadata/production_evidence/kaptive_ko_typing.tsv

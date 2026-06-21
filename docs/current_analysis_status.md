@@ -67,8 +67,10 @@ Evidence included:
 
 | Evidence | Count |
 | --- | ---: |
-| Sequence-backed CDS annotation rows | 8,393 |
+| Sequence-backed assay-phage CDS annotation rows | 8,393 |
 | Assay phages represented | 105 |
+| Combined Stage 3 annotation input rows | 8,417 |
+| GenBank bridge prophage CDS rows in combined input | 24 |
 | PHROGs/MMseqs receptor-domain rows | 495 |
 | Phold/Foldseek receptor-like structural rows | 23 |
 
@@ -82,6 +84,8 @@ The 23 Phold-only receptor-like candidates were conservatively triaged:
 | Insufficiently specific | 4 |
 
 The generic production workflow now also retains these accepted annotation rows in Stage 3 when their assay phage IDs are present in the manifest but absent from Stage 2 clusters because local raw FASTA files are not tracked. The retained rows keep blank species-cluster fields, so this does not promote missing local sequence files into completed taxonomy or dereplication evidence.
+
+The production profile now uses `data/metadata/production_evidence/phagehostlearn_plus_prophage_cds_annotations.tsv` as its Stage 3 annotation input. That file is a no-network merge of the 8,393 accepted assay-phage CDS rows with 24 existing parsed GenBank CDS rows for the NTUH-K2044 computational prophage candidate. The prophage rows are bridge annotation only, not standardized Pharokka/PHROGs/domain/structural evidence. Stage 4 currently detects zero RBP/depolymerase candidates for that prophage from these bridge rows.
 
 Claim boundary: these are computational receptor candidates. They do not prove capsule specificity, depolymerase activity, host range, or productive infection.
 
@@ -170,7 +174,7 @@ Claim boundary: H4 remains `blocked_no_productive_infection_labels`. These evide
 | Hypothesis | Current status | Reason |
 | --- | --- | --- |
 | H1 receptor compatibility | Exploratory, module-identity signal available but not claim-ready | Exact domain+structural module identity signatures beat RBPbase + K/O but do not robustly beat genome-similarity + K/O baselines; full domain-order architecture and novel-K generalization remain untested. |
-| H2 prophage receptor reservoir | Not the focus of the current PR stack | Requires larger prophage/host cohort and structural/synteny association analysis. |
+| H2 prophage receptor reservoir | Explicit assessed-zero prophage audit row available, claim remains blocked | One sequence-backed computational prophage now has 24 GenBank bridge CDS rows in Stage 3, but Stage 4 finds zero RBP/depolymerase candidates and the cohort is far too small for a reservoir claim. |
 | H3 breadth versus modularity/counter-defense | Exploratory module-count association rows available, claim remains data-dependent | Domain and total module counts show weak positive phage-level correlations with tested-panel spot-positive fraction (rho 0.110 and 0.106); structural count is near zero (rho 0.010); explicit anti-defense candidate coverage is insufficient at 7/105 phages. |
 | H4 defense/counter-defense improves productive-infection prediction | Blocked | No productive-infection, plaque, propagation, or EOP labels exist. |
 | H5 host lineage/prophage/defense landscape | Data-dependent association summary available | The workflow now summarizes ST versus DefenseFinder burden for 188/200 benchmark hosts across 120 ST groups, but this is association-only and not phage susceptibility or infectivity evidence. |
@@ -209,7 +213,7 @@ After the latest production run, the standard hypothesis-coverage audit recogniz
 | Hypothesis | Coverage audit status | Evidence basis |
 | --- | --- | --- |
 | H1 | pass | 92 pooled receptor-layer benchmark rows across 4 grouped split strategies and 23 model families; claim remains exploratory and spot-test-only. |
-| H2 | warn | Quantitative row exists, but current data lack a sufficient prophage cohort for a reservoir claim. |
+| H2 | warn | Two quantitative rows exist: one annotated-prophage coverage audit and one record-type group summary. The single annotated prophage has zero detected RBP/depolymerase candidates from bridge GenBank CDS evidence, so current data remain insufficient for a reservoir claim. |
 | H3 | warn | Module-count spot-breadth association rows exist, but counter-defense coverage is insufficient. |
 | H4 | warn | Blocked by absence of productive-infection, plaque, propagation, or EOP outcomes. |
 | H5 | pass | ST versus DefenseFinder burden summary. |

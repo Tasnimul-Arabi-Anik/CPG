@@ -853,6 +853,80 @@ def add_rate_test(
         )
 
 
+def add_h2_prophage_annotation_coverage(
+    rows: list[dict[str, str]],
+    feature_rows: list[dict[str, str]],
+    annotation_rows: list[dict[str, str]],
+    rbp_rows: list[dict[str, str]],
+) -> None:
+    annotated_prophages = {
+        row.get("genome_id", "")
+        for row in annotation_rows
+        if row.get("record_type", "") == "prophage" and not is_missing(row.get("genome_id"))
+    }
+    candidate_prophages = {
+        row.get("genome_id", "")
+        for row in rbp_rows
+        if row.get("record_type", "") == "prophage" and not is_missing(row.get("genome_id"))
+    }
+    assessed_count = len(annotated_prophages)
+    detected_count = len(annotated_prophages & candidate_prophages)
+    prophage_states = {"detected" if genome in candidate_prophages else "zero_detected" for genome in annotated_prophages}
+    if assessed_count == 0:
+        status = "blocked_no_prophage_annotations"
+    elif detected_count == 0:
+        status = "prophage_annotations_assessed_zero_rbp_candidates"
+    elif assessed_count < 3:
+        status = "blocked_insufficient_prophage_cohort"
+    else:
+        status = "analysis_ready"
+    coverage = detected_count / assessed_count if assessed_count else 0.0
+    rows.append(
+        {
+            "analysis_id": "prophage_annotation_rbp_candidate_coverage",
+            "hypothesis": "H2",
+            "task": "prophage_rbp_module_reservoir_coverage",
+            "target": "prophage_rbp_candidate_status",
+            "feature_set": "record_type",
+            "model_type": "annotation_candidate_coverage_audit",
+            "n_samples": str(assessed_count),
+            "n_classes": str(len(prophage_states)),
+            "n_features": "1",
+            "coverage": f"{coverage:.3f}" if assessed_count else "0.000",
+            "accuracy": "",
+            "macro_f1": "",
+            "baseline_accuracy": "",
+            "delta_vs_baseline": "",
+            "status": status,
+            "notes": (
+                f"annotated_prophages={assessed_count}; prophages_with_rbp_candidates={detected_count}; "
+                "GenBank prophage CDS rows are bridge annotation only, not standardized Pharokka/PHROGs/domain/structural evidence."
+            ),
+        }
+    )
+    feature_rows.append(
+        {
+            "analysis_id": "prophage_annotation_rbp_candidate_coverage",
+            "hypothesis": "H2",
+            "task": "prophage_rbp_module_reservoir_coverage",
+            "feature_set": "record_type",
+            "feature": "prophage",
+            "non_missing_count": str(assessed_count),
+            "unique_value_count": str(len(prophage_states)),
+            "full_accuracy": "",
+            "accuracy_without_feature": "",
+            "delta_accuracy": "",
+            "association_metric": "prophage_rbp_candidate_fraction",
+            "association_value": f"{coverage:.3f}" if assessed_count else "",
+            "notes": (
+                f"annotated_prophages={';'.join(sorted(annotated_prophages)) or 'none'}; "
+                f"candidate_prophages={';'.join(sorted(candidate_prophages & annotated_prophages)) or 'none'}; "
+                "assessed_zero_detected means no candidate was detected from current accepted/bridge annotation evidence, not biological absence."
+            ),
+        }
+    )
+
+
 def median_value(values: list[float]) -> float | None:
     if not values:
         return None
@@ -1621,6 +1695,10 @@ def summary_row(
         action = "Increase assessed assay-phage feature coverage and satisfy the pre-specified H3 thresholds before testing H3 associations."
     elif "descriptive_breadth_available" in row_statuses:
         action = "Spot-test breadth is available descriptively; do not treat it as support for RBP/counter-defense enrichment until feature evidence is assessed."
+    elif "prophage_annotations_assessed_zero_rbp_candidates" in row_statuses:
+        action = "Expand the prophage cohort and run standardized Pharokka/PHROGs plus domain/structural annotation before making an H2 reservoir claim."
+    elif "blocked_insufficient_prophage_cohort" in row_statuses:
+        action = "Increase the reviewed prophage cohort before testing prophage RBP/depolymerase reservoir enrichment."
     elif "blocked_no_productive_infection_labels" in row_statuses:
         action = "Curate productive-infection, plaque, or EOP outcomes for tested phage-host pairs, then rerun Stage 7."
     return {
@@ -1672,7 +1750,7 @@ def build_hypothesis_summary(
             "H2",
             "Do prophages provide a reservoir of RBP/depolymerase modules?",
             "record type versus RBP module group-rate summary",
-            {"record_type_vs_rbp_modules"},
+            {"prophage_annotation_rbp_candidate_coverage", "record_type_vs_rbp_modules"},
             "top_label_fraction_range_by_record_type",
             "Prophage module rows are candidates only; function and capsule specificity require validation.",
         ),
@@ -1776,6 +1854,8 @@ def run_models(
     h3_min_group_size: int,
     host_metadata_rows: list[dict[str, str]],
     host_defense_rows: list[dict[str, str]],
+    annotation_rows: list[dict[str, str]],
+    rbp_rows: list[dict[str, str]],
 ) -> tuple[list[dict[str, str]], list[dict[str, str]], list[dict[str, str]]]:
     model_rows: list[dict[str, str]] = []
     feature_rows: list[dict[str, str]] = []
@@ -1809,6 +1889,7 @@ def run_models(
         "H4 requires tested productive-infection, plaque, or EOP outcomes. compatibility_feature_status and matched_counterdefense_status are feature-derived labels and are not valid biological targets.",
     )
 
+    add_h2_prophage_annotation_coverage(model_rows, feature_rows, annotation_rows, rbp_rows)
     add_rate_test(
         model_rows,
         feature_rows,
@@ -1981,6 +2062,8 @@ def main() -> int:
         args.h3_min_group_size,
         host_metadata_rows,
         host_defense_rows,
+        annotation_rows,
+        rbp_rows,
     )
     hypothesis_summary_rows = build_hypothesis_summary(model_rows, feature_rows, display_path(Path(args.model_comparison_output)))
     assay_feature_coverage_rows = build_assay_feature_coverage(

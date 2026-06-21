@@ -473,6 +473,19 @@ python scripts/build_ncbi_genbank_cds_annotation_input.py \
   --report-output data/metadata/external_evidence/ncbi_genbank_cds_annotations_report.tsv
 ```
 
+For the current production profile, the Stage 3 annotation input is a no-network merge of the accepted assay-phage CDS rows plus the already parsed NTUH-K2044 prophage CDS rows. This keeps the prophage visible to H2 audits while preserving the claim boundary that those prophage annotations are GenBank bridge evidence, not standardized Pharokka/PHROGs/domain/structural evidence.
+
+```bash
+python scripts/build_ncbi_genbank_cds_annotation_input.py \
+  --manifest data/metadata/source_manifests/klebsiella_prophages.tsv \
+  --base-input data/metadata/production_evidence/phagehostlearn_prodigal_cds_annotations.tsv \
+  --parsed-input data/metadata/external_evidence/genbank_cds_annotations.tsv \
+  --parsed-genome-id NTUH-K2044_PhiSpy_pp1_NC_012731.1_2098066_2113724 \
+  --skip-fetch \
+  --output data/metadata/production_evidence/phagehostlearn_plus_prophage_cds_annotations.tsv \
+  --report-output data/metadata/production_evidence/phagehostlearn_plus_prophage_cds_annotations_report.tsv
+```
+
 ## Stage 4: RBP/Depolymerase Candidate Prioritization
 
 The RBP/depolymerase script consumes normalized annotations and gene clusters, then combines annotation keywords, sequence-cluster evidence, optional domain evidence, optional structural evidence, protein length, and local synteny context. Candidate novelty tiers are conservative: annotation text alone is not treated as a novelty claim.
@@ -566,7 +579,7 @@ Optional PADLOC/DefenseFinder-style and phage anti-defense schemas are documente
 
 ## Stage 7: Feature-Set Model Comparison
 
-The generic model comparison script consumes phage clusters, RBP/depolymerase candidates, phage-host links, compatibility features, optional phage/host bridge metadata, and canonical phage-host assay rows when available. It writes transparent leave-one-out categorical baselines for K/O association proxies, group summaries for prophage RBP reservoirs, host background defense burden, exploratory novelty context, assay-derived spot-test breadth, and assay-feature coverage. A separate frozen H1 receptor benchmark (`scripts/run_receptor_layer_model_comparison.py`) consumes production receptor evidence, exact PHROGs/MMseqs and Phold/Foldseek module-identity signatures, host K/O evidence, and genome-similarity baselines to evaluate spot-test interaction under grouped splits. In the current benchmark, exact domain+structural module identities improve over RBPbase plus host K/O but do not robustly outperform genome-similarity plus host K/O baselines; H1 therefore remains exploratory rather than claim-supported. H3 retains tested-host denominators, positive spot-test counts, continuous spot-positive fractions, and Wilson intervals for the observed tested panel; these are initial-interaction summaries only. H4 remains explicitly blocked until productive-infection, plaque, EOP, or propagation outcomes are curated.
+The generic model comparison script consumes phage clusters, RBP/depolymerase candidates, phage-host links, compatibility features, optional phage/host bridge metadata, and canonical phage-host assay rows when available. It writes transparent leave-one-out categorical baselines for K/O association proxies, group summaries for prophage RBP reservoirs, host background defense burden, exploratory novelty context, assay-derived spot-test breadth, and assay-feature coverage. H2 now includes an explicit prophage annotation coverage audit: annotated prophages are counted separately from prophages with detected RBP/depolymerase candidates so bridge-annotated, zero-candidate prophages are not silently omitted. A separate frozen H1 receptor benchmark (`scripts/run_receptor_layer_model_comparison.py`) consumes production receptor evidence, exact PHROGs/MMseqs and Phold/Foldseek module-identity signatures, host K/O evidence, and genome-similarity baselines to evaluate spot-test interaction under grouped splits. In the current benchmark, exact domain+structural module identities improve over RBPbase plus host K/O but do not robustly outperform genome-similarity plus host K/O baselines; H1 therefore remains exploratory rather than claim-supported. H3 retains tested-host denominators, positive spot-test counts, continuous spot-positive fractions, and Wilson intervals for the observed tested panel; these are initial-interaction summaries only. H4 remains explicitly blocked until productive-infection, plaque, EOP, or propagation outcomes are curated.
 
 Implemented command:
 
