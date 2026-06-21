@@ -55,7 +55,29 @@ PREDICTION_COLUMNS = [
     "predicted_score",
     "model_id",
     "baseline_id",
+    "support_state",
+    "training_support_rows",
+    "intermediate_support_rows",
+    "nearest_phage_count",
+    "used_global_prevalence",
     "claim_boundary",
+]
+SUPPORT_DIAGNOSTIC_COLUMNS = [
+    "hypothesis",
+    "split_strategy",
+    "fold",
+    "model_name",
+    "test_rows",
+    "direct_support_rows",
+    "intermediate_fallback_rows",
+    "global_fallback_rows",
+    "global_model_rows",
+    "missing_similarity_rows",
+    "median_training_support_rows",
+    "mean_training_support_rows",
+    "min_training_support_rows",
+    "max_training_support_rows",
+    "notes",
 ]
 POOLED_COLUMNS = [
     "hypothesis",
@@ -129,11 +151,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--summary-output", default="results/production/models/receptor_layer_model_summary.tsv")
     parser.add_argument("--prediction-output", default="results/production/models/receptor_layer_out_of_fold_predictions.tsv")
     parser.add_argument("--pooled-summary-output", default="results/production/models/receptor_layer_model_pooled_summary.tsv")
+    parser.add_argument("--support-diagnostics-output", default="results/production/models/receptor_layer_support_diagnostics.tsv")
     parser.add_argument("--ablation-output", default="results/production/models/receptor_layer_feature_source_ablation.tsv")
     parser.add_argument("--group-bootstrap-output", default="results/production/models/receptor_layer_group_bootstrap_delta.tsv")
     parser.add_argument("--delta-output", default="results/production/models/receptor_layer_model_delta_summary.tsv")
     parser.add_argument("--readiness-output", default="results/production/models/receptor_layer_model_readiness.tsv")
-    parser.add_argument("--report-output", default="PILOT_REPORT.md")
+    parser.add_argument("--report-output", default="results/production/models/receptor_layer_model_report.md")
     parser.add_argument("--bootstrap-iterations", type=int, default=1000)
     parser.add_argument("--group-bootstrap-iterations", type=int, default=200)
     parser.add_argument("--seed", type=int, default=20260621)
@@ -175,7 +198,9 @@ def host_ko_key(row: dict[str, str]) -> str:
     return "K=" + (row.get("host_K_locus", "NA") or "NA") + "|O=" + (row.get("host_O_locus", "NA") or "NA")
 
 
-def train_phage_rates(rows: list[dict[str, str]], smoothing: float) -> tuple[dict[str, float], dict[tuple[str, str], float], float]:
+def train_phage_rates(
+    rows: list[dict[str, str]], smoothing: float
+) -> tuple[dict[str, float], dict[tuple[str, str], float], float, dict[str, int], dict[tuple[str, str], int]]:
     positives = sum(to_int(row["spot_positive_binary"]) for row in rows)
     total = len(rows)
     prevalence = positives / total if total else 0.0
@@ -187,14 +212,18 @@ def train_phage_rates(rows: list[dict[str, str]], smoothing: float) -> tuple[dic
         phage_counts[phage][label] += 1
         phage_ko_counts[(phage, host_ko_key(row))][label] += 1
     phage_rates = {}
+    phage_support = {}
     for phage, counter in phage_counts.items():
         n = counter[0] + counter[1]
+        phage_support[phage] = n
         phage_rates[phage] = (counter[1] + smoothing * prevalence) / (n + smoothing) if n else prevalence
     phage_ko_rates = {}
+    phage_ko_support = {}
     for key, counter in phage_ko_counts.items():
         n = counter[0] + counter[1]
+        phage_ko_support[key] = n
         phage_ko_rates[key] = (counter[1] + smoothing * prevalence) / (n + smoothing) if n else prevalence
-    return phage_rates, phage_ko_rates, prevalence
+    return phage_rates, phage_ko_rates, prevalence, phage_support, phage_ko_support
 
 
 def nearest_training_phages(
@@ -213,14 +242,26 @@ def nearest_training_phages(
 
 
 def weighted_rate(phage_weights: list[tuple[str, float]], rates: dict[str, float], fallback: float) -> float:
+    score, _support = weighted_rate_with_support(phage_weights, rates, {}, fallback)
+    return score
+
+
+def weighted_rate_with_support(
+    phage_weights: list[tuple[str, float]],
+    rates: dict[str, float],
+    support_counts: dict[str, int],
+    fallback: float,
+) -> tuple[float, int]:
     numerator = 0.0
     denominator = 0.0
+    support = 0
     for phage, weight in phage_weights:
         if phage not in rates:
             continue
         numerator += rates[phage] * weight
         denominator += weight
-    return numerator / denominator if denominator else fallback
+        support += support_counts.get(phage, 0)
+    return (numerator / denominator if denominator else fallback), support
 
 
 def weighted_ko_rate(
@@ -229,15 +270,28 @@ def weighted_ko_rate(
     rates: dict[tuple[str, str], float],
     fallback: float,
 ) -> float:
+    score, _support = weighted_ko_rate_with_support(phage_weights, host_key, rates, {}, fallback)
+    return score
+
+
+def weighted_ko_rate_with_support(
+    phage_weights: list[tuple[str, float]],
+    host_key: str,
+    rates: dict[tuple[str, str], float],
+    support_counts: dict[tuple[str, str], int],
+    fallback: float,
+) -> tuple[float, int]:
     numerator = 0.0
     denominator = 0.0
+    support = 0
     for phage, weight in phage_weights:
         key = (phage, host_key)
         if key not in rates:
             continue
         numerator += rates[key] * weight
         denominator += weight
-    return numerator / denominator if denominator else fallback
+        support += support_counts.get(key, 0)
+    return (numerator / denominator if denominator else fallback), support
 
 
 def predict_genome_similarity(
@@ -247,20 +301,54 @@ def predict_genome_similarity(
     similarity_scores: dict[str, dict[str, float]],
     smoothing: float,
     top_k: int,
-) -> tuple[list[float], float]:
-    phage_rates, phage_ko_rates, prevalence = train_phage_rates(train_rows, smoothing)
+) -> tuple[list[float], float, list[dict[str, str]]]:
+    phage_rates, phage_ko_rates, prevalence, phage_support, phage_ko_support = train_phage_rates(train_rows, smoothing)
     train_phages = set(phage_rates)
     scores: list[float] = []
+    details: list[dict[str, str]] = []
     for row in test_rows:
         nearest = nearest_training_phages(row["phage_id"], train_phages, similarity_scores, top_k)
-        phage_rate = weighted_rate(nearest, phage_rates, prevalence)
+        phage_rate, phage_support_rows = weighted_rate_with_support(nearest, phage_rates, phage_support, prevalence)
+        nearest_count = sum(1 for phage, _weight in nearest if phage in phage_rates)
         if model_name == "genome_similarity_nearest_phage_rate":
             scores.append(phage_rate)
+            support_state = "nearest_phage_rate" if phage_support_rows else "global_prevalence_fallback"
+            details.append(
+                {
+                    "support_state": support_state,
+                    "training_support_rows": str(phage_support_rows),
+                    "intermediate_support_rows": "0",
+                    "nearest_phage_count": str(nearest_count),
+                    "used_global_prevalence": "true" if not phage_support_rows else "false",
+                }
+            )
         elif model_name == "genome_similarity_nearest_phage_host_KO_rate":
-            scores.append(weighted_ko_rate(nearest, host_ko_key(row), phage_ko_rates, phage_rate))
+            ko_rate, ko_support_rows = weighted_ko_rate_with_support(nearest, host_ko_key(row), phage_ko_rates, phage_ko_support, phage_rate)
+            scores.append(ko_rate)
+            if ko_support_rows:
+                support_state = "nearest_phage_host_KO_rate"
+                used_global = "false"
+                intermediate_support = str(phage_support_rows)
+            elif phage_support_rows:
+                support_state = "nearest_phage_rate_fallback"
+                used_global = "false"
+                intermediate_support = str(phage_support_rows)
+            else:
+                support_state = "global_prevalence_fallback"
+                used_global = "true"
+                intermediate_support = "0"
+            details.append(
+                {
+                    "support_state": support_state,
+                    "training_support_rows": str(ko_support_rows),
+                    "intermediate_support_rows": intermediate_support,
+                    "nearest_phage_count": str(nearest_count),
+                    "used_global_prevalence": used_global,
+                }
+            )
         else:
             raise ValueError(model_name)
-    return scores, prevalence
+    return scores, prevalence, details
 
 
 def write_tsv(path: Path, columns: list[str], rows: list[dict[str, str]]) -> None:
@@ -399,7 +487,7 @@ def make_group_folds(rows: list[dict[str, str]], split_strategy: str, n_folds: i
     return folds
 
 
-def train_rate_model(rows: list[dict[str, str]], model_name: str, smoothing: float) -> tuple[dict[str, float], float]:
+def train_rate_model(rows: list[dict[str, str]], model_name: str, smoothing: float) -> tuple[dict[str, float], float, dict[str, int]]:
     positives = sum(to_int(row["spot_positive_binary"]) for row in rows)
     total = len(rows)
     prevalence = positives / total if total else 0.0
@@ -407,14 +495,53 @@ def train_rate_model(rows: list[dict[str, str]], model_name: str, smoothing: flo
     for row in rows:
         counts[feature_key(row, model_name)][to_int(row["spot_positive_binary"])] += 1
     rates = {}
+    support = {}
     for key, counter in counts.items():
         n = counter[0] + counter[1]
+        support[key] = n
         rates[key] = (counter[1] + smoothing * prevalence) / (n + smoothing) if n else prevalence
-    return rates, prevalence
+    return rates, prevalence, support
 
 
 def predict(rows: list[dict[str, str]], model_name: str, rates: dict[str, float], fallback: float) -> list[float]:
     return [rates.get(feature_key(row, model_name), fallback) for row in rows]
+
+
+def predict_with_details(
+    rows: list[dict[str, str]],
+    model_name: str,
+    rates: dict[str, float],
+    support_counts: dict[str, int],
+    fallback: float,
+) -> tuple[list[float], list[dict[str, str]]]:
+    scores: list[float] = []
+    details: list[dict[str, str]] = []
+    for row in rows:
+        key = feature_key(row, model_name)
+        support = support_counts.get(key, 0)
+        if model_name == "global_prevalence":
+            score = fallback
+            support_state = "global_prevalence_model"
+            used_global = "true"
+        elif support:
+            score = rates[key]
+            support_state = "trained_feature_key"
+            used_global = "false"
+        else:
+            score = fallback
+            support_state = "global_prevalence_fallback"
+            used_global = "true"
+        scores.append(score)
+        details.append(
+            {
+                "support_state": support_state,
+                "training_support_rows": str(support),
+                "intermediate_support_rows": "0",
+                "nearest_phage_count": "0",
+                "used_global_prevalence": used_global,
+            }
+        )
+    return scores, details
 
 
 def average_precision(y: list[int], scores: list[float]) -> str:
@@ -489,6 +616,59 @@ def brier_score(y: list[int], scores: list[float]) -> str:
 def mean_metric(rows: list[dict[str, str]], key: str) -> str:
     values = [float(row[key]) for row in rows if row.get(key) not in {"", "NA"}]
     return f"{sum(values) / len(values):.6f}" if values else "NA"
+
+
+def median_number(values: list[int]) -> str:
+    if not values:
+        return "NA"
+    ordered = sorted(values)
+    midpoint = len(ordered) // 2
+    if len(ordered) % 2:
+        return f"{ordered[midpoint]:.3f}"
+    return f"{((ordered[midpoint - 1] + ordered[midpoint]) / 2):.3f}"
+
+
+def mean_number(values: list[int]) -> str:
+    return f"{(sum(values) / len(values)):.3f}" if values else "NA"
+
+
+def summarize_support_details(
+    split: str,
+    fold_idx: int,
+    model_name: str,
+    details: list[dict[str, str]],
+) -> dict[str, str]:
+    states = Counter(detail.get("support_state", "") for detail in details)
+    support_values = [to_int(detail.get("training_support_rows", "0")) for detail in details]
+    direct_states = {"trained_feature_key", "nearest_phage_rate", "nearest_phage_host_KO_rate"}
+    direct_rows = sum(states[state] for state in direct_states)
+    intermediate_rows = states["nearest_phage_rate_fallback"]
+    global_fallback_rows = states["global_prevalence_fallback"]
+    global_model_rows = states["global_prevalence_model"]
+    missing_similarity_rows = global_fallback_rows if model_name.startswith("genome_similarity_") else 0
+    if model_name == "global_prevalence":
+        notes = "Global prevalence is the intended model, not an accidental fallback."
+    elif model_name.startswith("genome_similarity_"):
+        notes = "Direct support means nearest-phage rate or nearest-phage+host-K/O support; intermediate fallback means host-K/O support was absent but nearest-phage marginal support was available."
+    else:
+        notes = "Direct support means exact training feature key was observed; global fallback means the test feature key was unseen in training."
+    return {
+        "hypothesis": "H1_spot_interaction_receptor_layer",
+        "split_strategy": split,
+        "fold": str(fold_idx),
+        "model_name": model_name,
+        "test_rows": str(len(details)),
+        "direct_support_rows": str(direct_rows),
+        "intermediate_fallback_rows": str(intermediate_rows),
+        "global_fallback_rows": str(global_fallback_rows),
+        "global_model_rows": str(global_model_rows),
+        "missing_similarity_rows": str(missing_similarity_rows),
+        "median_training_support_rows": median_number(support_values),
+        "mean_training_support_rows": mean_number(support_values),
+        "min_training_support_rows": str(min(support_values)) if support_values else "NA",
+        "max_training_support_rows": str(max(support_values)) if support_values else "NA",
+        "notes": notes,
+    }
 
 
 def build_pooled_summary(prediction_rows: list[dict[str, str]]) -> list[dict[str, str]]:
@@ -809,7 +989,7 @@ def genome_similarity_label(path: Path) -> str:
         return "BLASTN"
     return "genome-similarity"
 
-def build_report(path: Path, summary: list[dict[str, str]], pooled_summary: list[dict[str, str]], ablation_summary: list[dict[str, str]], group_bootstrap_summary: list[dict[str, str]], delta_summary: list[dict[str, str]], args: argparse.Namespace) -> None:
+def build_report(path: Path, summary: list[dict[str, str]], pooled_summary: list[dict[str, str]], ablation_summary: list[dict[str, str]], group_bootstrap_summary: list[dict[str, str]], delta_summary: list[dict[str, str]], support_diagnostics: list[dict[str, str]], args: argparse.Namespace) -> None:
     similarity_label = genome_similarity_label(Path(args.genome_similarity))
     best_by_split: dict[str, dict[str, str]] = {}
     for row in pooled_summary:
@@ -869,7 +1049,16 @@ def build_report(path: Path, summary: list[dict[str, str]], pooled_summary: list
                 f"groupCI95=[{row['bootstrap_ci95_low']}, {row['bootstrap_ci95_high']}]"
             )
     bootstrap_text = "; ".join(bootstrap_bits) or "not evaluable"
-    section = f"""\n\n## H1 Receptor-Layer Model Comparison\n\nA grouped, interpretable rate-baseline comparison was run from `results/production/model_inputs/receptor_layer_pairwise_features.tsv`. Fold-level metrics: `{args.model_output}`. Out-of-fold predictions: `{args.prediction_output}`. Mean-fold summary metrics: `{args.summary_output}`. Pooled out-of-fold summary metrics: `{args.pooled_summary_output}`. Fold-level deltas versus global prevalence: `{args.delta_output}`. Split strategies: cold phage, cold host, cold K-locus, and cold phage cluster. Models compared: global prevalence, phage marginal rate, host marginal rate, K-type/K/O rates, phage cluster/taxonomy rate, {similarity_label} nearest-phage genome-similarity rates, exact and boundary-reviewed RBPbase rates, receptor-feature signature rates, receptor plus host K/O rates, genome similarity plus host K/O rate, and combined receptor plus host K/O plus phage cluster rates. Frozen H1 contract: `docs/h1_receptor_layer_analysis_contract.md`. Best pooled average precision by split: {best_text}. Fold-level diagnostic average-precision deltas versus global prevalence: {delta_text}. Primary pooled receptor-versus-genome baseline comparison: {receptor_vs_genome_text}. Feature-source ablation table: `{args.ablation_output}`. Group-resampling AP delta table: `{args.group_bootstrap_output}`. Cold-cluster receptor-source contrasts: {ablation_text}. Primary group-bootstrap contrasts: {bootstrap_text}.\n\nClaim boundary: this is an initial quantitative H1 test on spot-test interaction outcomes only. It is not evidence of productive infection and does not address defense/counter-defense compatibility. In the current pilot, receptor-feature summaries do not yet outperform the {similarity_label} nearest-phage plus host K/O baseline under cold-phage, cold-K-locus, or cold-cluster splits. Fold-level intervals and sign-flip checks are diagnostic only. The held-out-group bootstrap intervals are benchmark-specific and use the current grouped folds, not an independent external validation. Treat any apparent model advantage as provisional until independent validation, leakage checks, and VIRIDIC/Mash-style manuscript-grade phage taxonomy/similarity baselines are added.\n"""
+    cold_k_support_bits = []
+    for row in support_diagnostics:
+        if row["split_strategy"] == "cold_K_locus" and row["model_name"] in {"receptor_plus_host_KO_rate", "genome_similarity_nearest_phage_host_KO_rate"}:
+            cold_k_support_bits.append(
+                f"fold {row['fold']} {row['model_name']}: direct={row['direct_support_rows']}, "
+                f"intermediate={row['intermediate_fallback_rows']}, global_fallback={row['global_fallback_rows']}, "
+                f"median_support={row['median_training_support_rows']}"
+            )
+    cold_k_support_text = "; ".join(cold_k_support_bits) or "not available"
+    section = f"""\n\n## H1 Receptor-Layer Model Comparison\n\nA grouped, interpretable rate-baseline comparison was run from `results/production/model_inputs/receptor_layer_pairwise_features.tsv`. Fold-level metrics: `{args.model_output}`. Out-of-fold predictions: `{args.prediction_output}`. Prediction support diagnostics: `{args.support_diagnostics_output}`. Mean-fold summary metrics: `{args.summary_output}`. Pooled out-of-fold summary metrics: `{args.pooled_summary_output}`. Fold-level deltas versus global prevalence: `{args.delta_output}`. Split strategies: cold phage, cold host, cold K-locus, and cold phage cluster. Models compared: global prevalence, phage marginal rate, host marginal rate, K-type/K/O rates, phage cluster/taxonomy rate, {similarity_label} nearest-phage genome-similarity rates, exact and boundary-reviewed RBPbase rates, receptor-feature signature rates, receptor plus host K/O rates, genome similarity plus host K/O rate, and combined receptor plus host K/O plus phage cluster rates. Frozen H1 contract: `docs/h1_receptor_layer_analysis_contract.md`. Best pooled average precision by split: {best_text}. Fold-level diagnostic average-precision deltas versus global prevalence: {delta_text}. Primary pooled receptor-versus-genome baseline comparison: {receptor_vs_genome_text}. Feature-source ablation table: `{args.ablation_output}`. Group-resampling AP delta table: `{args.group_bootstrap_output}`. Cold-cluster receptor-source contrasts: {ablation_text}. Primary group-bootstrap contrasts: {bootstrap_text}. Cold-K fallback/support diagnostics: {cold_k_support_text}.\n\nClaim boundary: this is an initial quantitative H1 test on spot-test interaction outcomes only. It is not evidence of productive infection and does not address defense/counter-defense compatibility. In the current pilot, coarse receptor-source/count summaries do not yet outperform the {similarity_label} nearest-phage plus host K/O baseline under cold-phage, cold-K-locus, or cold-cluster splits. Fold-level intervals and sign-flip checks are diagnostic only. The held-out-group bootstrap intervals are benchmark-specific and use the current grouped folds, not an independent external validation. Treat any apparent model advantage as provisional until independent validation, leakage checks, genuine RBP module identities, and VIRIDIC/Mash-style manuscript-grade phage taxonomy/similarity baselines are added.\n"""
     text = path.read_text(encoding="utf-8") if path.exists() else ""
     marker = "\n## H1 Receptor-Layer Model Comparison\n"
     if marker in text:
@@ -906,6 +1095,7 @@ def main() -> int:
     similarity_scores = load_similarity_scores(Path(args.genome_similarity))
     out_rows: list[dict[str, str]] = []
     prediction_rows: list[dict[str, str]] = []
+    support_diagnostic_rows: list[dict[str, str]] = []
     for split in split_strategies:
         folds = make_group_folds(rows, split, args.folds)
         for fold_idx, test_groups in enumerate(folds, start=1):
@@ -914,7 +1104,7 @@ def main() -> int:
             y = [to_int(row["spot_positive_binary"]) for row in test]
             for model_name in model_names:
                 if model_name.startswith("genome_similarity_"):
-                    scores, prevalence = predict_genome_similarity(
+                    scores, prevalence, support_details = predict_genome_similarity(
                         train,
                         test,
                         model_name,
@@ -928,9 +1118,10 @@ def main() -> int:
                         "not productive infection; not a VIRIDIC or independently validated taxonomy substitute."
                     )
                 else:
-                    rates, prevalence = train_rate_model(train, model_name, args.smoothing)
-                    scores = predict(test, model_name, rates, prevalence)
+                    rates, prevalence, support_counts = train_rate_model(train, model_name, args.smoothing)
+                    scores, support_details = predict_with_details(test, model_name, rates, support_counts, prevalence)
                     note = "Grouped smoothed-rate baseline; spot-test initial interaction only; not productive infection."
+                support_diagnostic_rows.append(summarize_support_details(split, fold_idx, model_name, support_details))
                 out_rows.append(
                     {
                         "hypothesis": "H1_spot_interaction_receptor_layer",
@@ -950,7 +1141,7 @@ def main() -> int:
                         "notes": note,
                     }
                 )
-                for test_row, label, score in zip(test, y, scores):
+                for test_row, label, score, detail in zip(test, y, scores, support_details):
                     prediction_rows.append(
                         {
                             "interaction_id": test_row.get("interaction_id", ""),
@@ -965,6 +1156,11 @@ def main() -> int:
                             "predicted_score": f"{score:.8f}",
                             "model_id": model_name,
                             "baseline_id": "global_prevalence",
+                            "support_state": detail.get("support_state", ""),
+                            "training_support_rows": detail.get("training_support_rows", ""),
+                            "intermediate_support_rows": detail.get("intermediate_support_rows", ""),
+                            "nearest_phage_count": detail.get("nearest_phage_count", ""),
+                            "used_global_prevalence": detail.get("used_global_prevalence", ""),
                             "claim_boundary": "Out-of-fold prediction for spot-test initial interaction only; not productive infection.",
                         }
                     )
@@ -1015,14 +1211,16 @@ def main() -> int:
     write_tsv(Path(args.summary_output), SUMMARY_COLUMNS, summary)
     write_tsv(Path(args.prediction_output), PREDICTION_COLUMNS, prediction_rows)
     write_tsv(Path(args.pooled_summary_output), POOLED_COLUMNS, pooled_summary)
+    write_tsv(Path(args.support_diagnostics_output), SUPPORT_DIAGNOSTIC_COLUMNS, support_diagnostic_rows)
     write_tsv(Path(args.ablation_output), ABLATION_COLUMNS, ablation_summary)
     write_tsv(Path(args.group_bootstrap_output), GROUP_BOOTSTRAP_COLUMNS, group_bootstrap_summary)
     write_tsv(Path(args.delta_output), DELTA_COLUMNS, delta_summary)
     write_tsv(Path(args.readiness_output), READINESS_COLUMNS, readiness)
-    build_report(Path(args.report_output), summary, pooled_summary, ablation_summary, group_bootstrap_summary, delta_summary, args)
+    build_report(Path(args.report_output), summary, pooled_summary, ablation_summary, group_bootstrap_summary, delta_summary, support_diagnostic_rows, args)
     print(f"Receptor-layer model comparison rows: {len(out_rows)}")
     print(f"Receptor-layer out-of-fold prediction rows: {len(prediction_rows)}")
     print(f"Receptor-layer pooled summary rows: {len(pooled_summary)}")
+    print(f"Receptor-layer support diagnostic rows: {len(support_diagnostic_rows)}")
     print(f"Receptor-layer source ablation rows: {len(ablation_summary)}")
     print(f"Receptor-layer group bootstrap rows: {len(group_bootstrap_summary)}")
     print(f"Receptor-layer delta summary rows: {len(delta_summary)}")

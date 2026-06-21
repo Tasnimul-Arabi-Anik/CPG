@@ -51,7 +51,7 @@ Primary model: `receptor_plus_host_KO_rate`.
 
 Primary baseline: `genome_similarity_nearest_phage_host_KO_rate` using the reviewed BLASTN whole-genome similarity table.
 
-Primary metric: tie-aware pooled out-of-fold average precision. Mean fold AP remains a descriptive diagnostic; pooled out-of-fold predictions are emitted to `results/production/models/receptor_layer_out_of_fold_predictions.tsv`.
+Primary metric: tie-aware pooled out-of-fold average precision. Mean fold AP remains a descriptive diagnostic; pooled out-of-fold predictions are emitted to `results/production/models/receptor_layer_out_of_fold_predictions.tsv`, and compact fallback/support summaries are emitted to `results/production/models/receptor_layer_support_diagnostics.tsv`.
 
 Primary contrast: `AP(receptor_plus_host_KO_rate) - AP(genome_similarity_nearest_phage_host_KO_rate)` under `cold_phage_cluster`.
 
@@ -110,7 +110,7 @@ Current feature source labels are exploratory. The current ablation output is `r
 - union receptor features plus host K/O
 - whole-genome similarity/taxonomy baselines
 
-Current cold-phage-cluster pooled AP findings are exploratory: Phold/Foldseek plus host K/O is higher than RBPbase plus host K/O, but union receptor features plus host K/O are lower than the BLASTN, fastANI, and skani nearest-phage plus host K/O baselines. The held-out-group bootstrap CI for this primary contrast overlaps zero. Under cold_K_locus, receptor feature plus host K/O models do not improve over the global baseline, while phage marginal, BLASTN nearest-phage, fastANI nearest-phage, and skani nearest-phage baselines retain signal; the held-out-group bootstrap CI for receptor union versus BLASTN nearest-phage plus host K/O is below zero. Because cold_K_locus deliberately withholds exact K-locus labels used in the receptor-plus-K/O composite key, this split also requires fallback/support diagnostics and a future host-locus feature representation before it can be interpreted as novel-receptor generalization. The current pilot argues against a coarse receptor-feature superiority claim only.
+Current cold-phage-cluster pooled AP findings are exploratory: Phold/Foldseek plus host K/O is higher than RBPbase plus host K/O, but union receptor features plus host K/O are lower than the BLASTN, fastANI, and skani nearest-phage plus host K/O baselines. The held-out-group bootstrap CI for this primary contrast overlaps zero. Under cold_K_locus, receptor feature plus host K/O models do not improve over the global baseline, while phage marginal, BLASTN nearest-phage, fastANI nearest-phage, and skani nearest-phage baselines retain signal; the held-out-group bootstrap CI for receptor union versus BLASTN nearest-phage plus host K/O is below zero. Because cold_K_locus deliberately withholds exact K-locus labels used in the receptor-plus-K/O composite key, the current support diagnostics show that receptor-plus-K/O uses global fallback for all cold-K-locus predictions, while genome-similarity plus K/O falls back to nearest-phage marginal rates when direct K/O support is unavailable. This split therefore requires a future host-locus feature representation before it can be interpreted as novel-receptor generalization. The current pilot argues against a coarse receptor-feature superiority claim only.
 
 ## Manual Phold-Only Candidate Review
 
@@ -148,6 +148,7 @@ Within the PhageHostLearn spot-test benchmark, coarse receptor-source/count summ
 Not allowed yet:
 
 - RBP/depolymerase module architecture has been adequately tested
+- cold-K-locus results prove novel-receptor generalization under the current exact K/O fallback design
 - receptor features outperform whole-genome similarity
 - general Klebsiella host-range prediction
 - productive-infection prediction
