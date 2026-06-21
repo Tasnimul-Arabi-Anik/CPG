@@ -399,6 +399,17 @@ def module_identity_signature(row: dict[str, str], source: str = "domain_structu
     raise ValueError(source)
 
 
+def ordered_architecture_signature(row: dict[str, str], source: str = "domain_structural") -> str:
+    if source == "domain":
+        return row.get("rbp_ordered_domain_architecture_signature", "ordered_domain_architecture:none") or "ordered_domain_architecture:none"
+    if source == "domain_structural":
+        return row.get(
+            "rbp_ordered_domain_structural_architecture_signature",
+            "ordered_domain_architecture:none|ordered_structural_architecture:none",
+        ) or "ordered_domain_architecture:none|ordered_structural_architecture:none"
+    raise ValueError(source)
+
+
 def source_receptor_signature(row: dict[str, str], source: str) -> str:
     if source == "rbpbase":
         return "rbpbase=" + bin_count(row.get("rbpbase_candidate_count", "0"))
@@ -463,6 +474,12 @@ def feature_key(row: dict[str, str], model_name: str) -> str:
         return module_identity_signature(row, "domain_structural")
     if model_name == "domain_structural_module_plus_host_KO_rate":
         return plus_host_ko(module_identity_signature(row, "domain_structural"), row)
+    if model_name == "ordered_domain_architecture_plus_host_KO_rate":
+        return plus_host_ko(ordered_architecture_signature(row, "domain"), row)
+    if model_name == "ordered_domain_structural_architecture_signature_rate":
+        return ordered_architecture_signature(row, "domain_structural")
+    if model_name == "ordered_domain_structural_architecture_plus_host_KO_rate":
+        return plus_host_ko(ordered_architecture_signature(row, "domain_structural"), row)
     if model_name == "receptor_signature_rate":
         return receptor_signature(row)
     if model_name == "receptor_plus_host_KO_rate":
@@ -730,6 +747,10 @@ def build_ablation_summary(pooled_summary: list[dict[str, str]]) -> list[dict[st
         ("structural_module_increment_over_rbpbase", "structural_module_plus_host_KO_rate", "rbpbase_plus_host_KO_rate"),
         ("domain_structural_module_increment_over_rbpbase", "domain_structural_module_plus_host_KO_rate", "rbpbase_plus_host_KO_rate"),
         ("domain_structural_module_vs_genome_similarity", "domain_structural_module_plus_host_KO_rate", "genome_similarity_nearest_phage_host_KO_rate"),
+        ("ordered_domain_architecture_increment_over_unordered_domain_module", "ordered_domain_architecture_plus_host_KO_rate", "domain_module_plus_host_KO_rate"),
+        ("ordered_domain_structural_architecture_increment_over_unordered_module_identity", "ordered_domain_structural_architecture_plus_host_KO_rate", "domain_structural_module_plus_host_KO_rate"),
+        ("ordered_domain_structural_architecture_increment_over_rbpbase", "ordered_domain_structural_architecture_plus_host_KO_rate", "rbpbase_plus_host_KO_rate"),
+        ("ordered_domain_structural_architecture_vs_genome_similarity", "ordered_domain_structural_architecture_plus_host_KO_rate", "genome_similarity_nearest_phage_host_KO_rate"),
         ("union_increment_over_rbpbase", "receptor_plus_host_KO_rate", "rbpbase_plus_host_KO_rate"),
         ("boundary_reviewed_union_increment_over_exact_union", "receptor_boundary_reviewed_plus_host_KO_rate", "receptor_plus_host_KO_rate"),
         ("boundary_reviewed_union_vs_genome_similarity", "receptor_boundary_reviewed_plus_host_KO_rate", "genome_similarity_nearest_phage_host_KO_rate"),
@@ -1056,6 +1077,10 @@ def build_report(path: Path, summary: list[dict[str, str]], pooled_summary: list
             "structural_module_increment_over_rbpbase",
             "domain_structural_module_increment_over_rbpbase",
             "domain_structural_module_vs_genome_similarity",
+            "ordered_domain_architecture_increment_over_unordered_domain_module",
+            "ordered_domain_structural_architecture_increment_over_unordered_module_identity",
+            "ordered_domain_structural_architecture_increment_over_rbpbase",
+            "ordered_domain_structural_architecture_vs_genome_similarity",
             "union_increment_over_rbpbase",
             "boundary_reviewed_rbpbase_increment_over_exact_rbpbase",
             "boundary_reviewed_union_increment_over_exact_union",
@@ -1084,7 +1109,7 @@ def build_report(path: Path, summary: list[dict[str, str]], pooled_summary: list
                 f"median_support={row['median_training_support_rows']}"
             )
     cold_k_support_text = "; ".join(cold_k_support_bits) or "not available"
-    section = f"""\n\n## H1 Receptor-Layer Model Comparison\n\nA grouped, interpretable rate-baseline comparison was run from `results/production/model_inputs/receptor_layer_pairwise_features.tsv`. Fold-level metrics: `{args.model_output}`. Out-of-fold predictions: `{args.prediction_output}`. Prediction support diagnostics: `{args.support_diagnostics_output}`. Mean-fold summary metrics: `{args.summary_output}`. Pooled out-of-fold summary metrics: `{args.pooled_summary_output}`. Fold-level deltas versus global prevalence: `{args.delta_output}`. Split strategies: cold phage, cold host, cold K-locus, and cold phage cluster. Models compared: global prevalence, phage marginal rate, host marginal rate, K-type/K/O rates, phage cluster/taxonomy rate, {similarity_label} nearest-phage genome-similarity rates, exact and boundary-reviewed RBPbase rates, receptor-feature count signatures, PHROGs/MMseqs and Phold/Foldseek module-identity signatures, receptor plus host K/O rates, genome similarity plus host K/O rate, and combined receptor plus host K/O plus phage cluster rates. Frozen H1 contract: `docs/h1_receptor_layer_analysis_contract.md`. Best pooled average precision by split: {best_text}. Fold-level diagnostic average-precision deltas versus global prevalence: {delta_text}. Primary pooled receptor-versus-genome baseline comparison: {receptor_vs_genome_text}. Feature-source ablation table: `{args.ablation_output}`. Group-resampling AP delta table: `{args.group_bootstrap_output}`. Cold-cluster receptor-source contrasts: {ablation_text}. Primary group-bootstrap contrasts: {bootstrap_text}. Cold-K fallback/support diagnostics: {cold_k_support_text}.\n\nClaim boundary: this is an initial quantitative H1 test on spot-test interaction outcomes only. It is not evidence of productive infection and does not address defense/counter-defense compatibility. In the current pilot, current receptor summaries, including exact PHROGs/MMseqs and Phold/Foldseek module-identity signatures, do not yet outperform the {similarity_label} nearest-phage plus host K/O baseline under cold-phage, cold-K-locus, or cold-cluster splits. Fold-level intervals and sign-flip checks are diagnostic only. The held-out-group bootstrap intervals are benchmark-specific and use the current grouped folds, not an independent external validation. Treat any apparent model advantage as provisional until independent validation, leakage checks, genuine RBP module identities, and VIRIDIC/Mash-style manuscript-grade phage taxonomy/similarity baselines are added.\n"""
+    section = f"""\n\n## H1 Receptor-Layer Model Comparison\n\nA grouped, interpretable rate-baseline comparison was run from `results/production/model_inputs/receptor_layer_pairwise_features.tsv`. Fold-level metrics: `{args.model_output}`. Out-of-fold predictions: `{args.prediction_output}`. Prediction support diagnostics: `{args.support_diagnostics_output}`. Mean-fold summary metrics: `{args.summary_output}`. Pooled out-of-fold summary metrics: `{args.pooled_summary_output}`. Fold-level deltas versus global prevalence: `{args.delta_output}`. Split strategies: cold phage, cold host, cold K-locus, and cold phage cluster. Models compared: global prevalence, phage marginal rate, host marginal rate, K-type/K/O rates, phage cluster/taxonomy rate, {similarity_label} nearest-phage genome-similarity rates, exact and boundary-reviewed RBPbase rates, receptor-feature count signatures, PHROGs/MMseqs and Phold/Foldseek module-identity signatures, ordered per-gene PHROGs/MMseqs architecture proxies, receptor plus host K/O rates, genome similarity plus host K/O rate, and combined receptor plus host K/O plus phage cluster rates. Frozen H1 contract: `docs/h1_receptor_layer_analysis_contract.md`. Best pooled average precision by split: {best_text}. Fold-level diagnostic average-precision deltas versus global prevalence: {delta_text}. Primary pooled receptor-versus-genome baseline comparison: {receptor_vs_genome_text}. Feature-source ablation table: `{args.ablation_output}`. Group-resampling AP delta table: `{args.group_bootstrap_output}`. Cold-cluster receptor-source contrasts: {ablation_text}. Primary group-bootstrap contrasts: {bootstrap_text}. Cold-K fallback/support diagnostics: {cold_k_support_text}.\n\nClaim boundary: this is an initial quantitative H1 test on spot-test interaction outcomes only. It is not evidence of productive infection and does not address defense/counter-defense compatibility. In the current pilot, current receptor summaries, including exact PHROGs/MMseqs and Phold/Foldseek module-identity signatures and ordered per-gene architecture proxies, do not robustly outperform the {similarity_label} nearest-phage plus host K/O baseline under cold-phage, cold-K-locus, or cold-cluster splits. Fold-level intervals and sign-flip checks are diagnostic only. The held-out-group bootstrap intervals are benchmark-specific and use the current grouped folds, not an independent external validation. Treat any apparent model advantage as provisional until independent validation, leakage checks, genuine RBP module identities, and VIRIDIC/Mash-style manuscript-grade phage taxonomy/similarity baselines are added.\n"""
     text = path.read_text(encoding="utf-8") if path.exists() else ""
     marker = "\n## H1 Receptor-Layer Model Comparison\n"
     if marker in text:
@@ -1113,6 +1138,9 @@ def main() -> int:
         "structural_module_plus_host_KO_rate",
         "domain_structural_module_signature_rate",
         "domain_structural_module_plus_host_KO_rate",
+        "ordered_domain_architecture_plus_host_KO_rate",
+        "ordered_domain_structural_architecture_signature_rate",
+        "ordered_domain_structural_architecture_plus_host_KO_rate",
         "receptor_signature_rate",
         "receptor_plus_host_KO_rate",
         "receptor_boundary_reviewed_plus_host_KO_rate",

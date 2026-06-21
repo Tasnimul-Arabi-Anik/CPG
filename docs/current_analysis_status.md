@@ -118,23 +118,22 @@ Tracked compact benchmark review outputs:
 | Assay phage receptor feature coverage | 105 |
 | Assay phage module identity signatures | 105 |
 | Assay phage cluster assignments | 105 |
-| Pooled summary | 92 |
-| Support diagnostics | 460 |
-| Feature-source ablation | 60 |
-| Held-out-group bootstrap | 60 |
+| Pooled summary | 104 |
+| Support diagnostics | 520 |
+| Feature-source ablation | 76 |
+| Held-out-group bootstrap | 76 |
 | Compact artifact checksum manifest | 7 |
 
-Primary cold-phage-cluster contrast for exact domain+structural module identity signatures:
+Primary cold-phage-cluster contrasts now separate unordered module identity from ordered architecture proxies:
 
-`AP(domain/structural module identity + host K/O) - AP(genome similarity + host K/O)`
-
-| Genome-similarity baseline | Module AP | Baseline AP | Delta AP | Bootstrap 95% CI |
+| Contrast | Model AP | Baseline AP | Delta AP | Bootstrap 95% CI |
 | --- | ---: | ---: | ---: | --- |
-| BLASTN | 0.203203 | 0.186960 | 0.016243 | [-0.045441, 0.071260] |
-| fastANI | 0.203203 | 0.188908 | 0.014295 | [-0.054362, 0.075745] |
-| skani | 0.203203 | 0.200487 | 0.002716 | [-0.056983, 0.064242] |
+| Unordered domain+structural module identity + K/O vs RBPbase + K/O | 0.190417 | 0.064114 | 0.126303 | [0.053441, 0.215846] |
+| Unordered domain+structural module identity + K/O vs BLASTN nearest-phage + K/O | 0.190417 | 0.195850 | -0.005433 | [-0.076435, 0.047078] |
+| Ordered domain+structural architecture proxy + K/O vs unordered module identity + K/O | 0.060394 | 0.190417 | -0.130023 | [-0.235675, -0.058682] |
+| Ordered domain+structural architecture proxy + K/O vs BLASTN nearest-phage + K/O | 0.060394 | 0.195850 | -0.135456 | [-0.238648, -0.061170] |
 
-Current interpretation: exact domain+structural module identity signatures improve over RBPbase plus host K/O in cold-phage-cluster evaluation (AP 0.203203 versus 0.071841; delta 0.131362; bootstrap CI [0.068376, 0.209580]). They do not yet robustly outperform genome-similarity plus host K/O baselines because the module-vs-genome paired bootstrap intervals overlap zero. These signatures are exact PHROGs/MMseqs and Phold/Foldseek evidence IDs, not full domain-order architecture or functional capsule specificity.
+Current interpretation: exact unordered domain+structural module identity signatures improve over RBPbase plus host K/O in cold-phage-cluster evaluation, but they do not robustly outperform BLASTN nearest-phage genome similarity plus host K/O. Ordered per-gene PHROGs/MMseqs architecture proxies were added from existing Prodigal gene order and MMseqs domain coordinates; in the current exact-key rate model they are too sparse under cold-phage/cold-cluster evaluation and underperform unordered module identity signatures. These architecture proxies are not manually curated domain boundaries, C-terminal receptor-recognition architecture, or functional capsule specificity.
 
 Cold-K-locus support diagnostics also show that exact receptor/module + K/O models use global-prevalence fallback for all 10,006 cold-K predictions, while the genome-similarity + K/O model uses nearest-phage intermediate fallback for all 10,006 cold-K predictions. Treat the current cold-K result as a fallback-design diagnostic, not a fair novel-receptor generalization test.
 
@@ -173,7 +172,7 @@ Claim boundary: H4 remains `blocked_no_productive_infection_labels`. Stage 7 now
 
 | Hypothesis | Current status | Reason |
 | --- | --- | --- |
-| H1 receptor compatibility | Exploratory, module-identity signal available but not claim-ready | Exact domain+structural module identity signatures beat RBPbase + K/O but do not robustly beat genome-similarity + K/O baselines; full domain-order architecture and novel-K generalization remain untested. |
+| H1 receptor compatibility | Exploratory, module-identity signal available but not claim-ready | Exact unordered domain+structural module identity signatures beat RBPbase + K/O but do not robustly beat BLASTN genome-similarity + K/O; ordered per-gene architecture proxies were tested and underperform in cold-phage/cold-cluster splits; novel-K generalization remains fallback-limited. |
 | H2 prophage receptor reservoir | Explicit assessed-zero prophage audit row available, claim remains blocked | One sequence-backed computational prophage now has 24 GenBank bridge CDS rows in Stage 3, but Stage 4 finds zero RBP/depolymerase candidates and the cohort is far too small for a reservoir claim. |
 | H3 breadth versus modularity/counter-defense | Exploratory module-count association rows available, claim remains data-dependent | Domain and total module counts show weak positive phage-level correlations with tested-panel spot-positive fraction (rho 0.110 and 0.106); structural count is near zero (rho 0.010); explicit anti-defense candidate coverage is insufficient at 7/105 phages. |
 | H4 defense/counter-defense improves productive-infection prediction | Blocked | No productive-infection, plaque, propagation, or EOP labels exist. |
@@ -188,7 +187,7 @@ Allowed now:
 
 Allowed now:
 
-> In the current exploratory H1 benchmark, exact receptor module identity signatures improve over RBPbase and are competitive with genome-similarity baselines under cold-phage-cluster evaluation, but do not yet robustly outperform genome similarity.
+> In the current exploratory H1 benchmark, exact unordered receptor module identity signatures improve over RBPbase and are competitive with BLASTN genome-similarity baselines under cold-phage-cluster evaluation, but do not robustly outperform genome similarity; ordered architecture proxies are currently too sparse for cold-phage/cold-cluster prediction.
 
 Allowed now:
 
@@ -212,7 +211,7 @@ After the latest production run, the standard hypothesis-coverage audit recogniz
 
 | Hypothesis | Coverage audit status | Evidence basis |
 | --- | --- | --- |
-| H1 | pass | 92 pooled receptor-layer benchmark rows across 4 grouped split strategies and 23 model families; claim remains exploratory and spot-test-only. |
+| H1 | pass | 104 pooled receptor-layer benchmark rows across 4 grouped split strategies and 26 model families; claim remains exploratory and spot-test-only. |
 | H2 | warn | Two quantitative rows exist: one annotated-prophage coverage audit and one record-type group summary. The single annotated prophage has zero detected RBP/depolymerase candidates from bridge GenBank CDS evidence, so current data remain insufficient for a reservoir claim. |
 | H3 | warn | Module-count spot-breadth association rows exist, but counter-defense coverage is insufficient. |
 | H4 | warn | Blocked by absence of productive-infection, plaque, propagation, or EOP outcomes. |

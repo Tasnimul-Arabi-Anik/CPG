@@ -57,7 +57,7 @@ Primary contrast: `AP(receptor_plus_host_KO_rate) - AP(genome_similarity_nearest
 
 Required Phold incremental contrast: `AP(pharokka_phold_plus_host_KO_rate) - AP(pharokka_plus_host_KO_rate)`. This contrast tests whether structure-informed Phold/Foldseek evidence adds predictive value beyond Pharokka-style receptor annotation. It must be evaluated on the same rows and folds as the primary comparison.
 
-Current pilot result direction from pooled AP: the original coarse receptor-source/count union plus K/O does not outperform the BLASTN nearest-phage plus K/O baseline under the frozen primary cold-phage-cluster split. An exploratory exact domain+structural module-identity contrast improves over RBPbase plus K/O and is competitive with genome-similarity baselines, but its paired bootstrap intervals versus genome similarity overlap zero. This is not a definitive test of full RBP/depolymerase domain-order architecture or novel-K generalization.
+Current pilot result direction from pooled AP: the original coarse receptor-source/count union plus K/O does not outperform the BLASTN nearest-phage plus K/O baseline under the frozen primary cold-phage-cluster split. Exact unordered domain+structural module identities improve over RBPbase plus K/O but do not robustly outperform BLASTN nearest-phage plus K/O. Ordered per-gene PHROGs/MMseqs architecture proxies have now been tested from existing Prodigal gene order and MMseqs domain coordinates; under cold-phage and cold-phage-cluster exact-key splits they are too sparse and underperform unordered module identity signatures. This is not a definitive test of manually curated RBP/depolymerase architecture or novel-K generalization.
 
 ## Secondary comparisons
 
@@ -97,7 +97,7 @@ Secondary metrics:
 
 Host receptor features come from reviewed Kaptive/Kleborate production evidence.
 
-Phage receptor features include RBPbase support, Pharokka annotations, Phold/Foldseek annotations, and exact PHROGs/MMseqs domain IDs plus Phold/Foldseek structural hit IDs as module-identity signatures. These module signatures are more informative than source/count bins, but they still do not encode domain order, catalytic-domain boundaries, C-terminal receptor-recognition architecture, or experimentally validated capsule specificity. These sources must remain separated in ablation before claiming that Phold-derived structural annotation or module identity adds value.
+Phage receptor features include RBPbase support, Pharokka annotations, Phold/Foldseek annotations, exact PHROGs/MMseqs domain IDs plus Phold/Foldseek structural hit IDs as module-identity signatures, and ordered per-gene PHROGs/MMseqs architecture proxies. The ordered proxy encodes Prodigal gene order and within-gene MMseqs hit order by amino-acid coordinates, but it still does not represent manually curated domain boundaries, catalytic-domain boundaries, C-terminal receptor-recognition architecture, or experimentally validated capsule specificity. These sources must remain separated in ablation before claiming that Phold-derived structural annotation, module identity, or ordered architecture adds value.
 
 Current feature source labels are exploratory. The current ablation output is `results/production/models/receptor_layer_feature_source_ablation.tsv` and compares:
 
@@ -110,10 +110,12 @@ Current feature source labels are exploratory. The current ablation output is `r
 - exact PHROGs/MMseqs domain module identities plus host K/O
 - exact Phold/Foldseek structural module identities plus host K/O
 - combined exact domain+structural module identities plus host K/O
+- ordered per-gene domain architecture plus host K/O
+- ordered per-gene domain+structural architecture plus host K/O
 - union receptor features plus host K/O
 - whole-genome similarity/taxonomy baselines
 
-Current cold-phage-cluster pooled AP findings are exploratory. Exact domain+structural module identity signatures plus host K/O outperform RBPbase plus host K/O (AP 0.203203 versus 0.071841; delta 0.131362; held-out-group bootstrap CI [0.068376, 0.209580]). Against genome-similarity plus host K/O baselines, the same module signature is competitive but not robustly superior: delta AP is 0.016243 versus BLASTN, 0.014295 versus fastANI, and 0.002716 versus skani, with all paired held-out-group bootstrap intervals overlapping zero. Under cold_K_locus, receptor feature plus host K/O and module plus host K/O models do not improve over the global baseline, while phage marginal and nearest-phage genome-similarity baselines retain signal. Because cold_K_locus deliberately withholds exact K-locus labels used in the receptor-plus-K/O composite key, the current support diagnostics show that receptor-plus-K/O and module-plus-K/O use global fallback for all cold-K-locus predictions, while genome-similarity plus K/O falls back to nearest-phage marginal rates when direct K/O support is unavailable. This split therefore requires a future host-locus feature representation before it can be interpreted as novel-receptor generalization. The current pilot supports module-identity signal over RBPbase, but not a robust claim that module identities outperform whole-genome similarity.
+Current cold-phage-cluster pooled AP findings are exploratory. Exact unordered domain+structural module identity signatures plus host K/O outperform RBPbase plus host K/O (AP 0.190417 versus 0.064114; delta 0.126303; held-out-group bootstrap CI [0.053441, 0.215846]). Against BLASTN nearest-phage genome-similarity plus host K/O, the same module signature is not robustly superior (AP 0.190417 versus 0.195850; delta -0.005433; CI [-0.076435, 0.047078]). Ordered per-gene domain+structural architecture plus host K/O underperforms unordered module identity in cold-phage-cluster evaluation (AP 0.060394 versus 0.190417; delta -0.130023; CI [-0.235675, -0.058682]) and underperforms BLASTN nearest-phage plus K/O (delta -0.135456; CI [-0.238648, -0.061170]). Under cold_K_locus, receptor feature plus host K/O, unordered module plus host K/O, and ordered architecture plus host K/O models do not improve over the global baseline, while phage marginal, taxonomy, and nearest-phage genome-similarity baselines retain signal. Because cold_K_locus deliberately withholds exact K-locus labels used in the receptor-plus-K/O composite key, this split requires a future host-locus feature representation before it can be interpreted as novel-receptor generalization. The current pilot supports module-identity signal over RBPbase, but not a robust claim that module identities or ordered architecture proxies outperform whole-genome similarity.
 
 ## Manual Phold-Only Candidate Review
 
@@ -146,11 +148,11 @@ Permutation tests must preserve the tested-pair mask and relevant grouping struc
 
 Allowed current claim:
 
-Within the PhageHostLearn spot-test benchmark, exact receptor module identity signatures improve over RBPbase and are competitive with genome-similarity baselines under cold-phage-cluster evaluation, but do not yet robustly outperform genome similarity.
+Within the PhageHostLearn spot-test benchmark, exact unordered receptor module identity signatures improve over RBPbase and are competitive with BLASTN genome-similarity baselines under cold-phage-cluster evaluation, but do not robustly outperform genome similarity; ordered per-gene architecture proxies currently underperform in cold-phage/cold-cluster exact-key evaluation.
 
 Not allowed yet:
 
-- RBP/depolymerase module architecture has been adequately tested
+- RBP/depolymerase module architecture has been adequately tested beyond the current ordered proxy
 - cold-K-locus results prove novel-receptor generalization under the current exact K/O fallback design
 - receptor features outperform whole-genome similarity
 - general Klebsiella host-range prediction
