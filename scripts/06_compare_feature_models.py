@@ -1137,6 +1137,30 @@ def build_assay_feature_coverage(
         if pair_count and sum(1 for phage, _host in assay_pairs if phage in standardized_annotation_phages) == pair_count
         else "Annotate assay phages with sequence-backed production CDS prediction before protein export."
     )
+    domain_entity_count = len(set(assay_phages) & domain_phages)
+    domain_pair_count = sum(1 for phage, _host in assay_pairs if phage in domain_phages)
+    structural_entity_count = len(set(assay_phages) & structural_phages)
+    structural_pair_count = sum(1 for phage, _host in assay_pairs if phage in structural_phages)
+    domain_entity_action = (
+        "Reviewed domain/profile evidence is available for all assay phages; manually review candidate specificity before biological claims."
+        if phage_count and domain_entity_count == phage_count
+        else "Add reviewed domain evidence for assay-phage RBP candidates."
+    )
+    domain_pair_action = (
+        "Reviewed domain/profile evidence covers all tested pairs; manually review candidate specificity before biological claims."
+        if pair_count and domain_pair_count == pair_count
+        else "Add domain evidence for assay-phage RBP candidates."
+    )
+    structural_entity_action = (
+        "Reviewed structural/remote-homology evidence is available for all assay phages; manually review confidence, coverage, and synteny before biological claims."
+        if phage_count and structural_entity_count == phage_count
+        else "Add reviewed structural/remote-homology evidence for assay-phage RBP candidates."
+    )
+    structural_pair_action = (
+        "Reviewed structural/remote-homology evidence covers all tested pairs; manually review confidence, coverage, and synteny before biological claims."
+        if pair_count and structural_pair_count == pair_count
+        else "Add structural evidence for assay-phage RBP candidates."
+    )
 
     rows: list[dict[str, str]] = []
     add_coverage_row(rows, "unique_assay_phages", "unique_phage", phage_count, phage_count, coverage_state(phage_count, phage_count, phage_count), "H1b;H3", "Use as denominator for assay-phage feature acquisition.")
@@ -1151,8 +1175,8 @@ def build_assay_feature_coverage(
         ("host_ST", "unique_host", len(st_hosts), len(st_assessed_hosts), host_count, "H1b;H5", host_st_action),
         ("standardized_phage_annotation", "unique_phage", len(set(assay_phages) & standardized_annotation_phages), len(set(assay_phages) & standardized_annotation_phages), phage_count, "H1b;H3", annotation_entity_action),
         ("rbp_candidates", "unique_phage", len(set(assay_phages) & rbp_phages), len(set(assay_phages) & rbp_phages), phage_count, "H1b;H3", "Run accepted RBP/depolymerase prediction for assay phages."),
-        ("domain_evidence", "unique_phage", len(set(assay_phages) & domain_phages), len(set(assay_phages) & domain_assessed_phages), phage_count, "H1b;H3", "Add reviewed domain evidence for assay-phage RBP candidates."),
-        ("structural_evidence", "unique_phage", len(set(assay_phages) & structural_phages), len(set(assay_phages) & structural_assessed_phages), phage_count, "H1b;H3", "Add reviewed structural/remote-homology evidence for assay-phage RBP candidates."),
+        ("domain_evidence", "unique_phage", domain_entity_count, len(set(assay_phages) & domain_assessed_phages), phage_count, "H1b;H3", domain_entity_action),
+        ("structural_evidence", "unique_phage", structural_entity_count, len(set(assay_phages) & structural_assessed_phages), phage_count, "H1b;H3", structural_entity_action),
         ("host_defense_evidence", "unique_host", len(set(assay_hosts) & host_defense_detected_hosts), len(set(assay_hosts) & host_defense_assessed_hosts), host_count, "H4;H5", "Run PADLOC/DefenseFinder or reviewed host-defense evidence for assay hosts."),
         ("phage_counterdefense_evidence", "unique_phage", len(set(assay_phages) & antidefense_detected_phages), len(set(assay_phages) & antidefense_assessed_phages), phage_count, "H3;H4", "Run reviewed phage anti-defense/counter-defense screening for assay phages."),
     ]
@@ -1167,8 +1191,8 @@ def build_assay_feature_coverage(
         ("host_ST", "pair", sum(1 for _phage, host in assay_pairs if host in st_hosts), sum(1 for _phage, host in assay_pairs if host in st_assessed_hosts), pair_count, "H1b;H5", pair_st_action),
         ("standardized_phage_annotation", "pair", sum(1 for phage, _host in assay_pairs if phage in standardized_annotation_phages), sum(1 for phage, _host in assay_pairs if phage in standardized_annotation_phages), pair_count, "H1b;H3", annotation_pair_action),
         ("rbp_candidates", "pair", sum(1 for phage, _host in assay_pairs if phage in rbp_phages), sum(1 for phage, _host in assay_pairs if phage in rbp_phages), pair_count, "H1b;H3", "Predict assay-phage RBP/depolymerase candidates."),
-        ("domain_evidence", "pair", sum(1 for phage, _host in assay_pairs if phage in domain_phages), sum(1 for phage, _host in assay_pairs if phage in domain_assessed_phages), pair_count, "H1b;H3", "Add domain evidence for assay-phage RBP candidates."),
-        ("structural_evidence", "pair", sum(1 for phage, _host in assay_pairs if phage in structural_phages), sum(1 for phage, _host in assay_pairs if phage in structural_assessed_phages), pair_count, "H1b;H3", "Add structural evidence for assay-phage RBP candidates."),
+        ("domain_evidence", "pair", domain_pair_count, sum(1 for phage, _host in assay_pairs if phage in domain_assessed_phages), pair_count, "H1b;H3", domain_pair_action),
+        ("structural_evidence", "pair", structural_pair_count, sum(1 for phage, _host in assay_pairs if phage in structural_assessed_phages), pair_count, "H1b;H3", structural_pair_action),
         ("host_defense_evidence", "pair", sum(1 for _phage, host in assay_pairs if host in host_defense_detected_hosts), sum(1 for _phage, host in assay_pairs if host in host_defense_assessed_hosts), pair_count, "H4;H5", "Annotate host defense systems for assay hosts."),
         ("phage_counterdefense_evidence", "pair", sum(1 for phage, _host in assay_pairs if phage in antidefense_detected_phages), sum(1 for phage, _host in assay_pairs if phage in antidefense_assessed_phages), pair_count, "H3;H4", "Annotate phage counter-defense features for assay phages."),
     ]
@@ -1193,7 +1217,7 @@ def build_assay_feature_coverage(
     defense_complete = sum(1 for phage, host in assay_pairs if phage in antidefense_detected_phages and host in host_defense_detected_hosts)
     defense_assessed = sum(1 for phage, host in assay_pairs if phage in antidefense_assessed_phages and host in host_defense_assessed_hosts)
     productive_measured = sum(1 for row in tested_spot_rows if row.get("productive_infection_result", "").strip().lower() in PRODUCTIVE_INFECTION_OBSERVED_VALUES)
-    add_coverage_row(rows, "receptor_layer_feature_completeness", "pair", receptor_complete, pair_count, coverage_state(receptor_complete, receptor_assessed, pair_count), "H1b", "Acquire missing production receptor-layer features; when host K/O is already assessed, the remaining blocker is assay-phage RBP/depolymerase evidence. Seed bridge support is reported separately.")
+    add_coverage_row(rows, "receptor_layer_feature_completeness", "pair", receptor_complete, pair_count, coverage_state(receptor_complete, receptor_assessed, pair_count), "H1b", "Production receptor-layer features cover all tested pairs; keep H1 interpretation tied to grouped model evaluation and confidence intervals." if pair_count and receptor_complete == pair_count else "Acquire missing production receptor-layer features; when host K/O is already assessed, the remaining blocker is assay-phage RBP/depolymerase evidence. Seed bridge support is reported separately.")
     add_coverage_row(rows, "seed_bridge_metadata_coverage", "pair", seed_bridge_metadata_coverage, pair_count, coverage_state(seed_bridge_metadata_coverage, seed_bridge_metadata_coverage, pair_count), "H1b", "RBPbase/Locibase seed bridge metadata can exercise the path, but it is not production K/O or RBP/domain evidence.")
     add_coverage_row(rows, "defense_counterdefense_feature_completeness", "pair", defense_complete, pair_count, coverage_state(defense_complete, defense_assessed, pair_count), "H4", "Acquire host-defense and phage counter-defense evidence for the same tested pairs.")
     add_coverage_row(rows, "productive_infection_outcomes", "pair", productive_measured, pair_count, coverage_state(productive_measured, productive_measured, pair_count), "H4", "Curate plaque, EOP, propagation, or productive-infection labels; spot tests alone do not satisfy H4.")

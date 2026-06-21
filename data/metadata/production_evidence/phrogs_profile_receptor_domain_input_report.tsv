@@ -1,0 +1,8 @@
+severity	item	message
+info	input_hits	11725
+info	normalized_rows	495
+info	unique_proteins	242
+info	unique_phrogs	93
+info	min_qcov	0.1
+info	skipped_low_qcov	69
+info	skipped_not_receptor_relevant	11161
