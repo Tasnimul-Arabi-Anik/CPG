@@ -88,7 +88,7 @@ Current feature source labels are exploratory. The current ablation output is `r
 - union receptor features plus host K/O
 - whole-genome similarity/taxonomy baselines
 
-Current cold-phage-cluster pooled AP findings are exploratory: Phold/Foldseek plus host K/O is higher than RBPbase plus host K/O, but union receptor features plus host K/O are lower than the BLASTN nearest-phage plus host K/O baseline. The held-out-group bootstrap CI for this primary contrast overlaps zero. Under cold_K_locus, receptor feature plus host K/O models do not improve over the global baseline, while phage marginal and BLASTN nearest-phage baselines retain signal; the held-out-group bootstrap CI for receptor union versus BLASTN nearest-phage plus host K/O is below zero. This argues against a receptor-feature superiority claim in the current pilot.
+Current cold-phage-cluster pooled AP findings are exploratory: Phold/Foldseek plus host K/O is higher than RBPbase plus host K/O, but union receptor features plus host K/O are lower than the BLASTN and fastANI nearest-phage plus host K/O baselines. The held-out-group bootstrap CI for this primary contrast overlaps zero. Under cold_K_locus, receptor feature plus host K/O models do not improve over the global baseline, while phage marginal, BLASTN nearest-phage, and fastANI nearest-phage baselines retain signal; the held-out-group bootstrap CI for receptor union versus BLASTN nearest-phage plus host K/O is below zero. This argues against a receptor-feature superiority claim in the current pilot.
 
 ## Cluster and baseline rules
 
@@ -96,7 +96,7 @@ Species-like phage clusters are taken from `results/production/clusters/phage_cl
 
 All models in a direct comparison must use the same reviewed spot-assay rows and the same grouped folds.
 
-The current BLASTN nearest-phage baseline is an established local sequence-similarity baseline, but it is not a substitute for VIRIDIC, Mash, skani, or another manuscript-grade all-vs-all phage similarity analysis.
+The current BLASTN nearest-phage baseline is the primary local sequence-similarity baseline. Mash and fastANI robustness baselines are also available. None of these is a substitute for VIRIDIC, skani, or another manuscript-grade phage intergenomic similarity analysis in the comprehensive public-scale study.
 
 ## Uncertainty rules
 

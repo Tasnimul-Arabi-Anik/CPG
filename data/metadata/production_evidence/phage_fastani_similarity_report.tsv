@@ -1,0 +1,8 @@
+severity	item	message
+info	fastani_version	version 1.34
+info	input_fastas	105
+info	pairwise_rows	5460
+info	reported_fastani_hits	727
+info	missing_fastani_hits	4733
+info	fastani_command	conda run -n fastani_env fastANI --ql results/production/phage_similarity/fastani/assay_phage_fastas.txt --rl results/production/phage_similarity/fastani/assay_phage_fastas.txt --threads 64 -o results/production/phage_similarity/fastani/assay_phages_fastani.tsv
+warning	coverage_semantics	coverage_percent is fastANI aligned_fragments/total_fragments and is not VIRIDIC intergenomic similarity coverage.

@@ -781,7 +781,32 @@ def build_delta_summary(
     return delta_rows
 
 
+
+def genome_similarity_label(path: Path) -> str:
+    text = str(path).lower()
+    if "fastani" in text:
+        return "fastANI"
+    if "mash" in text:
+        return "Mash"
+    if "blastn" in text or "phage_genome_similarity" in text:
+        return "BLASTN"
+    try:
+        with path.open(encoding="utf-8") as handle:
+            reader = csv.DictReader(handle, delimiter="\t")
+            first = next(reader, {})
+        method = first.get("method", "").lower()
+    except Exception:
+        method = ""
+    if "fastani" in method:
+        return "fastANI"
+    if "mash" in method:
+        return "Mash"
+    if "blastn" in method:
+        return "BLASTN"
+    return "genome-similarity"
+
 def build_report(path: Path, summary: list[dict[str, str]], pooled_summary: list[dict[str, str]], ablation_summary: list[dict[str, str]], group_bootstrap_summary: list[dict[str, str]], delta_summary: list[dict[str, str]], args: argparse.Namespace) -> None:
+    similarity_label = genome_similarity_label(Path(args.genome_similarity))
     best_by_split: dict[str, dict[str, str]] = {}
     for row in pooled_summary:
         if row["pooled_average_precision"] == "NA":
@@ -813,7 +838,7 @@ def build_report(path: Path, summary: list[dict[str, str]], pooled_summary: list
         receptor_ap = receptor_row.get("pooled_average_precision", "NA")
         genome_ap = genome_row.get("pooled_average_precision", "NA")
         receptor_vs_genome_bits.append(
-            f"{split}: receptor+K/O AP={receptor_ap}, BLASTN-nearest-phage+K/O AP={genome_ap}"
+            f"{split}: receptor+K/O AP={receptor_ap}, {similarity_label}-nearest-phage+K/O AP={genome_ap}"
         )
     receptor_vs_genome_text = "; ".join(receptor_vs_genome_bits) or "not evaluable"
     ablation_bits = []
@@ -840,7 +865,7 @@ def build_report(path: Path, summary: list[dict[str, str]], pooled_summary: list
                 f"groupCI95=[{row['bootstrap_ci95_low']}, {row['bootstrap_ci95_high']}]"
             )
     bootstrap_text = "; ".join(bootstrap_bits) or "not evaluable"
-    section = f"""\n\n## H1 Receptor-Layer Model Comparison\n\nA grouped, interpretable rate-baseline comparison was run from `results/production/model_inputs/receptor_layer_pairwise_features.tsv`. Fold-level metrics: `{args.model_output}`. Out-of-fold predictions: `{args.prediction_output}`. Mean-fold summary metrics: `{args.summary_output}`. Pooled out-of-fold summary metrics: `{args.pooled_summary_output}`. Fold-level deltas versus global prevalence: `{args.delta_output}`. Split strategies: cold phage, cold host, cold K-locus, and cold phage cluster. Models compared: global prevalence, phage marginal rate, host marginal rate, K-type/K/O rates, phage cluster/taxonomy rate, BLASTN nearest-phage genome-similarity rates, exact and boundary-reviewed RBPbase rates, receptor-feature signature rates, receptor plus host K/O rates, genome similarity plus host K/O rate, and combined receptor plus host K/O plus phage cluster rates. Frozen H1 contract: `docs/h1_receptor_layer_analysis_contract.md`. Best pooled average precision by split: {best_text}. Fold-level diagnostic average-precision deltas versus global prevalence: {delta_text}. Primary pooled receptor-versus-genome baseline comparison: {receptor_vs_genome_text}. Feature-source ablation table: `{args.ablation_output}`. Group-resampling AP delta table: `{args.group_bootstrap_output}`. Cold-cluster receptor-source contrasts: {ablation_text}. Primary group-bootstrap contrasts: {bootstrap_text}.\n\nClaim boundary: this is an initial quantitative H1 test on spot-test interaction outcomes only. It is not evidence of productive infection and does not address defense/counter-defense compatibility. In the current pilot, receptor-feature summaries do not yet outperform the BLASTN nearest-phage plus host K/O baseline under cold-phage, cold-K-locus, or cold-cluster splits. Fold-level intervals and sign-flip checks are diagnostic only. The held-out-group bootstrap intervals are benchmark-specific and use the current grouped folds, not an independent external validation. Treat any apparent model advantage as provisional until independent validation, leakage checks, and VIRIDIC/Mash-style manuscript-grade phage taxonomy/similarity baselines are added.\n"""
+    section = f"""\n\n## H1 Receptor-Layer Model Comparison\n\nA grouped, interpretable rate-baseline comparison was run from `results/production/model_inputs/receptor_layer_pairwise_features.tsv`. Fold-level metrics: `{args.model_output}`. Out-of-fold predictions: `{args.prediction_output}`. Mean-fold summary metrics: `{args.summary_output}`. Pooled out-of-fold summary metrics: `{args.pooled_summary_output}`. Fold-level deltas versus global prevalence: `{args.delta_output}`. Split strategies: cold phage, cold host, cold K-locus, and cold phage cluster. Models compared: global prevalence, phage marginal rate, host marginal rate, K-type/K/O rates, phage cluster/taxonomy rate, {similarity_label} nearest-phage genome-similarity rates, exact and boundary-reviewed RBPbase rates, receptor-feature signature rates, receptor plus host K/O rates, genome similarity plus host K/O rate, and combined receptor plus host K/O plus phage cluster rates. Frozen H1 contract: `docs/h1_receptor_layer_analysis_contract.md`. Best pooled average precision by split: {best_text}. Fold-level diagnostic average-precision deltas versus global prevalence: {delta_text}. Primary pooled receptor-versus-genome baseline comparison: {receptor_vs_genome_text}. Feature-source ablation table: `{args.ablation_output}`. Group-resampling AP delta table: `{args.group_bootstrap_output}`. Cold-cluster receptor-source contrasts: {ablation_text}. Primary group-bootstrap contrasts: {bootstrap_text}.\n\nClaim boundary: this is an initial quantitative H1 test on spot-test interaction outcomes only. It is not evidence of productive infection and does not address defense/counter-defense compatibility. In the current pilot, receptor-feature summaries do not yet outperform the {similarity_label} nearest-phage plus host K/O baseline under cold-phage, cold-K-locus, or cold-cluster splits. Fold-level intervals and sign-flip checks are diagnostic only. The held-out-group bootstrap intervals are benchmark-specific and use the current grouped folds, not an independent external validation. Treat any apparent model advantage as provisional until independent validation, leakage checks, and VIRIDIC/Mash-style manuscript-grade phage taxonomy/similarity baselines are added.\n"""
     text = path.read_text(encoding="utf-8") if path.exists() else ""
     marker = "\n## H1 Receptor-Layer Model Comparison\n"
     if marker in text:
@@ -894,9 +919,9 @@ def main() -> int:
                         args.similarity_top_k,
                     )
                     note = (
-                        "Grouped BLASTN whole-genome nearest-phage baseline; "
+                        f"Grouped {genome_similarity_label(Path(args.genome_similarity))} whole-genome nearest-phage baseline; "
                         f"top_k={args.similarity_top_k}; spot-test initial interaction only; "
-                        "not productive infection; not a VIRIDIC/Mash substitute."
+                        "not productive infection; not a VIRIDIC or independently validated taxonomy substitute."
                     )
                 else:
                     rates, prevalence = train_rate_model(train, model_name, args.smoothing)
