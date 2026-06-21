@@ -57,7 +57,7 @@ Primary contrast: `AP(receptor_plus_host_KO_rate) - AP(genome_similarity_nearest
 
 Required Phold incremental contrast: `AP(pharokka_phold_plus_host_KO_rate) - AP(pharokka_plus_host_KO_rate)`. This contrast tests whether structure-informed Phold/Foldseek evidence adds predictive value beyond Pharokka-style receptor annotation. It must be evaluated on the same rows and folds as the primary comparison.
 
-Current pilot result direction from pooled AP: coarse receptor-source/count summaries plus K/O do not outperform the BLASTN nearest-phage plus K/O baseline under the primary cold-phage-cluster split. This is not a definitive test of the stronger RBP/depolymerase module-architecture hypothesis.
+Current pilot result direction from pooled AP: the original coarse receptor-source/count union plus K/O does not outperform the BLASTN nearest-phage plus K/O baseline under the frozen primary cold-phage-cluster split. An exploratory exact domain+structural module-identity contrast improves over RBPbase plus K/O and is competitive with genome-similarity baselines, but its paired bootstrap intervals versus genome similarity overlap zero. This is not a definitive test of full RBP/depolymerase domain-order architecture or novel-K generalization.
 
 ## Secondary comparisons
 
@@ -146,7 +146,7 @@ Permutation tests must preserve the tested-pair mask and relevant grouping struc
 
 Allowed current claim:
 
-Within the PhageHostLearn spot-test benchmark, coarse receptor-source/count summaries and genome-similarity features show predictive signal under grouped evaluation.
+Within the PhageHostLearn spot-test benchmark, exact receptor module identity signatures improve over RBPbase and are competitive with genome-similarity baselines under cold-phage-cluster evaluation, but do not yet robustly outperform genome similarity.
 
 Not allowed yet:
 
