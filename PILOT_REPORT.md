@@ -96,9 +96,9 @@ Claim boundary: these structural annotations are prioritization evidence only. T
 
 ## Phold Non-Pharokka Receptor Review
 
-A focused full-set review table was built for Phold/Foldseek receptor-like CDSs that were not already annotated by Pharokka: `results/production/receptor_features/phold_non_pharokka_receptor_review.tsv`. It contains 23 CDS rows across 12 assay phages. Feature counts are tail fiber 12, tailspike 5, baseplate 6, receptor-binding 0, and depolymerase 0. Confidence counts are high 14, medium 5, and low 4. High-priority manual-review candidates: 8.
+A focused full-set review table was built for Phold/Foldseek receptor-like CDSs that were not already annotated by Pharokka: `results/production/receptor_features/phold_non_pharokka_receptor_review.tsv`. It contains 23 CDS rows across 12 assay phages. Feature counts are tail fiber 12, tailspike 5, baseplate 6, receptor-binding 0, and depolymerase 0. Confidence counts are high 14, medium 5, and low 4. High-priority manual-review candidates: 8. Computational triage classes are strong structure-informed candidate 8, possible tail/receptor-associated protein 5, generic structural protein 6, and insufficiently specific 4.
 
-Claim boundary: these rows are structural remote-homology review targets only. They do not demonstrate capsule specificity, depolymerase activity, productive infection, or receptor-feature superiority over genome-similarity baselines.
+Claim boundary: these rows are structural remote-homology review targets only. The triage class is not final manual review and does not demonstrate capsule specificity, depolymerase activity, productive infection, or receptor-feature superiority over genome-similarity baselines.
 
 ## Mapped Phold/Foldseek Structural Evidence
 

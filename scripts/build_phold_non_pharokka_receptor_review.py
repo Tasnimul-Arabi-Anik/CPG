@@ -21,6 +21,9 @@ COLUMNS = [
     "review_priority",
     "evidence_tier",
     "evidence_tier_reason",
+    "candidate_review_class",
+    "candidate_review_class_reason",
+    "manual_review_status",
     "phage_id",
     "study_id",
     "panel_id",
@@ -165,6 +168,44 @@ def evidence_tier(row: dict[str, str]) -> tuple[str, str, str]:
     )
 
 
+def candidate_review_class(row: dict[str, str], tier: str) -> tuple[str, str]:
+    """Assign a conservative computational triage class for manual review.
+
+    These classes mirror the H1 contract vocabulary. They are not final human
+    review calls and must not be used as functional receptor validation.
+    """
+
+    feature = row.get("feature_type", "")
+    product = row.get("product", "").lower()
+    cov_tier = coverage_tier(row.get("query_coverage", ""), row.get("target_coverage", ""))
+    spec_tier = specificity_tier(feature, row.get("product", ""))
+
+    if tier == "high_priority_candidate" and spec_tier == "specific_receptor_like_label":
+        return (
+            "strong_structure_informed_rbp_candidate",
+            "High-priority computational triage: high confidence, high bidirectional coverage, and a specific receptor-like Foldseek label.",
+        )
+    if tier == "medium_priority_candidate" and spec_tier.startswith("specific_receptor_like"):
+        return (
+            "possible_tail_or_receptor_associated_protein",
+            "Specific receptor-like label with medium/high confidence or partial structural support; needs manual synteny and specificity review.",
+        )
+    if feature == "baseplate" or "baseplate" in product:
+        return (
+            "generic_structural_protein",
+            "Baseplate or structural-context label; useful for receptor-module neighborhood review but not a specific RBP/depolymerase call.",
+        )
+    if cov_tier == "low_coverage" or tier == "low_priority_candidate":
+        return (
+            "insufficiently_specific",
+            "Weak coverage, low confidence, or nonspecific product label; retain as transparent negative/low-priority review evidence.",
+        )
+    return (
+        "possible_tail_or_receptor_associated_protein",
+        "Tail-associated structural annotation with some receptor-module relevance, but not enough specificity for a strong candidate class.",
+    )
+
+
 def load_prediction_rows(path: Path) -> list[dict[str, str]]:
     if not path.exists():
         return []
@@ -202,9 +243,9 @@ def add_report(path: Path, summary: list[dict[str, str]]) -> None:
 
 ## Phold Non-Pharokka Receptor Review
 
-A focused full-set review table was built for Phold/Foldseek receptor-like CDSs that were not already annotated by Pharokka: `results/production/receptor_features/phold_non_pharokka_receptor_review.tsv`. It contains {values.get('review_rows', '0')} CDS rows across {values.get('phages_with_review_rows', '0')} assay phages. Feature counts are tail fiber {values.get('tail_fiber_rows', '0')}, tailspike {values.get('tailspike_rows', '0')}, baseplate {values.get('baseplate_rows', '0')}, receptor-binding {values.get('receptor_binding_rows', '0')}, and depolymerase {values.get('depolymerase_rows', '0')}. Confidence counts are high {values.get('high_confidence_rows', '0')}, medium {values.get('medium_confidence_rows', '0')}, and low {values.get('low_confidence_rows', '0')}. High-priority manual-review candidates: {values.get('high_priority_candidate_rows', '0')}.
+A focused full-set review table was built for Phold/Foldseek receptor-like CDSs that were not already annotated by Pharokka: `results/production/receptor_features/phold_non_pharokka_receptor_review.tsv`. It contains {values.get('review_rows', '0')} CDS rows across {values.get('phages_with_review_rows', '0')} assay phages. Feature counts are tail fiber {values.get('tail_fiber_rows', '0')}, tailspike {values.get('tailspike_rows', '0')}, baseplate {values.get('baseplate_rows', '0')}, receptor-binding {values.get('receptor_binding_rows', '0')}, and depolymerase {values.get('depolymerase_rows', '0')}. Confidence counts are high {values.get('high_confidence_rows', '0')}, medium {values.get('medium_confidence_rows', '0')}, and low {values.get('low_confidence_rows', '0')}. High-priority manual-review candidates: {values.get('high_priority_candidate_rows', '0')}. Computational triage classes are strong structure-informed candidate {values.get('strong_structure_informed_rbp_candidate_rows', '0')}, possible tail/receptor-associated protein {values.get('possible_tail_or_receptor_associated_protein_rows', '0')}, generic structural protein {values.get('generic_structural_protein_rows', '0')}, and insufficiently specific {values.get('insufficiently_specific_rows', '0')}.
 
-Claim boundary: these rows are structural remote-homology review targets only. They do not demonstrate capsule specificity, depolymerase activity, productive infection, or receptor-feature superiority over genome-similarity baselines.
+Claim boundary: these rows are structural remote-homology review targets only. The triage class is not final manual review and does not demonstrate capsule specificity, depolymerase activity, productive infection, or receptor-feature superiority over genome-similarity baselines.
 """
     text = path.read_text(encoding="utf-8") if path.exists() else ""
     marker = "\n## Phold Non-Pharokka Receptor Review\n"
@@ -229,6 +270,7 @@ def build_summary(rows: list[dict[str, str]]) -> list[dict[str, str]]:
     feature_counts = Counter(row["feature_type"] for row in rows)
     confidence_counts = Counter(row["annotation_confidence"].lower() for row in rows)
     tier_counts = Counter(row["evidence_tier"] for row in rows)
+    review_class_counts = Counter(row["candidate_review_class"] for row in rows)
     phage_count = len({row["phage_id"] for row in rows})
     return [
         {
@@ -270,6 +312,19 @@ def build_summary(rows: list[dict[str, str]]) -> list[dict[str, str]]:
                 "low_priority_candidate",
             ]
         ],
+        *[
+            {
+                "metric": f"{review_class}_rows",
+                "value": str(review_class_counts.get(review_class, 0)),
+                "interpretation": f"Rows assigned candidate_review_class={review_class} for computational triage; manual confirmation still required.",
+            }
+            for review_class in [
+                "strong_structure_informed_rbp_candidate",
+                "possible_tail_or_receptor_associated_protein",
+                "generic_structural_protein",
+                "insufficiently_specific",
+            ]
+        ],
     ]
 
 
@@ -296,12 +351,16 @@ def main() -> int:
             context_cache[str(source_file)] = load_prediction_rows(source_file)
         local_context, prediction_row = build_context(context_cache[str(source_file)], hit.get("cds_id", ""), args.context_window)
         tier, reason, priority = evidence_tier(hit)
+        review_class, review_class_reason = candidate_review_class(hit, tier)
         coverage = coverage_by_phage.get(hit.get("phage_id", ""), {})
         rows.append(
             {
                 "review_priority": priority,
                 "evidence_tier": tier,
                 "evidence_tier_reason": reason,
+                "candidate_review_class": review_class,
+                "candidate_review_class_reason": review_class_reason,
+                "manual_review_status": "computational_triage_needs_manual_confirmation",
                 "phage_id": hit.get("phage_id", ""),
                 "study_id": coverage.get("study_id", ""),
                 "panel_id": coverage.get("panel_id", ""),
