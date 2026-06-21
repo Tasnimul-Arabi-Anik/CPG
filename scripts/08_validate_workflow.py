@@ -387,7 +387,7 @@ HYPOTHESIS_TESTS = [
     ("H2", "prophage RBP module reservoir summary", lambda row: row.get("analysis_id") == "record_type_vs_rbp_modules"),
     ("H3", "host-range breadth association from explicit assay panel labels", lambda row: row.get("analysis_id") in {"host_range_breadth_blocker", "spot_breadth_descriptive", "spot_breadth_vs_rbp_candidates", "spot_breadth_vs_counterdefense_candidates"} or row.get("target") in {"host_range_breadth", "spot_positive_fraction"}),
     ("H4", "productive-infection model comparison requires explicit assay outcome labels", lambda row: row.get("hypothesis") == "H4" and (row.get("analysis_id") == "productive_infection_receptor_defense_blocker" or row.get("target") == "productive_infection_result")),
-    ("H5", "host background versus defense burden summary", lambda row: row.get("analysis_id") == "st_vs_defense_status"),
+    ("H5", "host background versus defense burden summary", lambda row: row.get("analysis_id") in {"st_vs_defense_status", "st_vs_defense_burden_numeric"}),
     ("H6", "source and cluster novelty prioritization summary", lambda row: row.get("analysis_id") in {"source_vs_rbp_novelty", "cluster_size_vs_rbp_novelty"}),
 ]
 

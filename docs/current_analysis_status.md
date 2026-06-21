@@ -137,6 +137,8 @@ Evidence included:
 | Tested pairs with host-defense evidence | 10,006 / 10,006 |
 | Tested pairs with both host-defense and phage anti-defense candidate evidence | 814 / 10,006 |
 | Productive-infection outcomes | 0 / 10,006 |
+| ST-typed assay hosts with DefenseFinder burden | 188 / 200 |
+| ST groups represented in H5 burden summary | 120 |
 
 Annotation-keyword phage anti-defense hits are screening-only. They are excluded from compatibility matching unless supplied through an explicit reviewed evidence table.
 
@@ -150,7 +152,7 @@ Claim boundary: H4 remains `blocked_no_productive_infection_labels`. These evide
 | H2 prophage receptor reservoir | Not the focus of the current PR stack | Requires larger prophage/host cohort and structural/synteny association analysis. |
 | H3 breadth versus modularity/counter-defense | Descriptive breadth available only | Spot-test breadth exists, but feature association is not claim-ready. |
 | H4 defense/counter-defense improves productive-infection prediction | Blocked | No productive-infection, plaque, propagation, or EOP labels exist. |
-| H5 host lineage/prophage/defense landscape | Data-dependent | Host defense evidence exists for benchmark hosts, but lineage/ecology analysis is not mature. |
+| H5 host lineage/prophage/defense landscape | Data-dependent association summary available | The workflow now summarizes ST versus DefenseFinder burden for 188/200 benchmark hosts across 120 ST groups, but this is association-only and not phage susceptibility or infectivity evidence. |
 | H6 source/ecology novelty | Data-dependent | Requires broader source-balanced atlas and ecological source labels, not database provenance alone. |
 
 ## Reviewer-Safe Claims

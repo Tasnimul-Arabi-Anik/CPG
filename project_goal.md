@@ -44,7 +44,7 @@ H3. Broad-host-range phages are enriched for modular RBPs and counter-defense ge
 
 H4. Among receptor-compatible or initial-interaction-positive tested pairs, defense/counter-defense features improve productive-infection prediction beyond receptor features alone.
 
-H5. Clinically relevant Klebsiella lineages differ in prophage content, defense-system burden, and predicted phage susceptibility.
+H5. Clinically relevant Klebsiella lineages differ in prophage content and defense-system burden; any predicted phage susceptibility claims require separate validated assay models.
 
 H6. Novel RBP/depolymerase candidates are enriched in under-sampled sources or singleton species-like phage clusters.
 

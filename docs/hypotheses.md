@@ -161,7 +161,8 @@ Primary test:
 - lineage-level association tests between host background, prophage content, and defense burden.
 
 Current readiness:
-- separate host-population analysis; not a phage infectivity claim.
+- PR #14 adds a numeric association-only summary of ST versus DefenseFinder burden for 188/200 PhageHostLearn benchmark hosts across 120 ST groups.
+- This satisfies a bounded H5 technical summary for the benchmark host set, but it is not phage susceptibility, infectivity, prophage-carriage, or public-scale lineage evidence.
 
 Alternative explanation:
 - public genome collections may overrepresent outbreaks or specific surveillance projects.
@@ -169,7 +170,7 @@ Alternative explanation:
 Output:
 - `results/host_features/host_metadata.tsv`
 - `results/defense_systems/host_defense_systems.tsv`
-- `results/models/model_comparison.tsv` (`st_vs_defense_status` summary)
+- `results/models/model_comparison.tsv` (`st_vs_defense_burden_numeric` summary)
 - Figure 6.
 
 ## H6: Novel RBP Candidates Are Enriched in Under-Sampled Ecological Sources or Singleton Clusters

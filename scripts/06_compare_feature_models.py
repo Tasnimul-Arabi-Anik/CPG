@@ -807,6 +807,123 @@ def add_rate_test(
         )
 
 
+def median_value(values: list[float]) -> float | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    midpoint = len(ordered) // 2
+    if len(ordered) % 2:
+        return ordered[midpoint]
+    return (ordered[midpoint - 1] + ordered[midpoint]) / 2
+
+
+def add_host_defense_burden_by_st(
+    rows: list[dict[str, str]],
+    feature_rows: list[dict[str, str]],
+    host_metadata_rows: list[dict[str, str]],
+    host_defense_rows: list[dict[str, str]],
+) -> None:
+    defense_counts: Counter[str] = Counter()
+    defense_types: dict[str, set[str]] = defaultdict(set)
+    for row in host_defense_rows:
+        host_id = row.get("host_genome_id", "")
+        if is_missing(host_id):
+            continue
+        defense_counts[host_id] += 1
+        defense_type = row.get("defense_type", "") or row.get("defense_system", "")
+        if not is_missing(defense_type):
+            defense_types[host_id].add(defense_type)
+
+    benchmark_host_count = sum(
+        1
+        for row in host_metadata_rows
+        if row.get("host_genome_id", "").startswith("phagehostlearn_2024_host_")
+    )
+    st_hosts = []
+    grouped: dict[str, list[dict[str, str]]] = defaultdict(list)
+    for row in host_metadata_rows:
+        host_id = row.get("host_genome_id", "")
+        st = row.get("ST", "")
+        if not host_id.startswith("phagehostlearn_2024_host_"):
+            continue
+        if is_missing(host_id) or is_missing(st):
+            continue
+        if host_id not in defense_counts:
+            continue
+        count = defense_counts[host_id]
+        prepared = {
+            "host_genome_id": host_id,
+            "ST": st,
+            "defense_count": str(count),
+            "defense_type_count": str(len(defense_types.get(host_id, set()))),
+        }
+        st_hosts.append(prepared)
+        grouped[st].append(prepared)
+
+    n_samples = len(st_hosts)
+    n_groups = len(grouped)
+    groups_with_three = sum(1 for values in grouped.values() if len(values) >= 3)
+    status = "ok" if n_samples >= 20 and n_groups >= 3 and groups_with_three >= 3 else "insufficient_groups_for_rate_test"
+    counts = [parse_float_or_none(row["defense_count"]) for row in st_hosts]
+    present = [value for value in counts if value is not None]
+    overall_mean = mean_or_none(present)
+    overall_median = median_value(present)
+    rows.append(
+        {
+            "analysis_id": "st_vs_defense_burden_numeric",
+            "hypothesis": "H5",
+            "task": "host_background_defense_burden_summary",
+            "target": "host_defense_system_count",
+            "feature_set": "ST",
+            "model_type": "numeric_group_summary",
+            "n_samples": str(n_samples),
+            "n_classes": str(len({row["defense_count"] for row in st_hosts})),
+            "n_features": "1",
+            "coverage": f"{n_samples / benchmark_host_count:.3f}" if benchmark_host_count else "0.000",
+            "accuracy": "",
+            "macro_f1": "",
+            "baseline_accuracy": "",
+            "delta_vs_baseline": "",
+            "status": status,
+            "notes": (
+                "Association-only numeric ST versus DefenseFinder burden summary; "
+                f"st_groups={n_groups}; groups_with_n_ge_3={groups_with_three}; "
+                f"overall_mean={format_float(overall_mean)}; overall_median={format_float(overall_median)}."
+            ),
+        }
+    )
+
+    for st, values in sorted(grouped.items(), key=lambda item: (-len(item[1]), item[0])):
+        defense_values = [parse_float_or_none(row["defense_count"]) for row in values]
+        present_values = [value for value in defense_values if value is not None]
+        mean_count = mean_or_none(present_values)
+        median_count = median_value(present_values)
+        min_count = min(present_values) if present_values else None
+        max_count = max(present_values) if present_values else None
+        type_counts = [parse_float_or_none(row["defense_type_count"]) for row in values]
+        mean_type_count = mean_or_none(type_counts)
+        feature_rows.append(
+            {
+                "analysis_id": "st_vs_defense_burden_numeric",
+                "hypothesis": "H5",
+                "task": "host_background_defense_burden_summary",
+                "feature_set": "ST",
+                "feature": st,
+                "non_missing_count": str(len(values)),
+                "unique_value_count": str(len({row["defense_count"] for row in values})),
+                "full_accuracy": "",
+                "accuracy_without_feature": "",
+                "delta_accuracy": "",
+                "association_metric": "mean_host_defense_system_count_by_ST",
+                "association_value": format_float(mean_count),
+                "notes": (
+                    f"median={format_float(median_count)}; range={format_float(min_count)}-{format_float(max_count)}; "
+                    f"mean_defense_type_count={format_float(mean_type_count)}; association_only_not_infectivity."
+                ),
+            }
+        )
+
+
 def add_assay_breadth_descriptive_result(
     rows: list[dict[str, str]],
     feature_rows: list[dict[str, str]],
@@ -1253,11 +1370,15 @@ def mean_delta_between(model_rows: list[dict[str, str]], targets: list[str], pri
     return mean_or_none(deltas)
 
 
-def group_fraction_range(feature_rows: list[dict[str, str]], analysis_ids: set[str]) -> tuple[float | None, float | None, float | None]:
+def group_fraction_range(
+    feature_rows: list[dict[str, str]],
+    analysis_ids: set[str],
+    association_metric: str = "top_group_label_fraction",
+) -> tuple[float | None, float | None, float | None]:
     values = [
         parse_float_or_none(row.get("association_value", ""))
         for row in feature_rows
-        if row.get("analysis_id") in analysis_ids and row.get("association_metric") == "top_group_label_fraction"
+        if row.get("analysis_id") in analysis_ids and row.get("association_metric") == association_metric
     ]
     present = [value for value in values if value is not None]
     if not present:
@@ -1357,10 +1478,10 @@ def build_hypothesis_summary(
         (
             "H5",
             "Do host lineages differ in defense burden?",
-            "ST versus host defense burden group-rate summary",
-            {"st_vs_defense_status"},
-            "top_label_fraction_range_by_ST",
-            "Lineage differences are associations and may reflect sampling bias.",
+            "ST versus host defense burden numeric summary",
+            {"st_vs_defense_burden_numeric"},
+            "mean_defense_system_count_range_by_ST",
+            "Lineage differences are associations and may reflect sampling bias; DefenseFinder burden is not phage susceptibility.",
         ),
         (
             "H6",
@@ -1406,7 +1527,8 @@ def build_hypothesis_summary(
     for hypothesis, question, required_test, analysis_ids, metric_name, guardrail in group_specs:
         rows = [row for row in model_rows if row.get("analysis_id") in analysis_ids]
         primary = first_row(rows)
-        metric, baseline, effect = group_fraction_range(feature_rows, analysis_ids)
+        association_metric = "mean_host_defense_system_count_by_ST" if hypothesis == "H5" else "top_group_label_fraction"
+        metric, baseline, effect = group_fraction_range(feature_rows, analysis_ids, association_metric)
         summary.append(
             summary_row(
                 hypothesis,
@@ -1434,6 +1556,8 @@ def run_models(
     h3_min_assessed_phages: int,
     h3_min_feature_groups: int,
     h3_min_group_size: int,
+    host_metadata_rows: list[dict[str, str]],
+    host_defense_rows: list[dict[str, str]],
 ) -> tuple[list[dict[str, str]], list[dict[str, str]], list[dict[str, str]]]:
     model_rows: list[dict[str, str]] = []
     feature_rows: list[dict[str, str]] = []
@@ -1512,15 +1636,11 @@ def run_models(
             "blocked_no_host_range_breadth_labels",
             "H3 requires assay panels with tested-host denominators and susceptible-host numerators. RBP/counter-defense co-occurrence is not a host-range breadth test.",
         )
-    add_rate_test(
+    add_host_defense_burden_by_st(
         model_rows,
         feature_rows,
-        samples,
-        "H5",
-        "st_vs_defense_status",
-        "host_background_defense_summary",
-        "ST",
-        "host_defense_system_count_bin",
+        host_metadata_rows,
+        host_defense_rows,
     )
     add_rate_test(
         model_rows,
@@ -1594,6 +1714,8 @@ def main() -> int:
         args.h3_min_assessed_phages,
         args.h3_min_feature_groups,
         args.h3_min_group_size,
+        host_metadata_rows,
+        host_defense_rows,
     )
     hypothesis_summary_rows = build_hypothesis_summary(model_rows, feature_rows, display_path(Path(args.model_comparison_output)))
     assay_feature_coverage_rows = build_assay_feature_coverage(
