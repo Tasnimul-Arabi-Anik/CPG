@@ -44,6 +44,12 @@ MATRIX_COLUMNS = [
     "rbpbase_boundary_reviewed_missing_count",
     "rbpbase_boundary_reviewed_high_score_missing_count",
     "rbpbase_boundary_reviewed_candidate_count",
+    "rbp_domain_module_count",
+    "rbp_domain_module_signature",
+    "rbp_structural_module_count",
+    "rbp_structural_module_signature",
+    "rbp_domain_structural_module_signature",
+    "rbp_module_identity_state",
     "phage_side_receptor_feature_state",
     "host_receptor_feature_state",
     "taxonomy_baseline_state",
@@ -57,6 +63,16 @@ MATRIX_COLUMNS = [
 ]
 SUMMARY_COLUMNS = ["metric", "value", "interpretation"]
 READINESS_COLUMNS = ["readiness_item", "status", "evidence", "next_action", "claim_boundary"]
+MODULE_SUMMARY_COLUMNS = [
+    "phage_id",
+    "rbp_domain_module_count",
+    "rbp_domain_module_signature",
+    "rbp_structural_module_count",
+    "rbp_structural_module_signature",
+    "rbp_domain_structural_module_signature",
+    "rbp_module_identity_state",
+    "claim_boundary",
+]
 
 
 def parse_args() -> argparse.Namespace:
@@ -67,9 +83,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--phage-features", default="results/production/receptor_features/assay_phage_receptor_feature_coverage.tsv")
     parser.add_argument("--clusters", default="results/production/clusters/phage_clusters.tsv")
     parser.add_argument("--candidates", default="results/production/rbp_depolymerase/candidates.tsv")
+    parser.add_argument("--domain-evidence", default="data/metadata/production_evidence/rbp_domain_evidence.tsv")
+    parser.add_argument("--structural-evidence", default="data/metadata/production_evidence/rbp_structural_evidence.tsv")
     parser.add_argument("--matrix-output", default="results/production/model_inputs/receptor_layer_pairwise_features.tsv")
     parser.add_argument("--summary-output", default="results/production/model_inputs/receptor_layer_pairwise_feature_summary.tsv")
     parser.add_argument("--readiness-output", default="results/production/model_inputs/receptor_layer_pairwise_model_readiness.tsv")
+    parser.add_argument("--module-summary-output", default="results/production/receptor_features/assay_phage_module_identity_signatures.tsv")
     parser.add_argument("--report-output", default="PILOT_REPORT.md")
     return parser.parse_args()
 
@@ -103,6 +122,19 @@ def first_nonmissing(values: list[str]) -> str:
     return "NA"
 
 
+def phage_from_annotation_gene_id(annotation_gene_id: str) -> str:
+    if "|" in annotation_gene_id:
+        return annotation_gene_id.split("|", 1)[0]
+    return annotation_gene_id
+
+
+def compact_signature(prefix: str, values: set[str]) -> str:
+    cleaned = sorted(value for value in values if present(value))
+    if not cleaned:
+        return f"{prefix}:none"
+    return f"{prefix}:" + "+".join(cleaned)
+
+
 def build_report(path: Path, summary: list[dict[str, str]], readiness: list[dict[str, str]], args: argparse.Namespace) -> None:
     values = {row["metric"]: row["value"] for row in summary}
     model_state = next((row["status"] for row in readiness if row["readiness_item"] == "receptor_layer_pairwise_matrix"), "unknown")
@@ -129,6 +161,23 @@ def main() -> int:
     phage_features = {row["phage_id"]: row for row in read_tsv(Path(args.phage_features))}
     cluster_rows = read_tsv(Path(args.clusters), required=False)
     candidates = read_tsv(Path(args.candidates), required=False)
+    domain_evidence = read_tsv(Path(args.domain_evidence), required=False)
+    structural_evidence = read_tsv(Path(args.structural_evidence), required=False)
+
+    domain_modules_by_phage: dict[str, set[str]] = defaultdict(set)
+    structural_modules_by_phage: dict[str, set[str]] = defaultdict(set)
+    for row in domain_evidence:
+        phage = phage_from_annotation_gene_id(row.get("annotation_gene_id", ""))
+        domain_id = row.get("domain_id", "")
+        if present(phage) and present(domain_id):
+            domain_modules_by_phage[phage].add(domain_id)
+    for row in structural_evidence:
+        phage = phage_from_annotation_gene_id(row.get("annotation_gene_id", ""))
+        hit_id = row.get("structural_hit_id", "")
+        hit_name = row.get("structural_hit_name", "")
+        structural_id = hit_id if present(hit_id) else hit_name
+        if present(phage) and present(structural_id):
+            structural_modules_by_phage[phage].add(structural_id)
 
     cluster_by_phage: dict[str, str] = {}
     representative_by_phage: dict[str, str] = {}
@@ -145,6 +194,33 @@ def main() -> int:
         cluster_by_phage.setdefault(phage, row.get("species_cluster_id", ""))
         representative_by_phage.setdefault(phage, row.get("representative_id", ""))
 
+    module_summary_rows: list[dict[str, str]] = []
+    for phage in sorted(phage_features):
+        domain_modules = domain_modules_by_phage.get(phage, set())
+        structural_modules = structural_modules_by_phage.get(phage, set())
+        domain_signature = compact_signature("domain", domain_modules)
+        structural_signature = compact_signature("structural", structural_modules)
+        pf = phage_features.get(phage, {})
+        phage_receptor_ready = pf.get("phage_side_receptor_feature_state") in {"assessed_positive", "assessed_zero_detected"}
+        if domain_modules or structural_modules:
+            module_identity_state = "assessed_positive"
+        elif phage_receptor_ready:
+            module_identity_state = "assessed_zero_detected"
+        else:
+            module_identity_state = "not_assessed"
+        module_summary_rows.append(
+            {
+                "phage_id": phage,
+                "rbp_domain_module_count": str(len(domain_modules)),
+                "rbp_domain_module_signature": domain_signature,
+                "rbp_structural_module_count": str(len(structural_modules)),
+                "rbp_structural_module_signature": structural_signature,
+                "rbp_domain_structural_module_signature": domain_signature + "|" + structural_signature,
+                "rbp_module_identity_state": module_identity_state,
+                "claim_boundary": "PHROGs/MMseqs and Phold/Foldseek module identity signature for H1 benchmarking only; not functional capsule specificity or full domain-order architecture.",
+            }
+        )
+
     rows: list[dict[str, str]] = []
     for assay in assays:
         if assay.get("tested", "").lower() != "true" or assay.get("assay_type") != "spot":
@@ -159,6 +235,17 @@ def main() -> int:
         host_receptor_ready = present(k.get("K_locus", "")) and present(k.get("O_locus", ""))
         phage_receptor_ready = pf.get("phage_side_receptor_feature_state") in {"assessed_positive", "assessed_zero_detected"}
         taxonomy_ready = present(cluster_by_phage.get(phage, ""))
+        domain_modules = domain_modules_by_phage.get(phage, set())
+        structural_modules = structural_modules_by_phage.get(phage, set())
+        domain_signature = compact_signature("domain", domain_modules)
+        structural_signature = compact_signature("structural", structural_modules)
+        combined_module_signature = domain_signature + "|" + structural_signature
+        if domain_modules or structural_modules:
+            module_identity_state = "assessed_positive"
+        elif phage_receptor_ready:
+            module_identity_state = "assessed_zero_detected"
+        else:
+            module_identity_state = "not_assessed"
         if host_receptor_ready and phage_receptor_ready and spot_binary in {"0", "1"}:
             pair_state = "complete_for_receptor_layer"
         else:
@@ -196,6 +283,12 @@ def main() -> int:
                 "rbpbase_boundary_reviewed_missing_count": pf.get("rbpbase_boundary_reviewed_missing_count", "0"),
                 "rbpbase_boundary_reviewed_high_score_missing_count": pf.get("rbpbase_boundary_reviewed_high_score_missing_count", "0"),
                 "rbpbase_boundary_reviewed_candidate_count": pf.get("rbpbase_boundary_reviewed_candidate_count", pf.get("rbpbase_candidate_count", "0")),
+                "rbp_domain_module_count": str(len(domain_modules)),
+                "rbp_domain_module_signature": domain_signature,
+                "rbp_structural_module_count": str(len(structural_modules)),
+                "rbp_structural_module_signature": structural_signature,
+                "rbp_domain_structural_module_signature": combined_module_signature,
+                "rbp_module_identity_state": module_identity_state,
                 "phage_side_receptor_feature_state": pf.get("phage_side_receptor_feature_state", "not_assessed"),
                 "host_receptor_feature_state": "available" if host_receptor_ready else "missing_KO",
                 "taxonomy_baseline_state": "available" if taxonomy_ready else "missing_cluster_label",
@@ -214,6 +307,8 @@ def main() -> int:
     host_feature_pairs = sum(1 for row in rows if row["host_receptor_feature_state"] == "available")
     phage_feature_pairs = sum(1 for row in rows if row["phage_side_receptor_feature_state"] in {"assessed_positive", "assessed_zero_detected"})
     taxonomy_pairs = sum(1 for row in rows if row["taxonomy_baseline_state"] == "available")
+    module_identity_pairs = sum(1 for row in rows if row["rbp_module_identity_state"] == "assessed_positive")
+    module_assessed_pairs = sum(1 for row in rows if row["rbp_module_identity_state"] in {"assessed_positive", "assessed_zero_detected"})
     summary = [
         {"metric": "tested_spot_pairs", "value": str(len(rows)), "interpretation": "Reviewed tested spot-assay phage-host pairs included in the feature matrix."},
         {"metric": "spot_positive_pairs", "value": str(outcome_counts.get("positive", 0)), "interpretation": "Spot-positive initial interaction rows."},
@@ -223,6 +318,8 @@ def main() -> int:
         {"metric": "pairs_with_host_KO", "value": str(host_feature_pairs), "interpretation": "Pair rows whose host has K and O locus evidence."},
         {"metric": "pairs_with_phage_receptor_features", "value": str(phage_feature_pairs), "interpretation": "Pair rows whose phage has assessed receptor-feature evidence."},
         {"metric": "pairs_with_taxonomy_baseline", "value": str(taxonomy_pairs), "interpretation": "Pair rows whose phage has a species-cluster/taxonomy baseline label."},
+        {"metric": "pairs_with_module_identity_evidence", "value": str(module_identity_pairs), "interpretation": "Pair rows whose phage has at least one PHROGs/MMseqs domain or Phold/Foldseek structural module identity."},
+        {"metric": "pairs_with_module_identity_assessed", "value": str(module_assessed_pairs), "interpretation": "Pair rows whose phage has module identity evidence assessed as positive or zero detected."},
         {"metric": "pairs_complete_for_receptor_features", "value": str(pair_states.get("complete_for_receptor_layer", 0)), "interpretation": "Pair rows with spot outcome, host K/O, and assessed phage receptor features."},
         {"metric": "pairs_missing_taxonomy_baseline", "value": str(len(rows) - taxonomy_pairs), "interpretation": "Pair rows missing a phage species-cluster baseline label; keep missingness explicit."},
     ]
@@ -244,6 +341,7 @@ def main() -> int:
         },
     ]
 
+    write_tsv(Path(args.module_summary_output), MODULE_SUMMARY_COLUMNS, module_summary_rows)
     write_tsv(Path(args.matrix_output), MATRIX_COLUMNS, rows)
     write_tsv(Path(args.summary_output), SUMMARY_COLUMNS, summary)
     write_tsv(Path(args.readiness_output), READINESS_COLUMNS, readiness)
