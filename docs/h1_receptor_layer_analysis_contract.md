@@ -57,7 +57,7 @@ Primary contrast: `AP(receptor_plus_host_KO_rate) - AP(genome_similarity_nearest
 
 Required Phold incremental contrast: `AP(pharokka_phold_plus_host_KO_rate) - AP(pharokka_plus_host_KO_rate)`. This contrast tests whether structure-informed Phold/Foldseek evidence adds predictive value beyond Pharokka-style receptor annotation. It must be evaluated on the same rows and folds as the primary comparison.
 
-Current pilot result direction from pooled AP: receptor plus K/O does not outperform the BLASTN nearest-phage plus K/O baseline under the primary cold-phage-cluster split.
+Current pilot result direction from pooled AP: coarse receptor-source/count summaries plus K/O do not outperform the BLASTN nearest-phage plus K/O baseline under the primary cold-phage-cluster split. This is not a definitive test of the stronger RBP/depolymerase module-architecture hypothesis.
 
 ## Secondary comparisons
 
@@ -97,7 +97,7 @@ Secondary metrics:
 
 Host receptor features come from reviewed Kaptive/Kleborate production evidence.
 
-Phage receptor features currently summarize RBPbase support, Pharokka annotations, and Phold/Foldseek annotations. These sources must be separated in a later ablation before claiming that Phold-derived structural annotation adds value.
+Phage receptor features currently summarize RBPbase support, Pharokka annotations, and Phold/Foldseek annotations mostly as source/count signatures. They do not encode RBP domain order, catalytic domains, C-terminal receptor-recognition architecture, or Foldseek structural class as reusable module identities. These sources must be separated in ablation before claiming that Phold-derived structural annotation adds value, and a later analysis must add genuine module identities before claiming to test module architecture.
 
 Current feature source labels are exploratory. The current ablation output is `results/production/models/receptor_layer_feature_source_ablation.tsv` and compares:
 
@@ -110,7 +110,7 @@ Current feature source labels are exploratory. The current ablation output is `r
 - union receptor features plus host K/O
 - whole-genome similarity/taxonomy baselines
 
-Current cold-phage-cluster pooled AP findings are exploratory: Phold/Foldseek plus host K/O is higher than RBPbase plus host K/O, but union receptor features plus host K/O are lower than the BLASTN, fastANI, and skani nearest-phage plus host K/O baselines. The held-out-group bootstrap CI for this primary contrast overlaps zero. Under cold_K_locus, receptor feature plus host K/O models do not improve over the global baseline, while phage marginal, BLASTN nearest-phage, fastANI nearest-phage, and skani nearest-phage baselines retain signal; the held-out-group bootstrap CI for receptor union versus BLASTN nearest-phage plus host K/O is below zero. This argues against a receptor-feature superiority claim in the current pilot.
+Current cold-phage-cluster pooled AP findings are exploratory: Phold/Foldseek plus host K/O is higher than RBPbase plus host K/O, but union receptor features plus host K/O are lower than the BLASTN, fastANI, and skani nearest-phage plus host K/O baselines. The held-out-group bootstrap CI for this primary contrast overlaps zero. Under cold_K_locus, receptor feature plus host K/O models do not improve over the global baseline, while phage marginal, BLASTN nearest-phage, fastANI nearest-phage, and skani nearest-phage baselines retain signal; the held-out-group bootstrap CI for receptor union versus BLASTN nearest-phage plus host K/O is below zero. Because cold_K_locus deliberately withholds exact K-locus labels used in the receptor-plus-K/O composite key, this split also requires fallback/support diagnostics and a future host-locus feature representation before it can be interpreted as novel-receptor generalization. The current pilot argues against a coarse receptor-feature superiority claim only.
 
 ## Manual Phold-Only Candidate Review
 
@@ -143,10 +143,11 @@ Permutation tests must preserve the tested-pair mask and relevant grouping struc
 
 Allowed current claim:
 
-Within the PhageHostLearn spot-test benchmark, receptor-layer and genome-similarity features show predictive signal under grouped evaluation.
+Within the PhageHostLearn spot-test benchmark, coarse receptor-source/count summaries and genome-similarity features show predictive signal under grouped evaluation.
 
 Not allowed yet:
 
+- RBP/depolymerase module architecture has been adequately tested
 - receptor features outperform whole-genome similarity
 - general Klebsiella host-range prediction
 - productive-infection prediction
