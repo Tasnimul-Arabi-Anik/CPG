@@ -112,25 +112,27 @@ Tracked compact benchmark review outputs:
 | Output | Rows |
 | --- | ---: |
 | Assay phage receptor feature coverage | 105 |
+| Assay phage module identity signatures | 105 |
 | Assay phage cluster assignments | 105 |
-| Pooled summary | 76 |
-| Feature-source ablation | 44 |
-| Held-out-group bootstrap | 44 |
-| Compact artifact checksum manifest | 5 |
+| Pooled summary | 92 |
+| Support diagnostics | 460 |
+| Feature-source ablation | 60 |
+| Held-out-group bootstrap | 60 |
+| Compact artifact checksum manifest | 7 |
 
-Primary cold-phage-cluster contrast:
+Primary cold-phage-cluster contrast for exact domain+structural module identity signatures:
 
-`AP(receptor + host K/O) - AP(genome similarity + host K/O)`
+`AP(domain/structural module identity + host K/O) - AP(genome similarity + host K/O)`
 
-| Genome-similarity baseline | Receptor AP | Baseline AP | Delta AP | Bootstrap 95% CI |
+| Genome-similarity baseline | Module AP | Baseline AP | Delta AP | Bootstrap 95% CI |
 | --- | ---: | ---: | ---: | --- |
-| BLASTN | 0.118254 | 0.195850 | -0.077596 | [-0.171900, 0.014083] |
-| fastANI | 0.118254 | 0.188858 | -0.070604 | [-0.158084, 0.010668] |
-| skani | 0.118254 | 0.199395 | -0.081141 | [-0.169619, -0.002116] |
+| BLASTN | 0.203203 | 0.186960 | 0.016243 | [-0.045441, 0.071260] |
+| fastANI | 0.203203 | 0.188908 | 0.014295 | [-0.054362, 0.075745] |
+| skani | 0.203203 | 0.200487 | 0.002716 | [-0.056983, 0.064242] |
 
-Current interpretation: within this benchmark, coarse receptor-source/count summaries do not outperform genome-similarity plus host K/O baselines in the primary cold-phage-cluster comparison. This does not falsify the stronger RBP/depolymerase module-architecture hypothesis, which still requires domain/structural module identities.
+Current interpretation: exact domain+structural module identity signatures improve over RBPbase plus host K/O in cold-phage-cluster evaluation (AP 0.203203 versus 0.071841; delta 0.131362; bootstrap CI [0.068376, 0.209580]). They do not yet robustly outperform genome-similarity plus host K/O baselines because the module-vs-genome paired bootstrap intervals overlap zero. These signatures are exact PHROGs/MMseqs and Phold/Foldseek evidence IDs, not full domain-order architecture or functional capsule specificity.
 
-Cold-K-locus support diagnostics also show that the exact receptor + K/O model uses global-prevalence fallback for all 10,006 cold-K predictions, while the genome-similarity + K/O model uses nearest-phage intermediate fallback for all 10,006 cold-K predictions. Treat the current cold-K result as a fallback-design diagnostic, not a fair novel-receptor generalization test.
+Cold-K-locus support diagnostics also show that exact receptor/module + K/O models use global-prevalence fallback for all 10,006 cold-K predictions, while the genome-similarity + K/O model uses nearest-phage intermediate fallback for all 10,006 cold-K predictions. Treat the current cold-K result as a fallback-design diagnostic, not a fair novel-receptor generalization test.
 
 ## PR #14: Defense/Counter-Defense Evidence
 
@@ -158,7 +160,7 @@ Claim boundary: H4 remains `blocked_no_productive_infection_labels`. These evide
 
 | Hypothesis | Current status | Reason |
 | --- | --- | --- |
-| H1 receptor compatibility | Exploratory, not supported as a stronger-than-taxonomy claim | Current coarse receptor-source/count summaries do not beat genome-similarity + K/O baselines in the primary comparison; module architecture has not yet been adequately tested. |
+| H1 receptor compatibility | Exploratory, module-identity signal available but not claim-ready | Exact domain+structural module identity signatures beat RBPbase + K/O but do not robustly beat genome-similarity + K/O baselines; full domain-order architecture and novel-K generalization remain untested. |
 | H2 prophage receptor reservoir | Not the focus of the current PR stack | Requires larger prophage/host cohort and structural/synteny association analysis. |
 | H3 breadth versus modularity/counter-defense | Descriptive breadth available only | Spot-test breadth exists, but feature association is not claim-ready. |
 | H4 defense/counter-defense improves productive-infection prediction | Blocked | No productive-infection, plaque, propagation, or EOP labels exist. |
@@ -173,7 +175,7 @@ Allowed now:
 
 Allowed now:
 
-> In the current exploratory H1 benchmark, coarse receptor-source/count summaries do not outperform genome-similarity plus host K/O baselines under the primary cold-phage-cluster comparison.
+> In the current exploratory H1 benchmark, exact receptor module identity signatures improve over RBPbase and are competitive with genome-similarity baselines under cold-phage-cluster evaluation, but do not yet robustly outperform genome similarity.
 
 Not allowed now:
 
