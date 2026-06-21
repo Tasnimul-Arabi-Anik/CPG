@@ -601,7 +601,7 @@ Output schemas are documented in `docs/host_defense_run_handoff_schema.md`.
 
 ## Stage 6: Defense/Counter-Defense Feature Integration
 
-The defense/counter-defense script consumes host metadata, phage-host links, phage annotations, and optional host defense or phage anti-defense evidence tables. It writes normalized host defense systems, phage anti-defense candidates, and compatibility rows that combine receptor metadata with defense/counter-defense features.
+The defense/counter-defense script consumes host metadata, phage-host links, phage annotations, and optional host defense or phage anti-defense evidence tables. It writes normalized host defense systems, phage anti-defense candidates, and compatibility rows that combine receptor metadata with accepted defense/counter-defense features. Annotation-keyword anti-defense hits are retained only as screening candidates in the phage anti-defense table; they are excluded from compatibility matching and do not make counter-defense metadata available.
 
 Implemented command:
 

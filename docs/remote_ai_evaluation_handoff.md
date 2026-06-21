@@ -11,6 +11,31 @@ The broader long-term hypothesis has two filters:
 
 Current real quantitative work is focused on the first filter. The second-filter H4 defense/counter-defense analysis remains blocked because productive-infection/plaque/EOP outcomes and accepted defense/counter-defense evidence are not yet available.
 
+
+## Current Work Summary for Remote Reviewers
+
+What we are doing:
+
+- Building a reproducible Klebsiella phage comparative-genomics analysis around a two-filter hypothesis: receptor compatibility first, then defense/counter-defense compatibility only when valid productive-infection and defense evidence exist.
+- The current active analysis is the receptor-layer H1 benchmark on the PhageHostLearn spot-test dataset using grouped splits and strong genome-similarity baselines.
+- The current engineering focus is claim-boundary protection: missing or keyword-screened evidence must not be treated as biological absence or accepted counter-defense support.
+
+What we have so far:
+
+- A reviewed assay layer with 10,006 tested spot-test pairs, 333 spot-positive and 9,673 spot-negative, across 105 phages and 200 hosts.
+- Host K/O typing coverage for the assay hosts and phage receptor-feature evidence from RBPbase, Pharokka, and mapped Phold/Foldseek outputs.
+- BLASTN, Mash, and fastANI nearest-phage baselines for receptor-layer H1 comparisons.
+- Current exploratory result: receptor-feature unions do not robustly outperform nearest-phage genome-similarity plus host K/O baselines under grouped evaluation.
+- No accepted host-defense or phage anti-defense evidence. Keyword anti-defense hits are screening-only and are excluded from compatibility matching.
+
+What should be done next:
+
+- Keep H4 blocked until productive-infection/plaque/EOP outcomes and accepted host-defense plus phage-counter-defense evidence exist.
+- Review the mapped Phold/Foldseek receptor candidates, especially the high-priority non-Pharokka rows, for structural quality and synteny.
+- Add a phage-appropriate intergenomic similarity/taxonomy baseline such as VIRIDIC or skani if feasible.
+- Add accepted DefenseFinder/PADLOC host-defense outputs and curated phage anti-defense evidence only after the receptor-layer endpoint and claim boundary are stable.
+- Do not claim receptor superiority, capsule specificity, productive infection, or therapeutic utility from the current outputs.
+
 ## Current Data Layer
 
 - Assay source: PhageHostLearn 2024 benchmark.
@@ -51,7 +76,7 @@ Phage receptor-side evidence:
 - Accepted mapped Phold/Foldseek structural evidence: 23 normalized rows.
 - Structural evidence coverage after production refresh: 12/105 assay phages and 1,048/10,006 tested pairs.
 - Stage 4 final RBP/depolymerase candidates with structural support: 17 rows across 12 phages.
-- Domain evidence remains not assessed; host-defense and phage anti-defense evidence remain absent.
+- Domain evidence remains not assessed; accepted host-defense and phage anti-defense evidence remain absent. Annotation-keyword anti-defense screening is not accepted counter-defense evidence.
 
 Important interpretation boundary: RBPbase, Pharokka, and Phold/Foldseek rows are candidate-prioritization evidence. They do not prove capsule specificity, depolymerase activity, or infection success.
 
@@ -140,6 +165,19 @@ fastANI robustness check:
   - Cold K-locus delta AP: -0.103323, group CI95 [-0.156806, -0.070827].
   - Cold host delta AP: -0.146362, group CI95 [-0.195479, -0.096439].
 - Interpretation: fastANI is slightly weaker than the current BLASTN baseline in AP but stronger than Mash in cold phage and cold cluster. The receptor union still does not robustly outperform fastANI nearest-phage plus host K/O.
+
+
+## Defense/Counter-Defense Boundary
+
+Stage 6 now treats annotation-keyword anti-defense hits as screening-only candidates. These rows may be written to `phage_antidefense_candidates.tsv` for review, but they are excluded from accepted compatibility matching unless an explicit reviewed phage anti-defense input table is supplied. This prevents generic methyltransferase, recombinase, repair, or similar annotation strings from being counted as demonstrated counter-defense capacity.
+
+A local Phold sub-database screen was inspected across the 105 assay phages:
+
+- DefenseFinder CDS prediction files: 105 files, 0 data rows.
+- CARD CDS prediction files: 105 files, 0 data rows.
+- VFDB CDS prediction files: one data row in `phagehostlearn_2024_phage_K15PH90`, labelled capsule/immune modulation/hypothetical protein.
+
+These Phold sub-database outputs are not accepted phage anti-defense evidence. They do not change H4 readiness.
 
 ## Locally Generated Outputs
 

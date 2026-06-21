@@ -34,7 +34,7 @@ One row per normalized host defense system. Important columns:
 
 ### `results/defense_systems/phage_antidefense_candidates.tsv`
 
-One row per explicit or inferred phage anti-defense candidate. Inferred candidates from annotation text are marked with `evidence_type=annotation_keyword_inference` and should be treated as lower-confidence hypotheses.
+One row per explicit or screening-level phage anti-defense candidate. Rows marked `evidence_type=annotation_keyword_inference` are annotation-keyword screening hits only. They are written for review and prioritization, but they are not accepted counter-defense evidence and are excluded from compatibility matching unless the same candidate is supplied through an explicit reviewed anti-defense table.
 
 ### `results/defense_systems/compatibility_features.tsv`
 
@@ -49,9 +49,9 @@ Important columns:
 | `K_type`, `O_type`, `ST` | Receptor and host background features from Stage 5. |
 | `host_defense_system_count` | Number of host defense systems linked to the host. |
 | `host_defense_types` | Semicolon-delimited normalized host defense classes. |
-| `phage_antidefense_count` | Number of phage anti-defense candidates linked to the phage. |
-| `phage_antidefense_targets` | Semicolon-delimited defense systems targeted by phage candidates. |
-| `matched_counterdefense_count` | Number of phage target classes matching host defense classes/systems. |
+| `phage_antidefense_count` | Number of accepted explicit phage anti-defense candidates linked to the phage for compatibility matching. Annotation-keyword screening rows are excluded. |
+| `phage_antidefense_targets` | Semicolon-delimited defense systems targeted by accepted explicit phage candidates. |
+| `matched_counterdefense_count` | Number of accepted explicit phage target classes matching host defense classes/systems. |
 | `compatibility_feature_status` | Missingness/status flag for downstream modeling. |
 
 ### `results/defense_systems/defense_counterdefense_report.tsv`
@@ -60,4 +60,4 @@ Run-level validation and provenance messages.
 
 ## Current Behavior
 
-This stage does not run PADLOC, DefenseFinder, or anti-defense databases directly. It normalizes their tabular outputs when supplied and performs conservative annotation-keyword inference for phage counter-defense candidates when explicit evidence is absent.
+This stage does not run PADLOC, DefenseFinder, or anti-defense databases directly. It normalizes their tabular outputs when supplied. Annotation-keyword phage hits are screening-only review candidates; they remain in `phage_antidefense_candidates.tsv` but are excluded from `compatibility_features.tsv` counter-defense counts, target matching, and compatibility statuses unless explicit reviewed evidence is supplied.

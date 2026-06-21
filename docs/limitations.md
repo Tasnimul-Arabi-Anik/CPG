@@ -14,7 +14,7 @@ Known limitations to track:
 - Capsule and O-locus calls may be missing for historical phage hosts.
 - Prophage RBP candidates may be inactive remnants.
 - Structure-informed annotation can identify remote similarity but does not prove receptor specificity.
-- Defense/counter-defense annotations are incomplete because many anti-defense genes remain undiscovered.
+- Defense/counter-defense annotations are incomplete because many anti-defense genes remain undiscovered. Annotation-keyword anti-defense hits are screening candidates only and are not accepted as counter-defense compatibility evidence.
 - Broad host range can reflect testing effort rather than intrinsic generalism.
 
 Each manuscript claim should distinguish observation, computational inference, and experimentally validated conclusion.
@@ -23,4 +23,4 @@ Claim wording and remaining speculative claims are tracked explicitly in `docs/c
 
 ## Assay Feature Coverage
 
-The seed profile contains reviewed spot-test outcomes, and the production profile now has reviewed PhageHostLearn K/O result rows for 200/200 assay hosts (Typeable K 196/200; Typeable O 191/200), ST/AMR/virulence context for 188/200 assay hosts, and baseline Prodigal CDS predictions for 105/105 assay phages. Most phage-side explanatory features are still not production-assessed: Prodigal CDS rows provide protein sequences, not RBP/depolymerase function, domain evidence, or structural evidence. Missing RBP, domain, structural, defense, or counter-defense evidence must be interpreted as `not_assessed`, not as biological absence. H3 therefore has descriptive spot-breadth values but no supported RBP/counter-defense enrichment claim until production feature coverage is sufficient.
+The seed profile contains reviewed spot-test outcomes, and the production profile now has reviewed PhageHostLearn K/O result rows for 200/200 assay hosts (Typeable K 196/200; Typeable O 191/200), ST/AMR/virulence context for 188/200 assay hosts, and baseline Prodigal CDS predictions for 105/105 assay phages. Most phage-side explanatory features are still not production-assessed: Prodigal CDS rows provide protein sequences, not RBP/depolymerase function, domain evidence, or structural evidence. Missing RBP, domain, structural, defense, or counter-defense evidence must be interpreted as `not_assessed`, not as biological absence; keyword-only anti-defense screening must not be treated as accepted counter-defense evidence. H3 therefore has descriptive spot-breadth values but no supported RBP/counter-defense enrichment claim until production feature coverage is sufficient.
