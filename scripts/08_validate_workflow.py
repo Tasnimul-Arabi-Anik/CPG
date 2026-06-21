@@ -405,13 +405,25 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def clean_tsv_value(value: str | list[str] | None) -> str:
+    if isinstance(value, list):
+        return ";".join((item or "").strip() for item in value)
+    return (value or "").strip()
+
+
 def read_tsv(path: Path) -> tuple[list[str], list[dict[str, str]]]:
     if not path.exists():
         return [], []
     with path.open(newline="") as handle:
         reader = csv.DictReader(handle, delimiter="\t")
         fieldnames = reader.fieldnames or []
-        rows = [{key: (value or "").strip() for key, value in row.items()} for row in reader]
+        rows = []
+        for row in reader:
+            cleaned = {key: clean_tsv_value(value) for key, value in row.items() if key is not None}
+            extra_fields = row.get(None)
+            if extra_fields:
+                cleaned["__extra_fields__"] = clean_tsv_value(extra_fields)
+            rows.append(cleaned)
     return fieldnames, rows
 
 
