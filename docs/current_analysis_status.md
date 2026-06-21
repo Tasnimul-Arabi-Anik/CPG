@@ -128,7 +128,9 @@ Primary cold-phage-cluster contrast:
 | fastANI | 0.118254 | 0.188858 | -0.070604 | [-0.158084, 0.010668] |
 | skani | 0.118254 | 0.199395 | -0.081141 | [-0.169619, -0.002116] |
 
-Current interpretation: within this benchmark, coarse receptor-source/count summaries do not outperform genome-similarity plus host K/O baselines in the primary cold-phage-cluster comparison. This does not falsify the stronger RBP/depolymerase module-architecture hypothesis, which still requires domain/structural module identities and fallback diagnostics.
+Current interpretation: within this benchmark, coarse receptor-source/count summaries do not outperform genome-similarity plus host K/O baselines in the primary cold-phage-cluster comparison. This does not falsify the stronger RBP/depolymerase module-architecture hypothesis, which still requires domain/structural module identities.
+
+Cold-K-locus support diagnostics also show that the exact receptor + K/O model uses global-prevalence fallback for all 10,006 cold-K predictions, while the genome-similarity + K/O model uses nearest-phage intermediate fallback for all 10,006 cold-K predictions. Treat the current cold-K result as a fallback-design diagnostic, not a fair novel-receptor generalization test.
 
 ## PR #14: Defense/Counter-Defense Evidence
 
