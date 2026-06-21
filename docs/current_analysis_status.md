@@ -99,16 +99,24 @@ Additional evidence included:
 | fastANI phage similarity rows | 5,460 |
 | skani phage similarity rows | 5,460 |
 
-Generated local benchmark outputs under ignored `results/production/`:
+Generated large local benchmark outputs under ignored `results/production/`:
 
 | Output | Rows |
 | --- | ---: |
 | Pairwise receptor feature matrix | 10,006 |
 | Primary model comparison | 380 |
 | Out-of-fold predictions | 760,456 |
+
+Tracked compact benchmark review outputs:
+
+| Output | Rows |
+| --- | ---: |
+| Assay phage receptor feature coverage | 105 |
+| Assay phage cluster assignments | 105 |
 | Pooled summary | 76 |
 | Feature-source ablation | 44 |
 | Held-out-group bootstrap | 44 |
+| Compact artifact checksum manifest | 5 |
 
 Primary cold-phage-cluster contrast:
 
@@ -120,7 +128,7 @@ Primary cold-phage-cluster contrast:
 | fastANI | 0.118254 | 0.188858 | -0.070604 | [-0.158084, 0.010668] |
 | skani | 0.118254 | 0.199395 | -0.081141 | [-0.169619, -0.002116] |
 
-Current interpretation: within this benchmark, the current receptor-feature summaries do not outperform genome-similarity plus host K/O baselines in the primary cold-phage-cluster comparison. H1 remains exploratory and should not be claimed as supported.
+Current interpretation: within this benchmark, coarse receptor-source/count summaries do not outperform genome-similarity plus host K/O baselines in the primary cold-phage-cluster comparison. This does not falsify the stronger RBP/depolymerase module-architecture hypothesis, which still requires domain/structural module identities and fallback diagnostics.
 
 ## PR #14: Defense/Counter-Defense Evidence
 
@@ -148,7 +156,7 @@ Claim boundary: H4 remains `blocked_no_productive_infection_labels`. These evide
 
 | Hypothesis | Current status | Reason |
 | --- | --- | --- |
-| H1 receptor compatibility | Exploratory, not supported as a stronger-than-taxonomy claim | Current receptor summaries do not beat genome-similarity + K/O baselines in the primary comparison. |
+| H1 receptor compatibility | Exploratory, not supported as a stronger-than-taxonomy claim | Current coarse receptor-source/count summaries do not beat genome-similarity + K/O baselines in the primary comparison; module architecture has not yet been adequately tested. |
 | H2 prophage receptor reservoir | Not the focus of the current PR stack | Requires larger prophage/host cohort and structural/synteny association analysis. |
 | H3 breadth versus modularity/counter-defense | Descriptive breadth available only | Spot-test breadth exists, but feature association is not claim-ready. |
 | H4 defense/counter-defense improves productive-infection prediction | Blocked | No productive-infection, plaque, propagation, or EOP labels exist. |
@@ -163,11 +171,11 @@ Allowed now:
 
 Allowed now:
 
-> In the current exploratory H1 benchmark, receptor-feature summaries do not outperform genome-similarity plus host K/O baselines under the primary cold-phage-cluster comparison.
+> In the current exploratory H1 benchmark, coarse receptor-source/count summaries do not outperform genome-similarity plus host K/O baselines under the primary cold-phage-cluster comparison.
 
 Not allowed now:
 
-> RBP/depolymerase features explain Klebsiella phage host range better than taxonomy.
+> RBP/depolymerase module architecture explains Klebsiella phage host range better than taxonomy.
 
 Not allowed now:
 
