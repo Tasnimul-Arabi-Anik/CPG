@@ -6,8 +6,10 @@ from __future__ import annotations
 import argparse
 import csv
 import itertools
+import re
 import subprocess
 import tempfile
+import zipfile
 from pathlib import Path
 from typing import Iterable
 
@@ -72,6 +74,45 @@ def fasta_length(path: Path) -> int:
     return total
 
 
+def split_archive_locator(path_text: str) -> tuple[str, str] | None:
+    if "::" not in path_text:
+        return None
+    archive_path, member = path_text.split("::", 1)
+    archive_path = archive_path.strip()
+    member = member.strip()
+    if not archive_path or not member:
+        raise ValueError("Archive sequence path must use archive.zip::member.fasta")
+    member_path = Path(member)
+    if member_path.is_absolute() or ".." in member_path.parts:
+        raise ValueError(f"Archive member path is not allowed: {member}")
+    return archive_path, member
+
+
+def safe_filename(value: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9_.-]+", "_", value).strip("._")
+    return cleaned or "sequence"
+
+
+def materialize_fasta(path_text: str, genome_id: str, extraction_dir: Path) -> Path:
+    locator = split_archive_locator(path_text)
+    if locator is None:
+        return Path(path_text)
+    archive_text, member = locator
+    archive_path = Path(archive_text)
+    if archive_path.suffix.lower() != ".zip":
+        raise ValueError(f"Unsupported archive sequence path, expected .zip: {archive_path}")
+    if not archive_path.exists():
+        raise FileNotFoundError(archive_path)
+    with zipfile.ZipFile(archive_path) as archive:
+        if member not in archive.namelist():
+            raise FileNotFoundError(f"{archive_path}::{member}")
+        data = archive.read(member)
+    extraction_dir.mkdir(parents=True, exist_ok=True)
+    target = extraction_dir / f"{safe_filename(genome_id)}.fasta"
+    target.write_bytes(data)
+    return target
+
+
 def merge_intervals(intervals: list[tuple[int, int]]) -> int:
     if not intervals:
         return 0
@@ -85,11 +126,12 @@ def merge_intervals(intervals: list[tuple[int, int]]) -> int:
     return sum(end - start + 1 for start, end in merged)
 
 
-def load_records(manifest_path: Path, sequence_qc_path: Path, report: list[dict[str, str]]) -> list[dict[str, str]]:
+def load_records(manifest_path: Path, sequence_qc_path: Path, extraction_dir: Path, report: list[dict[str, str]]) -> list[dict[str, str]]:
     _, manifest_rows = read_tsv(manifest_path)
     _, qc_rows = read_tsv(sequence_qc_path)
     qc_by_id = {row.get("genome_id", ""): row for row in qc_rows}
     records: list[dict[str, str]] = []
+    zip_members = 0
     for row in manifest_rows:
         genome_id = row.get("genome_id", "")
         if row.get("record_type") not in ELIGIBLE_RECORD_TYPES:
@@ -99,10 +141,16 @@ def load_records(manifest_path: Path, sequence_qc_path: Path, report: list[dict[
             report.append({"severity": "warning", "item": genome_id, "message": "Skipped record without passing sequence QC."})
             continue
         path_text = qc_row.get("resolved_sequence_path") or row.get("raw_sequence_path", "")
-        path = Path(path_text)
+        try:
+            path = materialize_fasta(path_text, genome_id, extraction_dir)
+        except (OSError, ValueError, zipfile.BadZipFile) as exc:
+            report.append({"severity": "warning", "item": genome_id, "message": f"Skipped unreadable FASTA: {exc}"})
+            continue
         if not path.exists():
             report.append({"severity": "warning", "item": genome_id, "message": f"Skipped missing FASTA: {path}"})
             continue
+        if split_archive_locator(path_text) is not None:
+            zip_members += 1
         records.append(
             {
                 "genome_id": genome_id,
@@ -111,6 +159,8 @@ def load_records(manifest_path: Path, sequence_qc_path: Path, report: list[dict[
             }
         )
     report.append({"severity": "info", "item": "records", "message": f"Loaded {len(records)} local FASTA-backed phage-like records."})
+    if zip_members:
+        report.append({"severity": "info", "item": "zip_member_records", "message": f"Materialized {zip_members} ZIP-member FASTA records into a temporary BLASTN workspace."})
     return records
 
 
@@ -168,34 +218,35 @@ def main() -> int:
     report: list[dict[str, str]] = []
     rows: list[dict[str, str]] = []
     try:
-        records = load_records(Path(args.manifest), Path(args.sequence_qc), report)
-        for left, right in itertools.combinations(records, 2):
-            identity, coverage, aligned_bp = run_blastn(left, right, args)
-            rows.append(
-                {
-                    "genome_id_1": left["genome_id"],
-                    "genome_id_2": right["genome_id"],
-                    "identity_percent": f"{identity:.3f}",
-                    "coverage_percent": f"{coverage:.3f}",
-                    "method": f"blastn_local_pairwise_min_hsp_{args.min_hsp_length}",
-                    "evidence_source": "build_blastn_pairwise_similarity.py",
-                    "notes": (
-                        f"Local BLASTN bridge evidence generated from sequence-QC-passing FASTA records; "
-                        f"task={args.task}; min_hsp_length={args.min_hsp_length}; "
-                        "coverage is reciprocal minimum non-overlapping aligned fraction; not a VIRIDIC/Mash substitute."
-                    ),
-                }
-            )
-            report.append(
-                {
-                    "severity": "info",
-                    "item": f"{left['genome_id']} vs {right['genome_id']}",
-                    "message": (
-                        f"identity={identity:.3f}; reciprocal_min_coverage={coverage:.3f}; "
-                        f"retained_hsp_aligned_bp={aligned_bp}"
-                    ),
-                }
-            )
+        with tempfile.TemporaryDirectory(prefix="cpg_blastn_records_") as record_tmp:
+            records = load_records(Path(args.manifest), Path(args.sequence_qc), Path(record_tmp), report)
+            for left, right in itertools.combinations(records, 2):
+                identity, coverage, aligned_bp = run_blastn(left, right, args)
+                rows.append(
+                    {
+                        "genome_id_1": left["genome_id"],
+                        "genome_id_2": right["genome_id"],
+                        "identity_percent": f"{identity:.3f}",
+                        "coverage_percent": f"{coverage:.3f}",
+                        "method": f"blastn_local_pairwise_min_hsp_{args.min_hsp_length}",
+                        "evidence_source": "build_blastn_pairwise_similarity.py",
+                        "notes": (
+                            f"Local BLASTN bridge evidence generated from sequence-QC-passing FASTA records; "
+                            f"task={args.task}; min_hsp_length={args.min_hsp_length}; "
+                            "coverage is reciprocal minimum non-overlapping aligned fraction; not a VIRIDIC/Mash substitute."
+                        ),
+                    }
+                )
+                report.append(
+                    {
+                        "severity": "info",
+                        "item": f"{left['genome_id']} vs {right['genome_id']}",
+                        "message": (
+                            f"identity={identity:.3f}; reciprocal_min_coverage={coverage:.3f}; "
+                            f"retained_hsp_aligned_bp={aligned_bp}"
+                        ),
+                    }
+                )
     except Exception as exc:  # noqa: BLE001 - capture executable/input failures in report form
         report.append({"severity": "error", "item": "blastn_pairwise_similarity", "message": str(exc)})
 
