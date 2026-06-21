@@ -19,7 +19,7 @@ Current expected state after running the real workflow:
 - `results/seed/metadata/phage_host_assays.tsv` should contain 10,006 reviewed PhageHostLearn spot-test rows: 333 positive and 9,673 tested negative;
 - blank PhageHostLearn matrix cells remain untested and productive infection remains `not_measured`;
 - `results/seed/qc/assay_feature_coverage.tsv` should show descriptive spot-breadth availability but missing production K/O/ST, RBP/domain/structural, host-defense, phage-counter-defense, and productive-infection coverage;
-- `results/production/qc/assay_feature_coverage.tsv`, after the production evidence stages are run, should show K/O result rows for 200/200 assay hosts, with Kaptive confidence retained separately (Typeable K 196/200; Typeable O 191/200; 12 hosts have at least one untypeable K/O result), ST coverage for 188/200 assay hosts, baseline CDS annotation coverage for 105/105 assay phages, RBPbase-exact candidate coverage for 103/105 assay phages (9,806/10,006 tested pairs), PHROGs/MMseqs receptor-domain evidence for 105/105 assay phages, and partial Phold/Foldseek structural evidence for 12/105 assay phages, while defense/counter-defense evidence, verified host raw-sequence paths, and productive-infection outcomes remain `not_assessed`;
+- `results/production/qc/assay_feature_coverage.tsv`, after the production evidence stages are run, should show K/O result rows for 200/200 assay hosts, with Kaptive confidence retained separately (Typeable K 196/200; Typeable O 191/200; 12 hosts have at least one untypeable K/O result), ST coverage for 188/200 assay hosts, baseline CDS annotation coverage for 105/105 assay phages, RBPbase-exact candidate coverage for 103/105 assay phages (9,806/10,006 tested pairs), PHROGs/MMseqs receptor-domain evidence for 105/105 assay phages, partial Phold/Foldseek structural evidence for 12/105 assay phages, and DefenseFinder host-defense evidence for 200/200 assay hosts, while phage counter-defense evidence, verified host raw-sequence paths, and productive-infection outcomes remain `not_assessed`;
 - real H1-H6 evidence remains limited because production external evidence is incomplete and most claims require feature coverage beyond the seed assay outcome layer;
 - `results/validation/goal_completion_audit.tsv` should keep the goal incomplete.
 
@@ -89,7 +89,7 @@ The current blockers are:
 - acquire or reconstruct local FASTA/GenBank sequence files for metadata-only rows using the generated sequence-fetch manifests and record reviewed checksums in `data/metadata/sequence_acquisition_manifest.tsv`;
 - replace bridge evidence with reviewed production evidence from standardized tools where needed;
 - maintain the reviewed PhageHostLearn host K/O/ST evidence and resolve the twelve hosts without Kleborate KpSC rows if ST/AMR/virulence coverage is required;
-- use the assay-phage CDS/protein table and exact RBPbase ML candidate matches as candidate evidence, then add reviewed domain/profile and structural evidence plus host defense and phage anti-defense evidence for the assay benchmark entities;
+- use the assay-phage CDS/protein table, exact RBPbase ML candidate matches, domain/profile evidence, structural evidence, and DefenseFinder host-defense evidence as candidate/evidence layers, then add reviewed phage anti-defense evidence for the assay benchmark entities;
 - curate productive-infection, plaque, propagation, or EOP outcomes before testing H4;
 - rerun H1-H6 model comparisons after the above evidence layers are accepted.
 

@@ -575,7 +575,7 @@ python scripts/04_integrate_host_features.py \
   --report-output results/host_features/host_feature_report.tsv
 ```
 
-Optional Kleborate and Kaptive input schemas are documented in `docs/host_feature_schema.md`. The production profile now points `inputs.pairwise_similarity` to the reviewed BLASTN baseline, `inputs.kleborate_input` and `inputs.kaptive_input` to reviewed PhageHostLearn host-typing evidence, `inputs.annotation_input` to reviewed PhageHostLearn Prodigal baseline CDS plus exact RBPbase candidate evidence, `inputs.domain_evidence` to MMseqs2/PHROGs receptor-domain evidence, and `inputs.structural_evidence` to mapped Phold/Foldseek receptor-like structural evidence. Full production readiness remains fail-closed until defense/counter-defense evidence inputs are populated and H4 outcome labels exist.
+Optional Kleborate and Kaptive input schemas are documented in `docs/host_feature_schema.md`. The production profile now points `inputs.pairwise_similarity` to the reviewed BLASTN baseline, `inputs.kleborate_input` and `inputs.kaptive_input` to reviewed PhageHostLearn host-typing evidence, `inputs.annotation_input` to reviewed PhageHostLearn Prodigal baseline CDS plus exact RBPbase candidate evidence, `inputs.domain_evidence` to MMseqs2/PHROGs receptor-domain evidence, `inputs.structural_evidence` to mapped Phold/Foldseek receptor-like structural evidence, and `inputs.host_defense_input` to DefenseFinder host-defense evidence. Full production readiness remains fail-closed until phage counter-defense evidence is populated and H4 outcome labels exist.
 
 ## Phage-Host Assay Contract and Validation
 
@@ -609,6 +609,8 @@ python scripts/create_host_defense_run_handoff.py \
 
 Output schemas are documented in `docs/host_defense_run_handoff_schema.md`.
 
+For the PhageHostLearn production profile, `scripts/build_phagehostlearn_host_defense_evidence.py` extracts the 200 tested host FASTA members from the reviewed `klebsiella_genomes.zip` archive into `results/`, runs DefenseFinder 3.0.0 with defense-finder-models 3.1.0 and CasFinder 3.1.0, and writes `data/metadata/production_evidence/host_defense_systems.tsv`. The current output has 2,758 normalized system-level rows across 200/200 assay hosts, with the archive SHA-256 verified against `data/metadata/production_evidence/phagehostlearn_host_typing_review.tsv`. This is accepted host-defense evidence, not phage defense-escape evidence.
+
 ## Stage 6: Defense/Counter-Defense Feature Integration
 
 The defense/counter-defense script consumes host metadata, phage-host links, phage annotations, and optional host defense or phage anti-defense evidence tables. It writes normalized host defense systems, phage anti-defense candidates, and compatibility rows that combine receptor metadata with accepted defense/counter-defense features. Annotation-keyword anti-defense hits are retained only as screening candidates in the phage anti-defense table; they are excluded from compatibility matching and do not make counter-defense metadata available.
@@ -626,7 +628,7 @@ python scripts/05_integrate_defense_counterdefense.py \
   --report-output results/defense_systems/defense_counterdefense_report.tsv
 ```
 
-Optional PADLOC/DefenseFinder-style and phage anti-defense schemas are documented in `docs/defense_counterdefense_schema.md`.
+Optional PADLOC/DefenseFinder-style and phage anti-defense schemas are documented in `docs/defense_counterdefense_schema.md`. The production profile now supplies DefenseFinder host-defense input. Phage anti-defense input remains absent, so annotation-keyword phage hits are still screening-only and H4 remains blocked.
 
 ## Stage 7: Feature-Set Model Comparison
 

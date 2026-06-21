@@ -100,7 +100,7 @@ Primary test:
 Current readiness:
 - panel-based spot-test breadth values are available from the reviewed PhageHostLearn subset in the seed profile; these represent initial-interaction breadth only.
 - Stage 7 reports `descriptive_breadth_available` and keeps feature associations claim-blocked unless the relevant assay-phage features have actually been assessed.
-- biological H3 claims remain blocked until production RBP/depolymerase modularity, domain/structural support where needed, explicit counter-defense evidence, and panel-aware association tests are available for the assay phages.
+- biological H3 claims remain blocked until production RBP/depolymerase modularity, domain/structural support where needed, explicit phage counter-defense evidence, and panel-aware association tests are available for the assay phages.
 
 Alternative explanation:
 - broad host range may reflect laboratory testing depth rather than biology.
@@ -128,7 +128,7 @@ Primary test:
 - compare receptor-only, defense-only, counter-defense-only, receptor-plus-defense, and receptor-plus-defense/counter-defense models against observed assay outcomes.
 
 Current readiness:
-- blocked until productive-infection labels exist. `compatibility_feature_status` and `matched_counterdefense_status` are not biological outcomes because they are constructed from the same features being modeled.
+- host DefenseFinder evidence is available for 200/200 assay hosts, but H4 remains blocked until productive-infection labels and accepted phage counter-defense evidence exist. `compatibility_feature_status` and `matched_counterdefense_status` are not biological outcomes because they are constructed from the same features being modeled.
 
 Expected result:
 - defense/counter-defense features may explain some receptor-compatible failures, but a robust null result is allowed.
@@ -158,7 +158,7 @@ Primary test:
 
 Current readiness:
 - production PhageHostLearn host typing provides K/O result rows for 200/200 assay hosts (Typeable K 196/200; Typeable O 191/200) and ST calls for 188/200 assay hosts;
-- H5 remains blocked for biological interpretation because host-defense evidence, prophage carriage across a broader host population, and sampling/lineage controls are not yet available;
+- H5 has benchmark host-defense evidence from DefenseFinder, but remains blocked for biological interpretation because broader host-population sampling, prophage carriage, and lineage/source controls are not yet available;
 - separate host-population analysis; not a phage infectivity claim.
 
 Alternative explanation:

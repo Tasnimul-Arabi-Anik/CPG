@@ -1089,6 +1089,10 @@ def build_assay_feature_coverage(
             parse_int(row.get("host_defense_system_count", "0")) > 0
             or is_informative_feature_value(row.get("host_defense_types", ""))
             or is_informative_feature_value(row.get("host_defense_systems", ""))
+            or is_informative_feature_value(row.get("defense_type", ""))
+            or is_informative_feature_value(row.get("defense_system", ""))
+            or is_informative_feature_value(row.get("system", ""))
+            or is_informative_feature_value(row.get("type", ""))
         )
     }
     antidefense_assessed_phages = row_id_set(phage_antidefense_rows, "phage_genome_id")
@@ -1177,7 +1181,7 @@ def build_assay_feature_coverage(
         ("rbp_candidates", "unique_phage", len(set(assay_phages) & rbp_phages), len(set(assay_phages) & rbp_phages), phage_count, "H1b;H3", "Run accepted RBP/depolymerase prediction for assay phages."),
         ("domain_evidence", "unique_phage", domain_entity_count, len(set(assay_phages) & domain_assessed_phages), phage_count, "H1b;H3", domain_entity_action),
         ("structural_evidence", "unique_phage", structural_entity_count, len(set(assay_phages) & structural_assessed_phages), phage_count, "H1b;H3", structural_entity_action),
-        ("host_defense_evidence", "unique_host", len(set(assay_hosts) & host_defense_detected_hosts), len(set(assay_hosts) & host_defense_assessed_hosts), host_count, "H4;H5", "Run PADLOC/DefenseFinder or reviewed host-defense evidence for assay hosts."),
+        ("host_defense_evidence", "unique_host", len(set(assay_hosts) & host_defense_detected_hosts), len(set(assay_hosts) & host_defense_assessed_hosts), host_count, "H4;H5", "Reviewed host-defense evidence is available for all assay hosts; H4 still needs phage counter-defense evidence and productive-infection labels." if host_count and len(set(assay_hosts) & host_defense_detected_hosts) == host_count else "Run PADLOC/DefenseFinder or reviewed host-defense evidence for assay hosts."),
         ("phage_counterdefense_evidence", "unique_phage", len(set(assay_phages) & antidefense_detected_phages), len(set(assay_phages) & antidefense_assessed_phages), phage_count, "H3;H4", "Run reviewed phage anti-defense/counter-defense screening for assay phages."),
     ]
     for metric, level, detected, assessed, denominator, blockers, action in entity_metrics:
@@ -1193,7 +1197,7 @@ def build_assay_feature_coverage(
         ("rbp_candidates", "pair", sum(1 for phage, _host in assay_pairs if phage in rbp_phages), sum(1 for phage, _host in assay_pairs if phage in rbp_phages), pair_count, "H1b;H3", "Predict assay-phage RBP/depolymerase candidates."),
         ("domain_evidence", "pair", domain_pair_count, sum(1 for phage, _host in assay_pairs if phage in domain_assessed_phages), pair_count, "H1b;H3", domain_pair_action),
         ("structural_evidence", "pair", structural_pair_count, sum(1 for phage, _host in assay_pairs if phage in structural_assessed_phages), pair_count, "H1b;H3", structural_pair_action),
-        ("host_defense_evidence", "pair", sum(1 for _phage, host in assay_pairs if host in host_defense_detected_hosts), sum(1 for _phage, host in assay_pairs if host in host_defense_assessed_hosts), pair_count, "H4;H5", "Annotate host defense systems for assay hosts."),
+        ("host_defense_evidence", "pair", sum(1 for _phage, host in assay_pairs if host in host_defense_detected_hosts), sum(1 for _phage, host in assay_pairs if host in host_defense_assessed_hosts), pair_count, "H4;H5", "Reviewed host-defense evidence covers all tested pairs; H4 still needs phage counter-defense evidence and productive-infection labels." if pair_count and sum(1 for _phage, host in assay_pairs if host in host_defense_detected_hosts) == pair_count else "Annotate host defense systems for assay hosts."),
         ("phage_counterdefense_evidence", "pair", sum(1 for phage, _host in assay_pairs if phage in antidefense_detected_phages), sum(1 for phage, _host in assay_pairs if phage in antidefense_assessed_phages), pair_count, "H3;H4", "Annotate phage counter-defense features for assay phages."),
     ]
     for metric, level, detected, assessed, denominator, blockers, action in pair_metrics:
@@ -1347,7 +1351,7 @@ def summary_row(
     if "blocked_no_host_range_breadth_labels" in row_statuses:
         action = "Curate phage-host assay panels with tested-host denominators and susceptible-host numerators, then rerun Stage 7."
     elif "blocked_feature_not_assessed" in row_statuses:
-        action = "Use the descriptive spot-breadth table, but acquire accepted production RBP/depolymerase and counter-defense evidence before testing H3 associations."
+        action = "Use the descriptive spot-breadth table, but acquire any missing accepted production feature evidence, especially phage counter-defense evidence, before testing H3 associations."
     elif "blocked_insufficient_feature_coverage" in row_statuses:
         action = "Increase assessed assay-phage feature coverage and satisfy the pre-specified H3 group-size thresholds before testing H3 associations."
     elif "descriptive_breadth_available" in row_statuses:
