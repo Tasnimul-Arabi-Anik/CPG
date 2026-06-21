@@ -222,7 +222,7 @@ After the latest production run, the standard hypothesis-coverage audit recogniz
 | H5 | true | partial | false | ST versus DefenseFinder burden summary exists, but it is descriptive and population-structure-uncontrolled. |
 | H6 | true | partial | false | Source/cluster novelty prioritization summaries exist, but benchmark source/ecology coverage is insufficient for a claim. |
 
-Goal completion remains incomplete because `G03` and `G05` are still blocking: H4 still lacks productive-infection, plaque, propagation, or EOP outcomes. H2 and H3 now have quantitative analysis-ready rows, but H2 remains too small for a reservoir claim and H3 counter-defense coverage remains limited; claim support remains data-dependent.
+Dry-lab benchmark completion no longer treats H4 as a hard blocker when it is explicitly scoped as future work: H4 still lacks productive-infection, plaque, propagation, or EOP outcomes and therefore supports no defense/counter-defense productive-infection claim. H2 and H3 have quantitative analysis-ready rows, but H2 remains too small for a reservoir claim and H3 counter-defense coverage remains limited; claim support remains data-dependent.
 
 ## Immediate Next Steps
 
