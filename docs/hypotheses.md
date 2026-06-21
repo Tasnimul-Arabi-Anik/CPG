@@ -44,13 +44,14 @@ Primary test:
 
 Current readiness:
 - seed/profile outputs contain 10,006 reviewed PhageHostLearn spot-test pairs, so H1b has an initial-interaction endpoint;
-- PR #12 adds production receptor evidence for the assay phages and PR #13 adds host K/O evidence plus genome-similarity baselines;
-- the frozen H1 benchmark runs grouped cold-host, cold-K-locus, cold-phage, and cold-phage-cluster evaluations with pooled AP and held-out-group bootstrap summaries;
-- in the primary cold-phage-cluster comparison, current receptor-feature summaries do not outperform genome-similarity plus host K/O baselines, so H1b remains exploratory and not claim-supported.
+- PR #12 adds production receptor evidence for the assay phages and PR #13 adds host K/O evidence, genome-similarity baselines, exact module-identity signatures, grouped model evaluation, and held-out-group bootstrap summaries;
+- in the frozen primary cold-phage-cluster comparison, the original receptor-feature union does not outperform genome-similarity plus host K/O baselines;
+- an exploratory exact domain+structural module-identity contrast improves over RBPbase plus K/O but does not robustly outperform genome similarity, so H1b remains exploratory and not claim-supported.
 
 Output:
 - `results/<profile>/qc/assay_feature_coverage.tsv` H1b coverage rows;
-- `results/production/models/receptor_layer_pairwise_matrix.tsv`;
+- `results/production/model_inputs/receptor_layer_pairwise_features.tsv`;
+- `results/production/receptor_features/assay_phage_module_identity_signatures.tsv`;
 - `results/production/models/receptor_layer_model_pooled_summary.tsv`;
 - `results/production/models/receptor_layer_group_bootstrap_delta.tsv`;
 - `results/models/hypothesis_summary.tsv` H1 row.
