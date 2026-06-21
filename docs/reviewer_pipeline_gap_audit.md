@@ -4,7 +4,7 @@ This document separates the current reproducible bridge workflow from the produc
 
 ## Current Position
 
-The repository currently supports reviewed source curation, accession-backed metadata, sequence-fetch review packets, GenBank CDS bridge annotations, provisional pangenome tables, RBP/depolymerase candidate prioritization, defense/counter-defense feature tables, model-comparison scaffolds, figure source generation, and claim audits.
+The repository currently supports reviewed source curation, accession-backed metadata, sequence-fetch review packets, production benchmark receptor evidence for the PhageHostLearn assay phages, host K/O typing evidence for the assay hosts, phage genome-similarity baselines, DefenseFinder host-defense evidence, explicit Phold ACR candidate evidence, figure source generation, and claim audits. The latest cross-PR status is summarized in `docs/current_analysis_status.md`.
 
 The current workflow is useful for controlled development and early real-data unlocks. It is not yet the final standardized comparative-genomics pipeline.
 
@@ -14,19 +14,19 @@ The current workflow is useful for controlled development and early real-data un
 | --- | --- | --- | --- | --- |
 | Source curation | Reviewed INPHARED seed, NCBI seed, one host, one prophage | Dataset is still a seed, not comprehensive | Expand to public-scale cultured phages, host genomes, and prophages with deduplication and source overlap audits | In progress |
 | Sequence acquisition | Local FASTA for initial records plus checksum-backed acquisition manifest and review packet | Metadata-only rows and unexpanded seed files cannot support genome-level manuscript claims | Acquire reviewed FASTA files for the expanded dataset, validate checksums, rerun sequence QC, and keep raw data immutable | In progress |
-| Genome similarity | Local BLASTN pairwise baseline | BLASTN baseline is not the standard species-like phage clustering method | VIRIDIC or documented all-vs-all Mash/ANI-style comparison across sequence-backed phages/prophages | Planned |
-| Annotation | GenBank CDS product bridge evidence | GenBank submitter annotations are heterogeneous | Standardized Pharokka/PHROGs annotation on all sequence-backed phage/prophage genomes | Planned |
-| RBP/depolymerase evidence | Keyword, synteny, length, provisional gene-cluster evidence, and a hardened importer for reviewed domain/structural outputs | Product keywords alone are weak for novelty/function; importer hardening is not evidence by itself | Add reviewed domain/profile evidence and structural/remote-homology evidence such as Phold/Foldseek-style annotations | Import contract implemented; evidence generation planned |
-| Host K/O/ST/AMR/virulence | One reviewed host row with K/O/ST metadata | Insufficient host diversity for H1/H2/H5 | Public-scale Klebsiella host panel typed with Kleborate/Kaptive or reviewed equivalent outputs | In progress |
-| Defense/counter-defense | Phage anti-defense inferred from annotation keywords; host defense table empty | Intracellular compatibility claims are weak without host defense calls | DefenseFinder/PADLOC host defense calls and curated phage anti-defense evidence | Planned |
-| Statistical modeling | H3/H4 are explicit blocked rows pending assay outcomes; H1/H2/H5/H6 remain scaffold/proxy tests | Host-range breadth and productive infection cannot be tested without an assay matrix | Import tested phage-host matrices, then model K/O receptor compatibility and productive-infection outcomes with grouped splits | In progress |
+| Genome similarity | BLASTN, fastANI, and skani benchmark similarity baselines for the 105 assay phages | These benchmark baselines are not a public-scale phage atlas clustering run | VIRIDIC or documented all-vs-all Mash/ANI-style comparison across the expanded sequence-backed atlas | Benchmark implemented; atlas-scale analysis pending |
+| Annotation | Sequence-backed CDS annotations for 105 assay phages plus receptor-domain and Phold/Foldseek receptor-like evidence | Benchmark evidence is not a comprehensive public-scale reannotation | Standardized Pharokka/PHROGs plus reviewed domain/structural evidence across all sequence-backed phage/prophage genomes | Benchmark implemented; atlas-scale analysis pending |
+| RBP/depolymerase evidence | 495 PHROGs/MMseqs receptor-domain rows and 23 Phold/Foldseek receptor-like structural rows for assay phages | Current receptor features did not outperform genome-similarity plus K/O in the primary cold-phage-cluster benchmark | Expand/curate receptor evidence and test external/generalization cohorts before claiming superiority | Benchmark implemented; claim not supported |
+| Host K/O/ST/AMR/virulence | 200 Kaptive host rows and 188 Kleborate host rows for the assay benchmark | Benchmark host typing supports H1 benchmarking but not a broad host-population analysis | Public-scale Klebsiella host panel typed with fixed Kleborate/Kaptive versions and source/lineage covariates | Benchmark implemented; public-scale analysis pending |
+| Defense/counter-defense | 2,758 DefenseFinder host-defense rows and 7 explicit Phold ACR candidates; annotation-keyword hits remain screening-only | No productive-infection/plaque/EOP outcomes exist, so H4 cannot be tested | Curate productive-infection outcomes before testing whether defense/counter-defense improves prediction | Evidence layer implemented; H4 blocked |
+| Statistical modeling | 10,006 spot-test pairs support H1 initial-interaction benchmarking; H3 has descriptive spot breadth; H4 is blocked | Spot tests are not productive infection, and H1 receptor summaries do not currently beat genome-similarity plus K/O baselines | Leakage-safe grouped analyses with appropriate outcomes, uncertainty, and claim audits after each evidence expansion | H1 benchmark implemented; H4 blocked |
 | Claims | Claim ledger blocks biological result claims | Strong claims would overstate bridge evidence | Keep only workflow/resource claims until claim-support audit allows stronger wording | Implemented |
 
 ## Reviewer-Safe Wording
 
 Allowed current wording:
 
-> The repository implements a reproducible, curation-first comparative-genomics framework and early real-data bridge evidence for testing receptor-binding plus defense/counter-defense hypotheses in Klebsiella phages.
+> The repository implements a reproducible, config-driven benchmark workflow with reviewed spot-test outcomes, production receptor evidence, host K/O typing evidence, genome-similarity baselines, and host defense/phage anti-defense candidate evidence for the PhageHostLearn benchmark.
 
 Not allowed yet:
 
@@ -34,9 +34,8 @@ Not allowed yet:
 
 ## Next Production Steps
 
-1. Acquire reviewed FASTA files for the NCBI seed phages through the sequence fetch review packet.
-2. Replace or supplement GenBank CDS bridge evidence with standardized Pharokka/PHROGs output.
-3. Generate production all-vs-all genome similarity using VIRIDIC, Mash, or another documented method.
-4. Add RBP/depolymerase domain and structural evidence.
-5. Add public-scale Klebsiella host genomes with Kleborate/Kaptive and host-defense calls.
-6. Re-run H1-H6 model comparisons and claim audits before strengthening manuscript claims.
+1. Review and merge the current PR stack in order: #12, #13, then #14.
+2. After merge, rerun the production workflow and claim audits from the merged `main` state.
+3. Curate productive-infection, plaque, propagation, or EOP outcomes before testing H4.
+4. Expand beyond the PhageHostLearn benchmark into a public-scale atlas with reviewed source deduplication, sequence acquisition, standardized annotation, and genome-similarity clustering.
+5. Re-run H1-H6 model comparisons and claim audits before strengthening manuscript claims.

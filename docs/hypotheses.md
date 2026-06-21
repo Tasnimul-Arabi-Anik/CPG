@@ -43,13 +43,16 @@ Primary test:
 - compare receptor-feature models against taxonomy and genome-similarity baselines under grouped train/test splits.
 
 Current readiness:
-- seed profile contains 10,006 reviewed PhageHostLearn spot-test pairs, so H1b has an initial-interaction endpoint;
-- Stage 7 reports assay-feature coverage and keeps RBPbase/Locibase bridge metadata as seed metadata coverage only;
-- this readiness step does not emit pair-level H1b model-performance rows from bridge metadata;
-- receptor-feature interpretation remains blocked until `results/<profile>/qc/assay_feature_coverage.tsv` shows adequate production RBP/depolymerase/domain evidence, host K/O/ST receptor features, and grouped cold-host/cold-phage/cold-study evaluation with uncertainty analysis.
+- seed/profile outputs contain 10,006 reviewed PhageHostLearn spot-test pairs, so H1b has an initial-interaction endpoint;
+- PR #12 adds production receptor evidence for the assay phages and PR #13 adds host K/O evidence plus genome-similarity baselines;
+- the frozen H1 benchmark runs grouped cold-host, cold-K-locus, cold-phage, and cold-phage-cluster evaluations with pooled AP and held-out-group bootstrap summaries;
+- in the primary cold-phage-cluster comparison, current receptor-feature summaries do not outperform genome-similarity plus host K/O baselines, so H1b remains exploratory and not claim-supported.
 
 Output:
 - `results/<profile>/qc/assay_feature_coverage.tsv` H1b coverage rows;
+- `results/production/models/receptor_layer_pairwise_matrix.tsv`;
+- `results/production/models/receptor_layer_model_pooled_summary.tsv`;
+- `results/production/models/receptor_layer_group_bootstrap_delta.tsv`;
 - `results/models/hypothesis_summary.tsv` H1 row.
 
 ## H2: Prophages Are an Under-Sampled Reservoir of Capsule-Recognition Proteins
@@ -98,9 +101,9 @@ Primary test:
 - first retain continuous panel breadth values (`tested_host_count`, `spot_positive_host_count`, `spot_positive_fraction`, Wilson interval for the observed tested-panel spot-positive proportion, `study_id`, and `panel_id`); then compare modularity and anti-defense burden only after feature coverage is actually assessed and minimum group-size thresholds are satisfied.
 
 Current readiness:
-- panel-based spot-test breadth values are available from the reviewed PhageHostLearn subset in the seed profile; these represent initial-interaction breadth only.
-- Stage 7 reports `descriptive_breadth_available` plus `blocked_feature_not_assessed` for current RBP/counter-defense association rows when assay-phage features have not actually been assessed.
-- biological H3 claims remain blocked until production RBP/depolymerase modularity and explicit counter-defense evidence are available for the assay phages.
+- panel-based spot-test breadth values are available from the reviewed PhageHostLearn subset; these represent initial-interaction breadth only.
+- PR #12 adds production receptor evidence and PR #14 adds explicit counter-defense candidate evidence for 7/105 assay phages.
+- current counter-defense coverage is insufficient for a claim-ready H3 association analysis, and spot-test breadth is not productive-infection breadth.
 
 Alternative explanation:
 - broad host range may reflect laboratory testing depth rather than biology.
@@ -128,7 +131,8 @@ Primary test:
 - compare receptor-only, defense-only, counter-defense-only, receptor-plus-defense, and receptor-plus-defense/counter-defense models against observed assay outcomes.
 
 Current readiness:
-- blocked until productive-infection labels exist. `compatibility_feature_status` and `matched_counterdefense_status` are not biological outcomes because they are constructed from the same features being modeled.
+- PR #14 adds host-defense evidence for 200/200 assay hosts and explicit Phold ACR candidates for 7/105 assay phages.
+- H4 remains blocked until productive-infection labels exist. `compatibility_feature_status` and `matched_counterdefense_status` are not biological outcomes because they are constructed from the same features being modeled.
 
 Expected result:
 - defense/counter-defense features may explain some receptor-compatible failures, but a robust null result is allowed.
