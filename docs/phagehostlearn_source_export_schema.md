@@ -1,6 +1,6 @@
 # PhageHostLearn Source Export Schema
 
-`scripts/create_phagehostlearn_source_exports.py` builds reviewable source exports for the PhageHostLearn 2024 benchmark entities. It reads a reviewed local copy of `phage_host_interactions.csv` and, when available, `phages_genomes.zip` from Zenodo record `10.5281/zenodo.11061100`.
+`scripts/create_phagehostlearn_source_exports.py` builds reviewable source exports for the PhageHostLearn 2024 benchmark entities. It reads a reviewed local copy of `phage_host_interactions.csv` and, when available, `phages_genomes.zip` and `klebsiella_genomes.zip` from Zenodo record `10.5281/zenodo.11061100`.
 
 The script does not approve mappings. It creates entity rows and source-to-canonical ID maps with pending review status; only rows later marked `reviewed`, `accepted`, or `approved` are imported by the review-filtered source importer and matrix normalizer.
 
@@ -12,9 +12,9 @@ The script does not approve mappings. It creates entity rows and source-to-canon
 - `data/metadata/assay_source_exports/phagehostlearn_2024_host_id_map.tsv`
 - `results/qc/phagehostlearn_2024_source_export_report.tsv`
 
-The phage export includes deterministic benchmark genome IDs, source IDs in notes, genome length and GC when the phage FASTA member is present in the reviewed zip, and an expected raw path under `data/raw/external/`. Raw FASTA files remain untracked.
+The phage export includes deterministic benchmark genome IDs, source IDs in notes, genome length and GC when the phage FASTA member is present in the reviewed zip, and a reviewed ZIP-member raw path. Raw FASTA files remain untracked.
 
-The host export includes deterministic benchmark host IDs and source IDs from the interaction matrix. Host genome archive inventory can support source-identity review, but K/O/ST typing and local raw sequence acquisition remain separate evidence layers.
+The host export includes deterministic benchmark host IDs and source IDs from the interaction matrix. When the reviewed host archive is supplied, rows with matching FASTA members receive `data/metadata/external/phagehostlearn/klebsiella_genomes.zip::fasta_files/<host>.fasta` raw paths. K/O/ST/AMR/virulence remain separate production evidence layers.
 
 ## Review Boundary
 
@@ -26,6 +26,7 @@ Generated source rows are curation artifacts. `config/source_imports.yaml` uses 
 python scripts/create_phagehostlearn_source_exports.py \
   --matrix /path/to/phage_host_interactions.csv \
   --phage-zip /path/to/phages_genomes.zip \
+  --host-zip /path/to/klebsiella_genomes.zip \
   --phage-export-output data/metadata/source_exports/phagehostlearn_2024_phages.tsv \
   --host-export-output data/metadata/source_exports/phagehostlearn_2024_hosts.tsv \
   --phage-map-output data/metadata/assay_source_exports/phagehostlearn_2024_phage_id_map.tsv \

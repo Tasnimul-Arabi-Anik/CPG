@@ -970,7 +970,13 @@ def is_verified_sequence(genome_id: str, manifest: dict[str, dict[str, str]], se
 def is_standardized_annotation(row: dict[str, str]) -> bool:
     tool = row.get("tool", "").lower()
     evidence = row.get("evidence", "").lower()
-    return any(token in tool for token in ["pharokka", "phrog"]) or "standardized" in evidence
+    functional_category = row.get("functional_category", "").lower()
+    return (
+        any(token in tool for token in ["pharokka", "phrog", "prodigal"])
+        or "standardized" in evidence
+        or evidence == "sequence_backed_cds_prediction"
+        or functional_category == "unannotated_cds"
+    )
 
 
 def has_domain_evidence(row: dict[str, str]) -> bool:
@@ -978,9 +984,23 @@ def has_domain_evidence(row: dict[str, str]) -> bool:
     return any(is_informative_feature_value(value) and value.lower() not in {"absent", "none", "no_domain_evidence"} for value in values)
 
 
+def is_domain_assessed(row: dict[str, str]) -> bool:
+    notes = row.get("notes", "").lower()
+    if "no domain evidence supplied" in notes:
+        return False
+    return any(column in row for column in ["domain_hit", "domain_architecture", "domain_count", "domain_sources", "domain_support", "best_domain_hit"])
+
+
 def has_structural_evidence(row: dict[str, str]) -> bool:
     values = [row.get("structural_hit", ""), row.get("structural_support", ""), row.get("best_structural_hit", "")]
     return any(is_informative_feature_value(value) and value.lower() not in {"absent", "none", "no_structural_evidence"} for value in values)
+
+
+def is_structural_assessed(row: dict[str, str]) -> bool:
+    notes = row.get("notes", "").lower()
+    if "no structural evidence supplied" in notes:
+        return False
+    return any(column in row for column in ["structural_hit", "structural_hit_id", "structural_support", "best_structural_hit"])
 
 
 def coverage_state(detected_count: int, assessed_count: int, denominator: int, rejected_count: int = 0) -> str:
@@ -1057,8 +1077,8 @@ def build_assay_feature_coverage(
     rbp_phages = {row.get("genome_id", "") for row in rbp_rows if not is_missing(row.get("genome_id", ""))}
     domain_phages = {row.get("genome_id", "") for row in rbp_rows + domain_rows if not is_missing(row.get("genome_id", "")) and has_domain_evidence(row)}
     structural_phages = {row.get("genome_id", "") for row in rbp_rows + domain_rows if not is_missing(row.get("genome_id", "")) and has_structural_evidence(row)}
-    domain_assessed_phages = {row.get("genome_id", "") for row in domain_rows if not is_missing(row.get("genome_id", ""))}
-    structural_assessed_phages = {row.get("genome_id", "") for row in domain_rows if not is_missing(row.get("genome_id", "")) and any(column in row for column in ["structural_hit", "structural_hit_id", "structural_support", "best_structural_hit"])}
+    domain_assessed_phages = {row.get("genome_id", "") for row in domain_rows if not is_missing(row.get("genome_id", "")) and is_domain_assessed(row)}
+    structural_assessed_phages = {row.get("genome_id", "") for row in domain_rows if not is_missing(row.get("genome_id", "")) and is_structural_assessed(row)}
 
     host_defense_assessed_hosts = row_id_set(host_defense_rows, "host_genome_id")
     host_defense_detected_hosts = {
@@ -1087,7 +1107,11 @@ def build_assay_feature_coverage(
 
     phage_seq = {phage for phage in assay_phages if is_verified_sequence(phage, manifest, sequence_qc)}
     host_seq = {host for host in assay_hosts if is_verified_sequence(host, manifest, sequence_qc)}
-    sequence_assessed_ids = set(sequence_qc) | phage_seq | host_seq
+    sequence_assessed_ids = {
+        genome_id
+        for genome_id, qc in sequence_qc.items()
+        if qc.get("sequence_qc_status", "").lower() not in {"", "no_sequence_provided"}
+    } | phage_seq | host_seq
     k_hosts = {host for host in assay_hosts if is_informative_feature_value(host_metadata.get(host, {}).get("K_type", ""))}
     o_hosts = {host for host in assay_hosts if is_informative_feature_value(host_metadata.get(host, {}).get("O_type", ""))}
     st_hosts = {host for host in assay_hosts if is_informative_feature_value(host_metadata.get(host, {}).get("ST", ""))}
@@ -1097,6 +1121,23 @@ def build_assay_feature_coverage(
     o_assessed_hosts = set(o_hosts)
     st_assessed_hosts = set(st_hosts)
 
+    host_k_action = "Reviewed Kaptive K result rows are available for all assay hosts; confidence is retained in the Kaptive evidence table." if host_count and len(k_hosts) == host_count else "Run reviewed Kaptive/Kleborate-style K typing for remaining assay hosts."
+    host_o_action = "Reviewed Kaptive O result rows are available for all assay hosts; confidence is retained in the Kaptive evidence table." if host_count and len(o_hosts) == host_count else "Run reviewed Kaptive/Kleborate-style O typing for remaining assay hosts."
+    host_st_action = "Reviewed Kleborate ST result rows are available for all assay hosts." if host_count and len(st_hosts) == host_count else "Resolve missing Kleborate/MLST typing for assay hosts without ST calls."
+    pair_k_action = "Reviewed Kaptive K result rows are available for all tested pairs; confidence is retained in the Kaptive evidence table." if pair_count and sum(1 for _phage, host in assay_pairs if host in k_hosts) == pair_count else "Acquire K-type calls for tested hosts missing K calls."
+    pair_o_action = "Reviewed Kaptive O result rows are available for all tested pairs; confidence is retained in the Kaptive evidence table." if pair_count and sum(1 for _phage, host in assay_pairs if host in o_hosts) == pair_count else "Acquire O-type calls for tested hosts missing O calls."
+    pair_st_action = "Reviewed Kleborate ST result rows are available for all tested pairs." if pair_count and sum(1 for _phage, host in assay_pairs if host in st_hosts) == pair_count else "Resolve missing ST calls for tested pairs involving hosts without ST calls."
+    annotation_entity_action = (
+        "Baseline sequence-backed CDS annotation is complete for all assay phages; next add RBP/domain/structural evidence."
+        if phage_count and len(set(assay_phages) & standardized_annotation_phages) == phage_count
+        else "Production sequence-backed CDS annotation is required before protein export; Prodigal baseline rows do not count as RBP/domain/structural evidence."
+    )
+    annotation_pair_action = (
+        "Baseline sequence-backed CDS annotation is complete for all tested pairs; next add RBP/domain/structural evidence."
+        if pair_count and sum(1 for phage, _host in assay_pairs if phage in standardized_annotation_phages) == pair_count
+        else "Annotate assay phages with sequence-backed production CDS prediction before protein export."
+    )
+
     rows: list[dict[str, str]] = []
     add_coverage_row(rows, "unique_assay_phages", "unique_phage", phage_count, phage_count, coverage_state(phage_count, phage_count, phage_count), "H1b;H3", "Use as denominator for assay-phage feature acquisition.")
     add_coverage_row(rows, "unique_assay_hosts", "unique_host", host_count, host_count, coverage_state(host_count, host_count, host_count), "H1b", "Use as denominator for assay-host feature acquisition.")
@@ -1105,10 +1146,10 @@ def build_assay_feature_coverage(
     entity_metrics = [
         ("phage_sequence_verified", "unique_phage", len(set(assay_phages) & phage_seq), len(set(assay_phages) & sequence_assessed_ids), phage_count, "H1b;H3", "Verify or reconstruct assay phage sequences before production annotation."),
         ("host_sequence_verified", "unique_host", len(set(assay_hosts) & host_seq), len(set(assay_hosts) & sequence_assessed_ids), host_count, "H1b;H4", "Extract/reconstruct assay host genomes and verify checksums before K/O/ST or defense typing."),
-        ("host_K_type", "unique_host", len(k_hosts), len(k_assessed_hosts), host_count, "H1b", "Run reviewed Kaptive/Kleborate-style typing for assay hosts."),
-        ("host_O_type", "unique_host", len(o_hosts), len(o_assessed_hosts), host_count, "H1b", "Run reviewed Kaptive/Kleborate-style typing for assay hosts."),
-        ("host_ST", "unique_host", len(st_hosts), len(st_assessed_hosts), host_count, "H1b;H5", "Run reviewed Kleborate/MLST typing for assay hosts."),
-        ("standardized_phage_annotation", "unique_phage", len(set(assay_phages) & standardized_annotation_phages), len(set(assay_phages) & standardized_annotation_phages), phage_count, "H1b;H3", "Run standardized phage annotation for assay phages; bridge GenBank annotations are not counted here."),
+        ("host_K_type", "unique_host", len(k_hosts), len(k_assessed_hosts), host_count, "H1b", host_k_action),
+        ("host_O_type", "unique_host", len(o_hosts), len(o_assessed_hosts), host_count, "H1b", host_o_action),
+        ("host_ST", "unique_host", len(st_hosts), len(st_assessed_hosts), host_count, "H1b;H5", host_st_action),
+        ("standardized_phage_annotation", "unique_phage", len(set(assay_phages) & standardized_annotation_phages), len(set(assay_phages) & standardized_annotation_phages), phage_count, "H1b;H3", annotation_entity_action),
         ("rbp_candidates", "unique_phage", len(set(assay_phages) & rbp_phages), len(set(assay_phages) & rbp_phages), phage_count, "H1b;H3", "Run accepted RBP/depolymerase prediction for assay phages."),
         ("domain_evidence", "unique_phage", len(set(assay_phages) & domain_phages), len(set(assay_phages) & domain_assessed_phages), phage_count, "H1b;H3", "Add reviewed domain evidence for assay-phage RBP candidates."),
         ("structural_evidence", "unique_phage", len(set(assay_phages) & structural_phages), len(set(assay_phages) & structural_assessed_phages), phage_count, "H1b;H3", "Add reviewed structural/remote-homology evidence for assay-phage RBP candidates."),
@@ -1121,10 +1162,10 @@ def build_assay_feature_coverage(
     pair_metrics = [
         ("phage_sequence_verified", "pair", sum(1 for phage, _host in assay_pairs if phage in phage_seq), sum(1 for phage, _host in assay_pairs if phage in sequence_assessed_ids), pair_count, "H1b;H3", "Complete assay-phage sequence verification for every tested pair."),
         ("host_sequence_verified", "pair", sum(1 for _phage, host in assay_pairs if host in host_seq), sum(1 for _phage, host in assay_pairs if host in sequence_assessed_ids), pair_count, "H1b;H4", "Complete assay-host sequence verification for every tested pair."),
-        ("host_K_type", "pair", sum(1 for _phage, host in assay_pairs if host in k_hosts), sum(1 for _phage, host in assay_pairs if host in k_assessed_hosts), pair_count, "H1b", "Acquire K-type calls for tested hosts."),
-        ("host_O_type", "pair", sum(1 for _phage, host in assay_pairs if host in o_hosts), sum(1 for _phage, host in assay_pairs if host in o_assessed_hosts), pair_count, "H1b", "Acquire O-type calls for tested hosts."),
-        ("host_ST", "pair", sum(1 for _phage, host in assay_pairs if host in st_hosts), sum(1 for _phage, host in assay_pairs if host in st_assessed_hosts), pair_count, "H1b;H5", "Acquire ST calls for tested hosts."),
-        ("standardized_phage_annotation", "pair", sum(1 for phage, _host in assay_pairs if phage in standardized_annotation_phages), sum(1 for phage, _host in assay_pairs if phage in standardized_annotation_phages), pair_count, "H1b;H3", "Annotate assay phages with standardized production tools."),
+        ("host_K_type", "pair", sum(1 for _phage, host in assay_pairs if host in k_hosts), sum(1 for _phage, host in assay_pairs if host in k_assessed_hosts), pair_count, "H1b", pair_k_action),
+        ("host_O_type", "pair", sum(1 for _phage, host in assay_pairs if host in o_hosts), sum(1 for _phage, host in assay_pairs if host in o_assessed_hosts), pair_count, "H1b", pair_o_action),
+        ("host_ST", "pair", sum(1 for _phage, host in assay_pairs if host in st_hosts), sum(1 for _phage, host in assay_pairs if host in st_assessed_hosts), pair_count, "H1b;H5", pair_st_action),
+        ("standardized_phage_annotation", "pair", sum(1 for phage, _host in assay_pairs if phage in standardized_annotation_phages), sum(1 for phage, _host in assay_pairs if phage in standardized_annotation_phages), pair_count, "H1b;H3", annotation_pair_action),
         ("rbp_candidates", "pair", sum(1 for phage, _host in assay_pairs if phage in rbp_phages), sum(1 for phage, _host in assay_pairs if phage in rbp_phages), pair_count, "H1b;H3", "Predict assay-phage RBP/depolymerase candidates."),
         ("domain_evidence", "pair", sum(1 for phage, _host in assay_pairs if phage in domain_phages), sum(1 for phage, _host in assay_pairs if phage in domain_assessed_phages), pair_count, "H1b;H3", "Add domain evidence for assay-phage RBP candidates."),
         ("structural_evidence", "pair", sum(1 for phage, _host in assay_pairs if phage in structural_phages), sum(1 for phage, _host in assay_pairs if phage in structural_assessed_phages), pair_count, "H1b;H3", "Add structural evidence for assay-phage RBP candidates."),
@@ -1152,7 +1193,7 @@ def build_assay_feature_coverage(
     defense_complete = sum(1 for phage, host in assay_pairs if phage in antidefense_detected_phages and host in host_defense_detected_hosts)
     defense_assessed = sum(1 for phage, host in assay_pairs if phage in antidefense_assessed_phages and host in host_defense_assessed_hosts)
     productive_measured = sum(1 for row in tested_spot_rows if row.get("productive_infection_result", "").strip().lower() in PRODUCTIVE_INFECTION_OBSERVED_VALUES)
-    add_coverage_row(rows, "receptor_layer_feature_completeness", "pair", receptor_complete, pair_count, coverage_state(receptor_complete, receptor_assessed, pair_count), "H1b", "Acquire production assay-phage RBP candidates and host K/O calls; seed bridge support is reported separately.")
+    add_coverage_row(rows, "receptor_layer_feature_completeness", "pair", receptor_complete, pair_count, coverage_state(receptor_complete, receptor_assessed, pair_count), "H1b", "Acquire missing production receptor-layer features; when host K/O is already assessed, the remaining blocker is assay-phage RBP/depolymerase evidence. Seed bridge support is reported separately.")
     add_coverage_row(rows, "seed_bridge_metadata_coverage", "pair", seed_bridge_metadata_coverage, pair_count, coverage_state(seed_bridge_metadata_coverage, seed_bridge_metadata_coverage, pair_count), "H1b", "RBPbase/Locibase seed bridge metadata can exercise the path, but it is not production K/O or RBP/domain evidence.")
     add_coverage_row(rows, "defense_counterdefense_feature_completeness", "pair", defense_complete, pair_count, coverage_state(defense_complete, defense_assessed, pair_count), "H4", "Acquire host-defense and phage counter-defense evidence for the same tested pairs.")
     add_coverage_row(rows, "productive_infection_outcomes", "pair", productive_measured, pair_count, coverage_state(productive_measured, productive_measured, pair_count), "H4", "Curate plaque, EOP, propagation, or productive-infection labels; spot tests alone do not satisfy H4.")

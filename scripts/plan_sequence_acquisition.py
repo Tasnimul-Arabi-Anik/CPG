@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import re
+import zipfile
 from pathlib import Path
 from typing import Iterable
 
@@ -79,6 +80,43 @@ def add_report(report: list[dict[str, str]], severity: str, item: str, message: 
 def resolve_path(root: Path, value: str) -> Path:
     path = Path(value)
     return path if path.is_absolute() else root / path
+
+
+def split_archive_locator(value: str) -> tuple[str, str] | None:
+    if "::" not in value:
+        return None
+    archive_path, member = value.split("::", 1)
+    archive_path = archive_path.strip()
+    member = member.strip()
+    if not archive_path or not member:
+        return None
+    return archive_path, member
+
+
+def safe_archive_member(member: str) -> bool:
+    member_path = Path(member)
+    return not member_path.is_absolute() and ".." not in member_path.parts
+
+
+def raw_sequence_availability(root: Path, raw_path: str) -> tuple[bool, str, str]:
+    locator = split_archive_locator(raw_path)
+    if locator:
+        archive_text, member = locator
+        archive_path = resolve_path(root, archive_text)
+        display = f"{display_path(root, archive_path)}::{member}"
+        if not safe_archive_member(member):
+            return False, display, "unsafe_archive_member"
+        if not archive_path.exists():
+            return False, display, "archive_missing"
+        try:
+            with zipfile.ZipFile(archive_path) as archive:
+                if member in archive.namelist():
+                    return True, display, "archive_member_available"
+        except zipfile.BadZipFile:
+            return False, display, "invalid_archive"
+        return False, display, "archive_member_missing"
+    resolved = resolve_path(root, raw_path)
+    return resolved.exists(), display_path(root, resolved), "local_path_available" if resolved.exists() else "local_path_missing"
 
 
 def display_path(root: Path, path: Path | str) -> str:
@@ -156,8 +194,8 @@ def plan_one(row: dict[str, str], root: Path, raw_dir: Path) -> dict[str, str]:
     notes = row.get("notes", "")
 
     has_raw_path = not is_missing(raw_path)
-    resolved = resolve_path(root, raw_path) if has_raw_path else Path("")
-    raw_exists = bool(has_raw_path and resolved.exists())
+    raw_exists, resolved_text, availability_status = raw_sequence_availability(root, raw_path) if has_raw_path else (False, "", "no_raw_sequence_path")
+    resolved = resolve_path(root, raw_path.split("::", 1)[0]) if has_raw_path else Path("")
     accessions = split_accessions(accession)
     primary_accession = accessions[0] if accessions else ""
     expected = expected_path(root, raw_dir, row, primary_accession) if primary_accession else Path("")
@@ -173,7 +211,7 @@ def plan_one(row: dict[str, str], root: Path, raw_dir: Path) -> dict[str, str]:
         needed = "false"
         method = "none"
         command = ""
-        next_notes = "Local raw_sequence_path exists."
+        next_notes = "Reviewed ZIP archive member exists." if availability_status == "archive_member_available" else "Local raw_sequence_path exists."
     elif not is_missing(raw_path) and not raw_exists and primary_accession:
         status = "configured_path_missing_fetchable"
         needed = "true"
@@ -204,7 +242,7 @@ def plan_one(row: dict[str, str], root: Path, raw_dir: Path) -> dict[str, str]:
         "source": source,
         "validation_status": validation_status,
         "raw_sequence_path": raw_path,
-        "resolved_sequence_path": display_path(root, resolved) if has_raw_path else "",
+        "resolved_sequence_path": resolved_text if has_raw_path else "",
         "raw_sequence_exists": str(raw_exists).lower(),
         "expected_sequence_path": display_path(root, expected) if primary_accession else "",
         "acquisition_needed": needed,

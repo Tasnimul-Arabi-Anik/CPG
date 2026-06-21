@@ -1,120 +1,76 @@
-# AGENTS.md
+# Klebsiella phage comparative genomics
 
-## Project Identity
+## Scientific objective
 
-This repository is for a Klebsiella phage comparative genomics study.
+Determine which novel comparative genomic analyses are feasible with the available Klebsiella phage and host data.
 
-The study prioritizes novelty. Avoid framing the project as only "we sequenced and annotated new phages." The main scientific angle is:
+The leading hypothesis is that phage-host compatibility reflects both:
 
-Klebsiella phage host range is shaped by two genomic filters:
-1. receptor compatibility: RBP/depolymerase modules versus capsule/LPS type;
-2. intracellular compatibility: bacterial defense systems versus phage anti-defense genes.
+1. receptor compatibility, including RBP/depolymerase and host K/O type;
+2. intracellular compatibility, including bacterial defense systems and phage counter-defense genes.
 
-## Main Hypotheses
+Do not assume this hypothesis can be tested until the available host-range and host-genome data have been audited.
 
-H1. RBP/depolymerase module architecture predicts host K/O association better than whole-genome phage taxonomy.
+## Operating principle
 
-H2. Klebsiella prophages encode an under-sampled reservoir of capsule-recognition proteins.
+Use established bioinformatics tools wherever possible.
 
-H3. Broad-host-range phages are enriched for modular RBPs, recombination signatures, and/or anti-defense genes.
+Do not implement replacements for existing annotation, clustering, alignment, taxonomy, host-typing, structure-search, or defense-detection software.
 
-H4. Host defense/counter-defense compatibility explains host-range gaps that receptor-binding predictions alone cannot explain.
+Before writing custom code:
 
-H5. Clinically important Klebsiella lineages differ in prophage content, defense-system burden, and predicted phage susceptibility.
+1. identify whether an established tool already performs the task;
+2. inspect its documented inputs and outputs;
+3. run it on a small real dataset;
+4. write glue code only if needed to combine or analyze its results.
 
-H6. Novel RBP/depolymerase candidates are enriched in under-sampled ecological sources or singleton species-like phage clusters.
+## Permitted custom code
 
-## Preferred Analysis Layers
+Custom scripts may be written for:
 
-Always organize the analysis into these layers:
+- metadata cleaning and validation;
+- output parsing and table joining;
+- statistical analysis;
+- visualization;
+- reproducible execution of established tools.
 
-1. Dataset curation
-   - Collect cultured Klebsiella phages.
-   - Collect Klebsiella prophages if host genomes are available.
-   - Keep metagenomic viral contigs separate unless explicitly asked to merge them.
-   - Record source, accession, host, isolation metadata, genome size, GC, completeness, and lifestyle.
+Do not create placeholder modules or hypothetical output tables.
 
-2. Phage genome comparison
-   - QC and remove poor-quality genomes.
-   - Dereplicate genomes.
-   - Compute ANI or intergenomic similarity.
-   - Build gene-sharing networks.
-   - Compare synteny and modular genome organization.
+## Development rule
 
-3. RBP/depolymerase discovery
-   - Predict tail fibers, tailspikes, receptor-binding proteins, and depolymerases.
-   - Use both sequence-based and structure-informed annotation when possible.
-   - Segment multidomain proteins where possible.
-   - Do not rely on BLAST alone for novelty claims.
+Begin with a pilot of real genomes.
 
-4. Host annotation
-   - Assign Klebsiella species complex member where possible.
-   - Assign MLST, K-locus, O-locus, AMR genes, and virulence markers.
-   - Keep host metadata linked to phage or prophage records.
+Do not build a full workflow manager until individual commands have successfully run and their outputs have been inspected.
 
-5. Defense/counter-defense analysis
-   - Annotate bacterial antiviral defense systems.
-   - Annotate phage anti-defense and DNA-modification genes.
-   - Test whether defense/counter-defense features improve host-range prediction.
+Every completed task must report:
 
-6. Statistical modeling
-   - Compare taxonomy-only, whole-genome similarity, RBP/depolymerase, host K/O, host defense, and combined models.
-   - Prefer interpretable models before complex models.
-   - Always report assumptions and missing metadata.
+- tool and version used;
+- exact command run;
+- input files;
+- output files;
+- records retained or excluded;
+- errors or uncertainties;
+- scientific interpretation.
 
-7. Figures and manuscript outputs
-   - Produce publication-ready tables and figures.
-   - Keep figure source data in results/.
-   - Update docs/methods.md when tools or thresholds change.
+Use existing tools directly. Do not create a wrapper, abstraction layer, database, dashboard, API, application, or reusable framework unless the current analysis cannot be completed without it.
 
-## Coding Rules
+No placeholder files.
 
-- Use Python for data tables, parsing, statistics, and figure source generation.
-- Use Snakemake or Nextflow for reproducible workflow orchestration.
-- Use conda/mamba environment files where possible.
-- Never hard-code file paths that should be in config/.
-- Never modify files in data/raw/.
-- Write outputs to results/.
-- Write logs to logs/.
-- Keep scripts modular and restartable.
-- Prefer TSV/CSV/Parquet outputs with clear schemas.
+Before writing more than 100 lines of custom code, state which existing tools were considered and why none solves the requirement.
 
-## Documentation Rules
+Prioritize obtaining a scientifically interpretable result from real data over improving repository architecture.
 
-Whenever adding or changing an analysis step, update:
-- docs/methods.md
-- docs/hypotheses.md if the change affects a hypothesis
-- docs/figure_plan.md if the change affects a figure
-- README.md if the command to run the workflow changes
+## Scientific safeguards
 
-## Validation Rules
+Distinguish:
 
-Before saying a step is complete, check:
-- the script runs on a small test input or dry run;
-- output files are created where expected;
-- column names are documented;
-- assumptions are stated;
-- failures are logged clearly.
+- experimentally measured host range;
+- predicted host association;
+- isolation host;
+- prophage host;
+- computational inference.
 
-## Novelty Standard
+Do not treat these as interchangeable.
 
-Do not claim novelty merely because a genome is newly assembled or annotated.
-
-Prefer novelty claims based on:
-- novel RBP/depolymerase modules;
-- remote structural homologs missed by sequence annotation;
-- prophage-derived receptor-binding candidates;
-- combined receptor plus defense/counter-defense prediction;
-- under-sampled host K/O types;
-- clinically relevant Klebsiella lineages;
-- reproducible prioritization of phages for experimental testing.
-
-## Response Style
-
-When reporting progress:
-- summarize what changed;
-- list files edited;
-- list commands run;
-- list outputs generated;
-- list remaining uncertainties;
-- suggest the next concrete step.
+Do not claim a host-range predictor without independent test data.
+Do not claim novelty solely because a sequence has no close BLAST hit.

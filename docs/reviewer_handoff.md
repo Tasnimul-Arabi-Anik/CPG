@@ -19,6 +19,7 @@ Current expected state after running the real workflow:
 - `results/seed/metadata/phage_host_assays.tsv` should contain 10,006 reviewed PhageHostLearn spot-test rows: 333 positive and 9,673 tested negative;
 - blank PhageHostLearn matrix cells remain untested and productive infection remains `not_measured`;
 - `results/seed/qc/assay_feature_coverage.tsv` should show descriptive spot-breadth availability but missing production K/O/ST, RBP/domain/structural, host-defense, phage-counter-defense, and productive-infection coverage;
+- `results/production/qc/assay_feature_coverage.tsv`, after the production evidence stages are run, should show K/O result rows for 200/200 assay hosts, with Kaptive confidence retained separately (Typeable K 196/200; Typeable O 191/200; 12 hosts have at least one untypeable K/O result), ST coverage for 188/200 assay hosts, baseline CDS annotation coverage for 105/105 assay phages, and RBPbase-exact candidate coverage for 103/105 assay phages (9,806/10,006 tested pairs), while domain evidence, structural evidence, defense/counter-defense evidence, verified host raw-sequence paths, and productive-infection outcomes remain `not_assessed`;
 - real H1-H6 evidence remains limited because production external evidence is incomplete and most claims require feature coverage beyond the seed assay outcome layer;
 - `results/validation/goal_completion_audit.tsv` should keep the goal incomplete.
 
@@ -87,8 +88,8 @@ The current blockers are:
 - expand and deduplicate INPHARED and NCBI cultured-phage sources before atlas-size or source-enrichment interpretation;
 - acquire or reconstruct local FASTA/GenBank sequence files for metadata-only rows using the generated sequence-fetch manifests and record reviewed checksums in `data/metadata/sequence_acquisition_manifest.tsv`;
 - replace bridge evidence with reviewed production evidence from standardized tools where needed;
-- extract or reconstruct benchmark host genomes and run K/O/ST typing for assay hosts;
-- add accepted RBP domain/structural evidence, host defense evidence, and phage anti-defense evidence for the assay benchmark entities;
+- maintain the reviewed PhageHostLearn host K/O/ST evidence and resolve the twelve hosts without Kleborate KpSC rows if ST/AMR/virulence coverage is required;
+- use the assay-phage CDS/protein table and exact RBPbase ML candidate matches as candidate evidence, then add reviewed domain/profile and structural evidence plus host defense and phage anti-defense evidence for the assay benchmark entities;
 - curate productive-infection, plaque, propagation, or EOP outcomes before testing H4;
 - rerun H1-H6 model comparisons after the above evidence layers are accepted.
 
@@ -111,8 +112,8 @@ Do not fabricate rows. New records must come from reviewed source exports or equ
 Fetched public annotations are acceptable as bridge evidence and provenance, but manuscript-grade comparisons should use standardized reannotation or normalized reviewed outputs. In the current workflow:
 
 - GenBank CDS annotation evidence is a bridge layer, not a substitute for standardized Pharokka/PHROGs-style production annotation.
-- BLASTN pairwise similarity is a bridge layer, not a substitute for production VIRIDIC/Mash/ANI-style dereplication evidence.
-- Kleborate and Kaptive bridge TSVs are useful for seed validation, but expanded host sets should be typed consistently.
+- Production BLASTN pairwise similarity is now available for sequence-QC-passing phage-like records, including reviewed PhageHostLearn ZIP-member FASTAs, but it remains a conservative baseline and not a substitute for VIRIDIC/Mash/ANI-style dereplication evidence.
+- Seed Kleborate and Kaptive bridge TSVs are useful for seed validation. The PhageHostLearn benchmark now has reviewed production Kaptive/Kleborate host-typing evidence, Prodigal baseline CDS evidence, and exact RBPbase ML candidate matches for candidate prioritization, but domain/structural evidence and functional receptor-specificity evidence remain absent.
 - Screening handoff files are not accepted anti-defense, defense, domain, or structural evidence until reviewed outputs are normalized and configured as input TSVs.
 
 This distinction is important for reviewer interpretation: the repository can validate the data path now, but biological claims require production evidence layers.

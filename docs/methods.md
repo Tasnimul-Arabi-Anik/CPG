@@ -320,6 +320,46 @@ Reviewed host-by-phage matrices are normalized before import with `scripts/norma
 
 `scripts/build_phagehostlearn_receptor_support.py` normalizes reviewed local PhageHostLearn RBPbase and Locibase files into tracked bridge-evidence tables under `data/metadata/external_evidence/`. The seed profile consumes `phagehostlearn_rbpbase_receptor_support.tsv` and `phagehostlearn_locibase_host_locus_support.tsv` as H1b bridge metadata features. These features are seed metadata coverage only: RBPbase scores are not structural/domain annotation, and Locibase fingerprints are not Kaptive/Kleborate K/O/ST typing. Column contracts are documented in `docs/phagehostlearn_receptor_support_schema.md`.
 
+`scripts/build_phagehostlearn_host_typing_evidence.py` normalizes reviewed Kaptive 3.2.1 and Kleborate 3.2.4 outputs from the local PhageHostLearn host FASTA archive into production evidence tables under `data/metadata/production_evidence/`. The reviewed host source export now points assay-host rows to `data/metadata/external/phagehostlearn/klebsiella_genomes.zip::fasta_files/<host>.fasta` locators, so sequence QC can verify host FASTA members without unpacking them into `data/raw/`. The host archive SHA-256 is recorded in `data/metadata/production_evidence/phagehostlearn_host_typing_review.tsv`. The current reviewed host-typing layer has Kaptive K/O result rows for 200 assay hosts, with Typeable K calls for 196/200 and Typeable O calls for 191/200; 12 hosts have at least one untypeable K/O result. Kleborate KpSC rows are available for 188 hosts; twelve hosts did not produce Kleborate KpSC rows and remain explicitly unresolved for ST/AMR/virulence. These host receptor/background features require paired phage receptor-candidate evidence and grouped model evaluation before H1b claim use.
+
+`scripts/build_phagehostlearn_phage_cds_annotations.py` extracts reviewed PhageHostLearn phage FASTA archive members to a temporary workspace and runs Prodigal 2.6.3 in meta mode to create `data/metadata/production_evidence/phagehostlearn_prodigal_cds_annotations.tsv`. When supplied with the reviewed local RBPbase file, it exact-matches RBPbase protein sequences to Prodigal predictions and labels matched CDS rows as `RBPbase_ML_candidate`. The current table contains 8,393 baseline CDS predictions across 105/105 assay phages, including 247 exact RBPbase matches across 103/105 phages, and records the phage archive SHA-256 plus per-member/RBPbase SHA-256 values. This evidence supplies sequence-backed protein records and candidate receptor labels for Stage 4; it is not PHROGs annotation, domain evidence, structural evidence, or functional receptor-specificity proof. The corresponding self-test uses a fake Prodigal executable so CI does not depend on Prodigal being installed.
+
+Reproduction command outline for the reviewed host-typing evidence:
+
+```bash
+mkdir -p /tmp/cpg_host_typing_all/hosts /tmp/cpg_host_typing_all/kaptive /tmp/cpg_host_typing_all/kleborate
+unzip -j -o data/metadata/external/phagehostlearn/klebsiella_genomes.zip 'fasta_files/*.fasta' -d /tmp/cpg_host_typing_all/hosts
+kaptive assembly Klebsiella_k_locus_primary_reference /tmp/cpg_host_typing_all/hosts/*.fasta -o /tmp/cpg_host_typing_all/kaptive/kaptive_k.tsv -j /tmp/cpg_host_typing_all/kaptive/kaptive_k.jsonl -t 8
+kaptive assembly Klebsiella_o_locus_primary_reference /tmp/cpg_host_typing_all/hosts/*.fasta -o /tmp/cpg_host_typing_all/kaptive/kaptive_o.tsv -j /tmp/cpg_host_typing_all/kaptive/kaptive_o.jsonl -t 8
+kleborate -a /tmp/cpg_host_typing_all/hosts/*.fasta -o /tmp/cpg_host_typing_all/kleborate -p kpsc
+python scripts/build_phagehostlearn_host_typing_evidence.py \
+  --host-id-map data/metadata/assay_source_exports/phagehostlearn_2024_host_id_map.tsv \
+  --kaptive-k /tmp/cpg_host_typing_all/kaptive/kaptive_k.tsv \
+  --kaptive-o /tmp/cpg_host_typing_all/kaptive/kaptive_o.tsv \
+  --kleborate /tmp/cpg_host_typing_all/kleborate/klebsiella_pneumo_complex_output.txt \
+  --host-archive data/metadata/external/phagehostlearn/klebsiella_genomes.zip \
+  --kaptive-version 3.2.1 \
+  --kleborate-version 3.2.4 \
+  --kaptive-k-command 'kaptive assembly Klebsiella_k_locus_primary_reference /tmp/cpg_host_typing_all/hosts/*.fasta -o /tmp/cpg_host_typing_all/kaptive/kaptive_k.tsv -j /tmp/cpg_host_typing_all/kaptive/kaptive_k.jsonl -t 8' \
+  --kaptive-o-command 'kaptive assembly Klebsiella_o_locus_primary_reference /tmp/cpg_host_typing_all/hosts/*.fasta -o /tmp/cpg_host_typing_all/kaptive/kaptive_o.tsv -j /tmp/cpg_host_typing_all/kaptive/kaptive_o.jsonl -t 8' \
+  --kleborate-command 'kleborate -a /tmp/cpg_host_typing_all/hosts/*.fasta -o /tmp/cpg_host_typing_all/kleborate -p kpsc' \
+  --kaptive-output data/metadata/production_evidence/kaptive_ko_typing.tsv \
+  --kleborate-output data/metadata/production_evidence/kleborate_host_features.tsv \
+  --report-output data/metadata/production_evidence/phagehostlearn_host_typing_review.tsv
+```
+
+Raw extracted FASTA files remain temporary or ignored raw data; only the reviewed normalized evidence TSVs and their checksum report are tracked.
+
+The host-typing normalizer has a fixture self-test for canonical ID mapping, path-collision rejection, and malformed-input output preservation:
+
+```bash
+python scripts/self_test_phagehostlearn_host_typing_evidence.py \
+  --output results/validation/phagehostlearn_host_typing_evidence_self_test.tsv \
+  --report-output results/validation/phagehostlearn_host_typing_evidence_self_test_report.tsv
+```
+
+Self-test output schemas are documented in `docs/phagehostlearn_host_typing_evidence_self_test_schema.md`.
+
 ## Stage 1: Dataset Curation
 
 Input records are listed in `config/samples.tsv`. The manifest builder validates required columns, unique genome identifiers, record types, numeric genome length, GC percentage, and optional local raw-sequence paths.
@@ -423,14 +463,17 @@ python scripts/01_dereplicate_phages.py \
 
 Optional pairwise input schema is documented in `docs/dereplication_schema.md`. Thresholds are read from `config/thresholds.yaml`.
 
-For the initial local FASTA-backed dataset, `data/metadata/external_evidence/blastn_pairwise_similarity.tsv` was generated with BLASTN from records passing Stage 1 sequence QC. This provides a conservative nucleotide-similarity baseline for the current cultured-phage/prophage pair; it is not a replacement for VIRIDIC, Mash, or an equivalent reviewed all-vs-all similarity run in the comprehensive public-scale analysis. The bridge TSV includes `evidence_source` and `notes` provenance fields for acceptance auditing. Regeneration command:
+For the current production benchmark, `data/metadata/production_evidence/phage_genome_similarity.tsv` is generated with BLASTN from records passing Stage 1 sequence QC, including reviewed PhageHostLearn ZIP-member phage FASTAs that are materialized only in a temporary workspace. This provides a conservative nucleotide-similarity baseline for sequence-backed phage-like records; it is not a replacement for VIRIDIC, Mash, or an equivalent reviewed all-vs-all similarity run in the comprehensive public-scale analysis. The TSV includes `evidence_source` and `notes` provenance fields for acceptance auditing. Regeneration command:
 
 ```bash
 python scripts/build_blastn_pairwise_similarity.py \
-  --manifest results/qc/phage_genome_manifest.tsv \
-  --sequence-qc results/qc/genome_sequence_qc.tsv \
-  --output data/metadata/external_evidence/blastn_pairwise_similarity.tsv \
-  --report-output data/metadata/external_evidence/blastn_pairwise_similarity_report.tsv
+  --manifest results/production/qc/phage_genome_manifest.tsv \
+  --sequence-qc results/production/qc/genome_sequence_qc.tsv \
+  --output data/metadata/production_evidence/phage_genome_similarity.tsv \
+  --report-output data/metadata/production_evidence/phage_genome_similarity_report.tsv \
+  --blastn blastn \
+  --task blastn \
+  --min-hsp-length 100
 ```
 
 ## Stage 3: Annotation and Pangenome Interface
@@ -511,7 +554,7 @@ python scripts/04_integrate_host_features.py \
   --report-output results/host_features/host_feature_report.tsv
 ```
 
-Optional Kleborate and Kaptive input schemas are documented in `docs/host_feature_schema.md`.
+Optional Kleborate and Kaptive input schemas are documented in `docs/host_feature_schema.md`. The production profile now points `inputs.pairwise_similarity` to the reviewed BLASTN baseline, `inputs.kleborate_input` and `inputs.kaptive_input` to reviewed PhageHostLearn host-typing evidence, and `inputs.annotation_input` to reviewed PhageHostLearn Prodigal baseline CDS plus exact RBPbase candidate evidence. Full production readiness remains fail-closed until the other production evidence inputs, especially domain/structural evidence and defense/counter-defense evidence, are populated.
 
 ## Phage-Host Assay Contract and Validation
 
@@ -699,7 +742,7 @@ After sequence QC, `scripts/plan_external_evidence.py` writes `results/qc/extern
 
 ## Sequence Acquisition Planning
 
-After manifest validation, `scripts/plan_sequence_acquisition.py` creates `results/qc/sequence_acquisition_plan.tsv`. This table separates records with existing local FASTA files from records that can be retrieved from accessions and metadata-only records that need additional curation. The workflow does not download sequence files automatically; suggested commands are recorded for review and reproducibility.
+After manifest validation, `scripts/plan_sequence_acquisition.py` creates `results/qc/sequence_acquisition_plan.tsv`. This table separates records with existing local FASTA files or reviewed ZIP-member locators from records that can be retrieved from accessions and metadata-only records that need additional curation. ZIP-member locators are considered local only when the archive exists and contains the requested safe member path. The workflow does not download sequence files automatically; suggested commands are recorded for review and reproducibility.
 
 Reviewed local raw FASTA files remain untracked under `data/raw/`. `data/metadata/sequence_acquisition_manifest.tsv` records the accession, source version, retrieval command, retrieval date, expected raw path, byte count, SHA-256 digest, and review status for each reviewed raw file. `scripts/validate_sequence_acquisition_manifest.py` writes `results/validation/sequence_acquisition_manifest_validation.tsv` and blocks reviewed rows whose local file is missing or whose checksum differs. This validates reproducibility of local raw inputs, but it does not make seed data manuscript-ready or replace production evidence generation.
 

@@ -64,4 +64,4 @@ Run-level validation and provenance messages.
 
 ## Current Behavior
 
-This stage is a prioritization layer, not final biochemical annotation. High-confidence candidates should be treated as computational predictions until experimentally validated or supported by stronger structure/function evidence.
+This stage is a prioritization layer, not final biochemical annotation. Exact RBPbase protein-sequence matches from the PhageHostLearn benchmark are treated as ML candidate evidence for prioritization only. High-confidence candidates should be treated as computational predictions until experimentally validated or supported by stronger domain, structural, or biochemical evidence.

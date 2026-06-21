@@ -46,7 +46,7 @@ Current readiness:
 - seed profile contains 10,006 reviewed PhageHostLearn spot-test pairs, so H1b has an initial-interaction endpoint;
 - Stage 7 reports assay-feature coverage and keeps RBPbase/Locibase bridge metadata as seed metadata coverage only;
 - this readiness step does not emit pair-level H1b model-performance rows from bridge metadata;
-- receptor-feature interpretation remains blocked until `results/<profile>/qc/assay_feature_coverage.tsv` shows adequate production RBP/depolymerase/domain evidence, host K/O/ST receptor features, and grouped cold-host/cold-phage/cold-study evaluation with uncertainty analysis.
+- receptor-feature interpretation remains blocked until `results/<profile>/qc/assay_feature_coverage.tsv` shows adequate candidate coverage, reviewed domain/structural support where required, and grouped cold-host/cold-phage/cold-study evaluation with uncertainty analysis. The production PhageHostLearn host layer now provides K/O result rows for 200/200 assay hosts (Typeable K 196/200; Typeable O 191/200) and ST calls for 188/200 assay hosts. The production phage layer provides baseline Prodigal CDS predictions for 105/105 assay phages and 247 exact RBPbase ML candidate matches across 103/105 assay phages, but these are candidate-level receptor features, not domain/structural support or functional receptor-specificity evidence.
 
 Output:
 - `results/<profile>/qc/assay_feature_coverage.tsv` H1b coverage rows;
@@ -99,8 +99,8 @@ Primary test:
 
 Current readiness:
 - panel-based spot-test breadth values are available from the reviewed PhageHostLearn subset in the seed profile; these represent initial-interaction breadth only.
-- Stage 7 reports `descriptive_breadth_available` plus `blocked_feature_not_assessed` for current RBP/counter-defense association rows when assay-phage features have not actually been assessed.
-- biological H3 claims remain blocked until production RBP/depolymerase modularity and explicit counter-defense evidence are available for the assay phages.
+- Stage 7 reports `descriptive_breadth_available` and keeps feature associations claim-blocked unless the relevant assay-phage features have actually been assessed.
+- biological H3 claims remain blocked until production RBP/depolymerase modularity, domain/structural support where needed, explicit counter-defense evidence, and panel-aware association tests are available for the assay phages.
 
 Alternative explanation:
 - broad host range may reflect laboratory testing depth rather than biology.
@@ -157,6 +157,8 @@ Primary test:
 - lineage-level association tests between host background, prophage content, and defense burden.
 
 Current readiness:
+- production PhageHostLearn host typing provides K/O result rows for 200/200 assay hosts (Typeable K 196/200; Typeable O 191/200) and ST calls for 188/200 assay hosts;
+- H5 remains blocked for biological interpretation because host-defense evidence, prophage carriage across a broader host population, and sampling/lineage controls are not yet available;
 - separate host-population analysis; not a phage infectivity claim.
 
 Alternative explanation:

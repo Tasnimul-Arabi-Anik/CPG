@@ -1,6 +1,6 @@
 # Genome Sequence QC Schema
 
-`scripts/00_qc_genome_sequences.py` checks local FASTA files referenced by `raw_sequence_path` in the Stage 1 manifest. It does not download genomes and does not modify raw sequence files.
+`scripts/00_qc_genome_sequences.py` checks FASTA files referenced by `raw_sequence_path` in the Stage 1 manifest. Paths may be ordinary local FASTA/FASTA.gz files or reviewed ZIP-member locators formatted as `archive.zip::path/inside/archive.fasta`. The script does not download genomes and does not modify raw sequence files.
 
 ## Command
 
@@ -70,3 +70,14 @@ Stage 2 dereplication can consume this table through `--sequence-qc`. When `geno
 
 
 See `docs/sequence_acquisition_schema.md` for the local sequence-acquisition planning stage that runs before QC.
+
+
+## ZIP-member locators
+
+For reviewed immutable archives, `raw_sequence_path` may point to a member inside a local ZIP archive:
+
+```text
+data/metadata/external/phagehostlearn/phages_genomes.zip::phages_genomes/A1a.fasta
+```
+
+The archive path is resolved relative to the repository root when not absolute. The member path must be relative and must not contain `..`. This allows archived source data to be sequence-QCed without extracting files into `data/raw/`.

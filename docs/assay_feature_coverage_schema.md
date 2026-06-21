@@ -23,4 +23,4 @@
 
 ## Interpretation
 
-The table is an analysis-readiness audit, not a result claim. For the seed PhageHostLearn benchmark, spot-test outcomes are real initial-interaction observations, but RBP/domain/structural, K/O/ST, defense/counter-defense, and productive-infection evidence remain separately gated.
+The table is an analysis-readiness audit, not a result claim. For the PhageHostLearn benchmark, spot-test outcomes are real initial-interaction observations, and the production profile now has reviewed host K/O result rows, partial ST context, baseline Prodigal CDS predictions for assay phages, and exact RBPbase ML candidate matches for 103/105 assay phages. Domain/structural evidence, defense/counter-defense evidence, verified host raw-sequence paths, and productive-infection evidence remain separately gated; missing phage-side functional or defense analysis must not be interpreted as feature absence.

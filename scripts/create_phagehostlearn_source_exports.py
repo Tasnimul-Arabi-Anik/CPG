@@ -57,6 +57,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Create PhageHostLearn benchmark source exports and pending ID maps.")
     parser.add_argument("--matrix", required=True, help="Reviewed phage_host_interactions.csv path.")
     parser.add_argument("--phage-zip", default="", help="Optional reviewed phages_genomes.zip path for phage length/GC inventory.")
+    parser.add_argument("--host-zip", default="", help="Optional reviewed klebsiella_genomes.zip path for host FASTA member inventory.")
     parser.add_argument("--phage-export-output", required=True, help="Output source export for benchmark phages.")
     parser.add_argument("--host-export-output", required=True, help="Output source export for benchmark hosts.")
     parser.add_argument("--phage-map-output", required=True, help="Output phage source-to-canonical ID map.")
@@ -143,11 +144,11 @@ def fasta_stats(text: str) -> tuple[int, str, int]:
     return length, f"{gc:.3f}", len(seqs)
 
 
-def load_phage_zip_inventory(path: Path) -> tuple[dict[str, dict[str, str]], list[str]]:
+def load_fasta_zip_inventory(path: Path, label: str) -> tuple[dict[str, dict[str, str]], list[str]]:
     inventory: dict[str, dict[str, str]] = {}
     warnings: list[str] = []
     if not path.exists():
-        return inventory, [f"phage zip not found: {path}"]
+        return inventory, [f"{label} zip not found: {path}"]
     zip_md5 = hashlib.md5(path.read_bytes()).hexdigest()
     with zipfile.ZipFile(path) as archive:
         for info in archive.infolist():
@@ -164,7 +165,7 @@ def load_phage_zip_inventory(path: Path) -> tuple[dict[str, dict[str, str]], lis
                 text = handle.read().decode("utf-8", errors="replace")
             length, gc, sequence_count = fasta_stats(text)
             if source_id in inventory:
-                warnings.append(f"duplicate phage source_id in zip; keeping first: {source_id}")
+                warnings.append(f"duplicate {label} source_id in zip; keeping first: {source_id}")
                 continue
             inventory[source_id] = {
                 "zip_member": info.filename,
@@ -177,13 +178,17 @@ def load_phage_zip_inventory(path: Path) -> tuple[dict[str, dict[str, str]], lis
     return inventory, warnings
 
 
+def load_phage_zip_inventory(path: Path) -> tuple[dict[str, dict[str, str]], list[str]]:
+    return load_fasta_zip_inventory(path, "phage")
+
+
 def phage_rows(phage_ids: list[str], inventory: dict[str, dict[str, str]], study_id: str, source_reference: str) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     for source_id in phage_ids:
         inv = inventory.get(source_id, {})
         genome_id = safe_id(f"{study_id}_phage", source_id)
         zip_member = inv.get("zip_member", "NA")
-        expected_path = f"data/raw/external/phagehostlearn/phages_genomes/{source_id}.fasta" if zip_member != "NA" else ""
+        expected_path = f"data/metadata/external/phagehostlearn/phages_genomes.zip::{zip_member}" if zip_member != "NA" else ""
         notes = [
             f"source_id={source_id}",
             f"source_study={study_id}",
@@ -213,18 +218,25 @@ def phage_rows(phage_ids: list[str], inventory: dict[str, dict[str, str]], study
     return rows
 
 
-def host_rows(host_ids: list[str], study_id: str, source_reference: str) -> list[dict[str, str]]:
+def host_rows(host_ids: list[str], inventory: dict[str, dict[str, str]], study_id: str, source_reference: str) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     for source_id in host_ids:
         genome_id = safe_id(f"{study_id}_host", source_id)
+        inv = inventory.get(source_id, {})
+        zip_member = inv.get("zip_member", "NA")
+        expected_path = f"data/metadata/external/phagehostlearn/klebsiella_genomes.zip::{zip_member}" if zip_member != "NA" else ""
         notes = [
             f"source_id={source_id}",
             f"source_study={study_id}",
             f"source_reference={source_reference}",
             "benchmark_entity=true",
             "review_status=pending_entity_review",
-            "host genome sequence is expected in Zenodo klebsiella_genomes.zip but was not unpacked into this repository",
-            "K/O/ST and assembly accession require review before enabling",
+            "host genome sequence is referenced as a reviewed klebsiella_genomes.zip member and is not unpacked into data/raw",
+            "K/O/ST/AMR/virulence remain separate production evidence layers",
+            f"host_archive_member={zip_member}",
+            f"host_archive_md5={inv.get('zip_md5', 'NA')}",
+            f"member_size_bytes={inv.get('member_size_bytes', 'NA')}",
+            f"sequence_count={inv.get('sequence_count', 'NA')}",
         ]
         rows.append(
             {
@@ -239,7 +251,7 @@ def host_rows(host_ids: list[str], study_id: str, source_reference: str) -> list
                 "ST": "NA",
                 "AMR_markers": "NA",
                 "virulence_markers": "NA",
-                "raw_sequence_path": "",
+                "raw_sequence_path": expected_path,
                 "notes": "; ".join(notes),
             }
         )
@@ -273,6 +285,7 @@ def run(args: argparse.Namespace) -> int:
     root = Path(args.root).resolve()
     matrix_path = resolve(root, args.matrix)
     phage_zip_path = resolve(root, args.phage_zip) if normalize(args.phage_zip) else Path()
+    host_zip_path = resolve(root, args.host_zip) if normalize(args.host_zip) else Path()
     outputs = [
         resolve(root, args.phage_export_output),
         resolve(root, args.host_export_output),
@@ -285,19 +298,25 @@ def run(args: argparse.Namespace) -> int:
         raise PhageHostLearnExportError(f"matrix does not exist: {matrix_path}")
     phage_ids, host_ids, tested, positive, negative = read_matrix_ids(matrix_path)
     inventory, warnings = load_phage_zip_inventory(phage_zip_path) if str(phage_zip_path) else ({}, ["phage zip not configured"])
+    host_inventory, host_warnings = load_fasta_zip_inventory(host_zip_path, "host") if str(host_zip_path) else ({}, ["host zip not configured"])
     phages = phage_rows(phage_ids, inventory, args.study_id, args.source_reference)
-    hosts = host_rows(host_ids, args.study_id, args.source_reference)
+    hosts = host_rows(host_ids, host_inventory, args.study_id, args.source_reference)
     phage_map = map_rows(phage_ids, f"{args.study_id}_phage", args.study_id, "phage")
     host_map = map_rows(host_ids, f"{args.study_id}_host", args.study_id, "host")
     report = [
         {"severity": "info", "item": "matrix", "message": f"phage_source_ids={len(phage_ids)}; host_source_ids={len(host_ids)}; tested_cells={tested}; positives={positive}; negatives={negative}"},
         {"severity": "info", "item": "phage_zip", "message": f"inventory_rows={len(inventory)}; matched_matrix_phages={sum(1 for pid in phage_ids if pid in inventory)}"},
+        {"severity": "info", "item": "host_zip", "message": f"inventory_rows={len(host_inventory)}; matched_matrix_hosts={sum(1 for hid in host_ids if hid in host_inventory)}"},
         {"severity": "info", "item": "exports", "message": f"phage_export_rows={len(phages)}; host_export_rows={len(hosts)}; map_rows={len(phage_map) + len(host_map)}"},
     ]
     report.extend({"severity": "warning", "item": "phage_zip", "message": warning} for warning in warnings[:100])
+    report.extend({"severity": "warning", "item": "host_zip", "message": warning} for warning in host_warnings[:100])
     missing_inventory = [pid for pid in phage_ids if pid not in inventory]
     if missing_inventory:
         report.append({"severity": "warning", "item": "missing_phage_inventory", "message": ";".join(missing_inventory[:50])})
+    missing_host_inventory = [hid for hid in host_ids if hid not in host_inventory]
+    if missing_host_inventory:
+        report.append({"severity": "warning", "item": "missing_host_inventory", "message": ";".join(missing_host_inventory[:50])})
     write_tsv_atomic(resolve(root, args.phage_export_output), PHAGE_EXPORT_COLUMNS, phages)
     write_tsv_atomic(resolve(root, args.host_export_output), HOST_EXPORT_COLUMNS, hosts)
     write_tsv_atomic(resolve(root, args.phage_map_output), MAP_COLUMNS, phage_map)

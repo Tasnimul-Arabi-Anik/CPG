@@ -14,7 +14,7 @@ profile:
   claim_scope: production_evidence_required
   production_evidence_targets:
     pairwise_similarity: data/metadata/production_evidence/phage_genome_similarity.tsv
-    annotation_input: data/metadata/production_evidence/pharokka_phrogs_annotations.tsv
+    annotation_input: data/metadata/production_evidence/phagehostlearn_prodigal_cds_annotations.tsv
     domain_evidence: data/metadata/production_evidence/rbp_domain_evidence.tsv
     structural_evidence: data/metadata/production_evidence/rbp_structural_evidence.tsv
     kleborate_input: data/metadata/production_evidence/kleborate_host_features.tsv
@@ -22,10 +22,10 @@ profile:
     host_defense_input: data/metadata/production_evidence/host_defense_systems.tsv
     phage_antidefense_input: data/metadata/production_evidence/phage_antidefense_candidates.tsv
 inputs:
-  pairwise_similarity: ''
-  annotation_input: ''
-  kleborate_input: ''
-  kaptive_input: ''
+  pairwise_similarity: data/metadata/production_evidence/phage_genome_similarity.tsv
+  annotation_input: data/metadata/production_evidence/phagehostlearn_prodigal_cds_annotations.tsv
+  kleborate_input: data/metadata/production_evidence/kleborate_host_features.tsv
+  kaptive_input: data/metadata/production_evidence/kaptive_ko_typing.tsv
 outputs:
   validation:
     workflow_config: config/workflow.production.yaml

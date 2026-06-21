@@ -45,6 +45,15 @@ jobs:
           python scripts/self_test_sequence_acquisition_manifest.py \
             --output results/validation/sequence_acquisition_manifest_self_test.tsv \
             --report-output results/validation/sequence_acquisition_manifest_self_test_report.tsv
+          python scripts/self_test_genome_sequence_qc.py \
+            --output results/validation/genome_sequence_qc_self_test.tsv \
+            --report-output results/validation/genome_sequence_qc_self_test_report.tsv
+          python scripts/self_test_sequence_acquisition.py \
+            --output results/validation/sequence_acquisition_self_test.tsv \
+            --report-output results/validation/sequence_acquisition_self_test_report.tsv
+          python scripts/self_test_blastn_pairwise_similarity.py \
+            --output results/validation/blastn_pairwise_similarity_self_test.tsv \
+            --report-output results/validation/blastn_pairwise_similarity_self_test_report.tsv
           python scripts/self_test_external_evidence_acceptance.py \
             --output results/validation/external_evidence_acceptance_self_test.tsv \
             --report-output results/validation/external_evidence_acceptance_self_test_report.tsv
@@ -69,6 +78,12 @@ jobs:
           python scripts/self_test_phagehostlearn_dataset.py \
             --output results/validation/assay_dataset_audit_self_test.tsv \
             --report-output results/validation/assay_dataset_audit_self_test_report.tsv
+          python scripts/self_test_phagehostlearn_host_typing_evidence.py \
+            --output results/validation/phagehostlearn_host_typing_evidence_self_test.tsv \
+            --report-output results/validation/phagehostlearn_host_typing_evidence_self_test_report.tsv
+          python scripts/self_test_phagehostlearn_phage_cds_annotations.py \
+            --output results/validation/phagehostlearn_phage_cds_annotation_self_test.tsv \
+            --report-output results/validation/phagehostlearn_phage_cds_annotation_self_test_report.tsv
           python scripts/self_test_phage_host_assay_validation.py \
             --output results/validation/phage_host_assay_validation_self_test.tsv \
             --report-output results/validation/phage_host_assay_validation_self_test_report.tsv
@@ -82,13 +97,13 @@ jobs:
       - name: Run production profile dry run
         run: python scripts/run_workflow.py --config config/workflow.production.yaml --dry-run
 
-      - name: Verify production profile fails closed without production evidence
+      - name: Verify production profile fails closed without complete production evidence
         run: |
           if python scripts/run_workflow.py --config config/workflow.production.yaml --stages stage_0_profile_requirements; then
-            echo "Production profile unexpectedly passed without required production evidence."
+            echo "Production profile unexpectedly passed without all required production evidence."
             exit 1
           else
-            echo "Production profile correctly failed closed before production evidence and assay outcomes are available."
+            echo "Production profile correctly failed closed until all required production evidence is available."
           fi
 
       - name: Upload validation artifacts

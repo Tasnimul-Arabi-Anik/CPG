@@ -79,3 +79,5 @@ Run-level validation and provenance messages.
 If no pairwise similarity table is supplied, each eligible genome is emitted as a singleton cluster. This is deliberate: it keeps downstream stages schema-stable while clearly marking that clustering is based on missing pairwise evidence, not biological distinctness. If a pairwise table is supplied but a genome has no threshold-passing link, its singleton cluster is labeled `singleton_no_threshold_pairwise_link`.
 
 When a sequence QC table is supplied, local FASTA-backed records with QC failures are excluded before pairwise rows are evaluated if `exclude_failed_local_sequence_qc_from_clustering` is true. Records without local sequence files remain eligible during early metadata curation, but their cluster rows carry `sequence_qc_status=no_sequence_provided`.
+
+`build_blastn_pairwise_similarity.py` accepts ordinary FASTA paths and reviewed ZIP-member locators of the form `archive.zip::member.fasta` from the sequence-QC table. ZIP members are extracted only into a temporary BLASTN workspace and are not written to `data/raw/`.

@@ -58,10 +58,11 @@ def result(test_id: str, scenario: str, expected: str, observed: str, notes: str
     }
 
 
-def make_args(root: Path, matrix: Path, zip_path: Path, out: Path) -> argparse.Namespace:
+def make_args(root: Path, matrix: Path, zip_path: Path, host_zip_path: Path, out: Path) -> argparse.Namespace:
     return argparse.Namespace(
         matrix=matrix.as_posix(),
         phage_zip=zip_path.as_posix(),
+        host_zip=host_zip_path.as_posix(),
         phage_export_output=(out / "phages.tsv").as_posix(),
         host_export_output=(out / "hosts.tsv").as_posix(),
         phage_map_output=(out / "phage_map.tsv").as_posix(),
@@ -79,6 +80,7 @@ def run_tests() -> list[dict[str, str]]:
         root = Path(tmp)
         matrix = root / "source" / "matrix.csv"
         zip_path = root / "source" / "phages.zip"
+        host_zip_path = root / "source" / "hosts.zip"
         out = root / "out"
         write_csv(matrix, [["", "phageA", "phageB"], ["hostA", "1", "0"], ["hostB", "", "1"]])
         zip_path.parent.mkdir(parents=True, exist_ok=True)
@@ -86,7 +88,11 @@ def run_tests() -> list[dict[str, str]]:
             archive.writestr("phages_genomes/phageA.fasta", ">phageA\nACGTACGT\n")
             archive.writestr("__MACOSX/phages_genomes/._phageA.fasta", "ignored")
             archive.writestr("phages_genomes/phageB.fasta", ">phageB\nGCGC\n")
-        rc = builder.run(make_args(root, matrix, zip_path, out))
+        with zipfile.ZipFile(host_zip_path, "w") as archive:
+            archive.writestr("fasta_files/hostA.fasta", ">hostA\nACGTACGTACGT\n")
+            archive.writestr("fasta_files/hostB.fasta", ">hostB\nGCGCGCGC\n")
+            archive.writestr("fasta_files/hostB.fasta.ndb", "ignored")
+        rc = builder.run(make_args(root, matrix, zip_path, host_zip_path, out))
         phages = read_rows(out / "phages.tsv")
         hosts = read_rows(out / "hosts.tsv")
         phage_map = read_rows(out / "phage_map.tsv")
@@ -100,9 +106,11 @@ def run_tests() -> list[dict[str, str]]:
         tests.append(result("maps_pending", "generated source-ID maps remain pending until review", "ok", observed))
         observed = "ok" if phages[0]["genome_length"] in {"8", "4"} and phages[0]["gc_percent"] != "NA" else "bad_fasta_stats"
         tests.append(result("phage_zip_stats", "phage zip FASTA members provide length and GC metadata", "ok", observed))
+        observed = "ok" if all(row["raw_sequence_path"].startswith("data/metadata/external/phagehostlearn/klebsiella_genomes.zip::fasta_files/") for row in hosts) else "missing_host_zip_locator"
+        tests.append(result("host_zip_locators", "host source rows point to reviewed host zip FASTA members", "ok", observed))
         observed = "ok" if any(row["item"] == "matrix" and "tested_cells=3" in row["message"] for row in report) else "bad_report"
         tests.append(result("report_counts", "report records tested cell counts", "ok", observed))
-        bad_args = make_args(root, matrix, zip_path, out)
+        bad_args = make_args(root, matrix, zip_path, host_zip_path, out)
         bad_args.report_output = bad_args.phage_export_output
         try:
             builder.run(bad_args)

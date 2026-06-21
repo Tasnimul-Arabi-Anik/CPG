@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import gzip
+import zipfile
 from pathlib import Path
 from typing import Iterable, TextIO
 
@@ -130,7 +131,7 @@ def open_text(path: Path) -> TextIO:
     return path.open("rt")
 
 
-def read_fasta_stats(path: Path) -> dict[str, int]:
+def read_fasta_stats_from_lines(lines: Iterable[str], source_label: str) -> dict[str, int]:
     sequence_count = 0
     total_length = 0
     gc_count = 0
@@ -138,28 +139,27 @@ def read_fasta_stats(path: Path) -> dict[str, int]:
     n_count = 0
     ambiguous_count = 0
     seen_sequence = False
-    with open_text(path) as handle:
-        for raw_line in handle:
-            line = raw_line.strip()
-            if not line:
-                continue
-            if line.startswith(">"):
-                sequence_count += 1
-                seen_sequence = True
-                continue
-            if not seen_sequence:
-                raise SequenceQCError(f"FASTA sequence line found before header in {path}")
-            seq = line.upper()
-            total_length += len(seq)
-            for base in seq:
-                if base in {"A", "C", "G", "T"}:
-                    atgc_count += 1
-                    if base in {"G", "C"}:
-                        gc_count += 1
-                elif base == "N":
-                    n_count += 1
-                else:
-                    ambiguous_count += 1
+    for raw_line in lines:
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith(">"):
+            sequence_count += 1
+            seen_sequence = True
+            continue
+        if not seen_sequence:
+            raise SequenceQCError(f"FASTA sequence line found before header in {source_label}")
+        seq = line.upper()
+        total_length += len(seq)
+        for base in seq:
+            if base in {"A", "C", "G", "T"}:
+                atgc_count += 1
+                if base in {"G", "C"}:
+                    gc_count += 1
+            elif base == "N":
+                n_count += 1
+            else:
+                ambiguous_count += 1
     return {
         "sequence_count": sequence_count,
         "total_length_bp": total_length,
@@ -168,6 +168,35 @@ def read_fasta_stats(path: Path) -> dict[str, int]:
         "n_count": n_count,
         "ambiguous_count": ambiguous_count,
     }
+
+
+def read_fasta_stats(path: Path) -> dict[str, int]:
+    with open_text(path) as handle:
+        return read_fasta_stats_from_lines(handle, path.as_posix())
+
+
+def split_archive_locator(raw_sequence_path: str) -> tuple[str, str] | None:
+    if "::" not in raw_sequence_path:
+        return None
+    archive_path, member = raw_sequence_path.split("::", 1)
+    archive_path = archive_path.strip()
+    member = member.strip()
+    if not archive_path or not member:
+        raise SequenceQCError("Archive sequence path must use archive.zip::member.fasta")
+    member_path = Path(member)
+    if member_path.is_absolute() or ".." in member_path.parts:
+        raise SequenceQCError(f"Archive member path is not allowed: {member}")
+    return archive_path, member
+
+
+def read_fasta_stats_from_archive(archive_path: Path, member: str) -> dict[str, int]:
+    if archive_path.suffix.lower() != ".zip":
+        raise SequenceQCError(f"Unsupported archive sequence path, expected .zip: {archive_path}")
+    with zipfile.ZipFile(archive_path) as archive:
+        if member not in archive.namelist():
+            raise SequenceQCError(f"Archive member does not exist: {archive_path}::{member}")
+        text = archive.read(member).decode("utf-8-sig")
+    return read_fasta_stats_from_lines(text.splitlines(), f"{archive_path}::{member}")
 
 
 def parse_float(value: str) -> float | None:
@@ -228,18 +257,35 @@ def qc_one(row: dict[str, str], root: Path, limits: dict[str, float], report: li
         add_report(report, genome_id, record_type, "info", "raw_sequence_path", "No raw_sequence_path provided; sequence QC skipped.")
         return base
 
-    resolved = resolve_sequence_path(root, raw_path)
-    base["resolved_sequence_path"] = resolved.as_posix()
+    try:
+        archive_locator = split_archive_locator(raw_path)
+    except SequenceQCError as exc:
+        base["sequence_qc_status"] = "invalid_sequence_path"
+        base["sequence_qc_messages"] = str(exc)
+        add_report(report, genome_id, record_type, "error", "raw_sequence_path", str(exc))
+        return base
+
+    if archive_locator:
+        archive_text, member = archive_locator
+        resolved = resolve_sequence_path(root, archive_text)
+        base["resolved_sequence_path"] = f"{resolved.as_posix()}::{member}"
+        missing_message = "sequence archive does not exist"
+    else:
+        member = ""
+        resolved = resolve_sequence_path(root, raw_path)
+        base["resolved_sequence_path"] = resolved.as_posix()
+        missing_message = "raw_sequence_path does not exist"
+
     if not resolved.exists():
         base["sequence_qc_status"] = "missing_sequence_file"
-        base["sequence_qc_messages"] = "raw_sequence_path does not exist"
+        base["sequence_qc_messages"] = missing_message
         add_report(report, genome_id, record_type, "warning", "raw_sequence_path", f"Sequence file does not exist: {resolved}")
         return base
 
     messages: list[str] = []
     try:
-        stats = read_fasta_stats(resolved)
-    except (OSError, SequenceQCError) as exc:
+        stats = read_fasta_stats_from_archive(resolved, member) if archive_locator else read_fasta_stats(resolved)
+    except (OSError, UnicodeDecodeError, zipfile.BadZipFile, SequenceQCError) as exc:
         base["sequence_qc_status"] = "invalid_fasta"
         base["sequence_qc_messages"] = str(exc)
         add_report(report, genome_id, record_type, "error", "fasta", str(exc))

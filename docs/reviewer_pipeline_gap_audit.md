@@ -14,12 +14,12 @@ The current workflow is useful for controlled development and early real-data un
 | --- | --- | --- | --- | --- |
 | Source curation | Reviewed INPHARED seed, NCBI seed, one host, one prophage | Dataset is still a seed, not comprehensive | Expand to public-scale cultured phages, host genomes, and prophages with deduplication and source overlap audits | In progress |
 | Sequence acquisition | Local FASTA for initial records plus checksum-backed acquisition manifest and review packet | Metadata-only rows and unexpanded seed files cannot support genome-level manuscript claims | Acquire reviewed FASTA files for the expanded dataset, validate checksums, rerun sequence QC, and keep raw data immutable | In progress |
-| Genome similarity | Local BLASTN pairwise baseline | BLASTN baseline is not the standard species-like phage clustering method | VIRIDIC or documented all-vs-all Mash/ANI-style comparison across sequence-backed phages/prophages | Planned |
+| Genome similarity | Production BLASTN pairwise baseline across 107 sequence-QC-passing phage-like records, including reviewed PhageHostLearn ZIP-member FASTAs | BLASTN baseline is useful for reproducible clustering but is not the standard species-like phage clustering method | VIRIDIC or documented all-vs-all Mash/ANI-style comparison across sequence-backed phages/prophages | Baseline available; standard tool planned |
 | Annotation | GenBank CDS product bridge evidence | GenBank submitter annotations are heterogeneous | Standardized Pharokka/PHROGs annotation on all sequence-backed phage/prophage genomes | Planned |
-| RBP/depolymerase evidence | Keyword, synteny, length, provisional gene-cluster evidence, and a hardened importer for reviewed domain/structural outputs | Product keywords alone are weak for novelty/function; importer hardening is not evidence by itself | Add reviewed domain/profile evidence and structural/remote-homology evidence such as Phold/Foldseek-style annotations | Import contract implemented; evidence generation planned |
-| Host K/O/ST/AMR/virulence | One reviewed host row with K/O/ST metadata | Insufficient host diversity for H1/H2/H5 | Public-scale Klebsiella host panel typed with Kleborate/Kaptive or reviewed equivalent outputs | In progress |
+| RBP/depolymerase evidence | Sequence-backed Prodigal CDS predictions for 105/105 assay phages plus 247 exact protein-sequence matches to PhageHostLearn RBPbase ML candidates across 103/105 phages; keyword/synteny/length scaffolds; hardened importer for reviewed domain/structural outputs | RBPbase exact matches are candidate evidence, not domain/structural evidence or functional receptor-specificity proof | Add reviewed domain/profile evidence and structural/remote-homology evidence such as Phold/Foldseek-style annotations; validate candidate specificity experimentally where needed | Candidate evidence available; domain/structural evidence planned |
+| Host K/O/ST/AMR/virulence | Reviewed PhageHostLearn production Kaptive K/O result rows for 200/200 assay hosts (Typeable K 196/200; Typeable O 191/200) and Kleborate KpSC rows for 188/200 assay hosts | Host receptor features are now available for the benchmark panel, but 12 hosts lack Kleborate ST/AMR/virulence rows and host raw-sequence paths remain unverified in the manifest | Resolve remaining host ST gaps if needed and preserve Kaptive/Kleborate confidence during receptor modeling | Partial production evidence |
 | Defense/counter-defense | Phage anti-defense inferred from annotation keywords; host defense table empty | Intracellular compatibility claims are weak without host defense calls | DefenseFinder/PADLOC host defense calls and curated phage anti-defense evidence | Planned |
-| Statistical modeling | H3/H4 are explicit blocked rows pending assay outcomes; H1/H2/H5/H6 remain scaffold/proxy tests | Host-range breadth and productive infection cannot be tested without an assay matrix | Import tested phage-host matrices, then model K/O receptor compatibility and productive-infection outcomes with grouped splits | In progress |
+| Statistical modeling | PhageHostLearn spot-test outcomes support initial-interaction and descriptive panel-breadth audits; candidate-level RBPbase exact matches are available for most assay phages; H4 productive-infection models remain blocked | Spot breadth and candidate features are available, but domain/structural support, counter-defense evidence, grouped leakage-safe modeling, and productive-infection labels are still absent | Add domain/structural evidence and grouped receptor modeling for H1/H3; H4 still requires plaque, EOP, propagation, or productive-infection outcomes | In progress |
 | Claims | Claim ledger blocks biological result claims | Strong claims would overstate bridge evidence | Keep only workflow/resource claims until claim-support audit allows stronger wording | Implemented |
 
 ## Reviewer-Safe Wording
@@ -34,9 +34,9 @@ Not allowed yet:
 
 ## Next Production Steps
 
-1. Acquire reviewed FASTA files for the NCBI seed phages through the sequence fetch review packet.
-2. Replace or supplement GenBank CDS bridge evidence with standardized Pharokka/PHROGs output.
-3. Generate production all-vs-all genome similarity using VIRIDIC, Mash, or another documented method.
-4. Add RBP/depolymerase domain and structural evidence.
-5. Add public-scale Klebsiella host genomes with Kleborate/Kaptive and host-defense calls.
+1. Use the production Prodigal CDS/protein table and exact RBPbase candidate matches for candidate-level receptor analyses.
+2. Add reviewed domain/profile and structural evidence for the assay-phage candidates.
+3. Replace or supplement the production BLASTN baseline with VIRIDIC, Mash, or another documented species-like phage similarity method before final taxonomy claims.
+4. Resolve remaining benchmark host ST gaps if lineage analyses require complete ST/AMR/virulence coverage.
+5. Add host-defense and phage counter-defense evidence only after preserving its claim boundary; H4 still needs productive-infection labels.
 6. Re-run H1-H6 model comparisons and claim audits before strengthening manuscript claims.
