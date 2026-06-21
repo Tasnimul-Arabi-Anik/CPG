@@ -435,7 +435,7 @@ python scripts/build_blastn_pairwise_similarity.py \
 
 ## Stage 3: Annotation and Pangenome Interface
 
-The annotation script consumes the Stage 1 manifest, Stage 2 cluster table, and optional Pharokka/PHROGs-style gene annotation rows. It writes normalized gene annotations, deterministic provisional gene clusters, and a wide pangenome count matrix. Hypothetical proteins are retained.
+The annotation script consumes the Stage 1 manifest, Stage 2 cluster table, and optional Pharokka/PHROGs-style gene annotation rows. It writes normalized gene annotations, deterministic provisional gene clusters, and a wide pangenome count matrix. Hypothetical proteins are retained. Accepted annotation rows are retained when their `genome_id` is present in the Stage 1 manifest even if that genome is absent from Stage 2 clusters; in that case `species_cluster_id` and `representative_id` are left blank and the row notes record that the annotation was retained without a Stage 2 cluster. This lets reviewed sequence-backed annotation evidence remain usable without pretending that missing local FASTA files passed sequence QC or assigning unsupported taxonomy clusters.
 
 Implemented command:
 

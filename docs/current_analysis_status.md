@@ -62,6 +62,8 @@ The 23 Phold-only receptor-like candidates were conservatively triaged:
 | Generic structural protein | 6 |
 | Insufficiently specific | 4 |
 
+The generic production workflow now also retains these accepted annotation rows in Stage 3 when their assay phage IDs are present in the manifest but absent from Stage 2 clusters because local raw FASTA files are not tracked. The retained rows keep blank species-cluster fields, so this does not promote missing local sequence files into completed taxonomy or dereplication evidence.
+
 Claim boundary: these are computational receptor candidates. They do not prove capsule specificity, depolymerase activity, host range, or productive infection.
 
 ## PR #13: H1 Receptor Benchmark
