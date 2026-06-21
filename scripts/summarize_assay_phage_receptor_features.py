@@ -62,6 +62,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rbp-candidates", default="results/production/rbp_depolymerase/candidates.tsv")
     parser.add_argument("--rbpbase-support", default="data/metadata/external_evidence/phagehostlearn_rbpbase_receptor_support.tsv")
     parser.add_argument("--missing-rbpbase-review", default="results/production/receptor_features/missing_rbpbase_review/missing_rbpbase_boundary_review.tsv")
+    parser.add_argument("--host-defense", default="data/metadata/production_evidence/host_defense_systems.tsv")
+    parser.add_argument("--phage-antidefense", default="data/metadata/production_evidence/phage_antidefense_candidates.tsv")
+    parser.add_argument("--assays", default="results/production/metadata/phage_host_assays.tsv")
     parser.add_argument("--coverage-output", default="results/production/receptor_features/assay_phage_receptor_feature_coverage.tsv")
     parser.add_argument("--summary-output", default="results/production/receptor_features/assay_phage_receptor_feature_summary.tsv")
     parser.add_argument("--readiness-output", default="results/production/receptor_features/assay_phage_receptor_model_readiness.tsv")
@@ -123,6 +126,17 @@ def main() -> int:
     rbp_candidates = read_tsv(Path(args.rbp_candidates), required=False)
     rbpbase_support = read_tsv(Path(args.rbpbase_support), required=False)
     missing_rbpbase_review = read_tsv(Path(args.missing_rbpbase_review), required=False)
+    host_defense = read_tsv(Path(args.host_defense), required=False)
+    phage_antidefense = read_tsv(Path(args.phage_antidefense), required=False)
+    assays = read_tsv(Path(args.assays), required=False)
+
+    host_defense_hosts = {row.get("host_genome_id", "") for row in host_defense if row.get("host_genome_id", "")}
+    phage_antidefense_phages = {row.get("phage_genome_id", "") for row in phage_antidefense if row.get("phage_genome_id", "")}
+    productive_measured = sum(
+        1
+        for row in assays
+        if row.get("productive_infection_result", "") in {"positive", "negative", "equivocal"}
+    )
 
     pharokka_status = {row["phage_id"]: row.get("status", "") for row in pharokka_run}
     phold_status = {row["phage_id"]: row.get("status", "") for row in phold_run}
@@ -269,9 +283,17 @@ def main() -> int:
         },
         {
             "readiness_item": "defense_counterdefense_model",
-            "status": "blocked_no_productive_infection_and_defense_evidence",
-            "evidence": "Current outcome is spot-test initial interaction; accepted host-defense and phage-counter-defense evidence are still absent from this feature audit.",
-            "next_action": "Acquire accepted host defense and phage counter-defense evidence only after receptor-layer feature matrix is stable; productive infection remains a separate blocker for H4.",
+            "status": (
+                "blocked_no_productive_infection_labels"
+                if productive_measured == 0 and host_defense_hosts and phage_antidefense_phages
+                else "blocked_no_productive_infection_and_incomplete_counterdefense_evidence"
+            ),
+            "evidence": (
+                f"host_defense_hosts={len(host_defense_hosts)}; "
+                f"accepted_phage_counterdefense_phages={len(phage_antidefense_phages)}; "
+                f"productive_infection_outcomes={productive_measured}. Current assay endpoint is spot-test initial interaction."
+            ),
+            "next_action": "Curate productive-infection, plaque, propagation, or EOP outcomes before testing defense/counter-defense compatibility; expand accepted phage counter-defense evidence for H3/H4 coverage.",
             "claim_boundary": "No defense/counter-defense host-range claim from spot outcomes alone.",
         },
     ]
