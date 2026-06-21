@@ -168,6 +168,8 @@ H3 spot-breadth association rows are now generated from the same evidence layer:
 
 Claim boundary: H4 remains `blocked_no_productive_infection_labels`. Stage 7 now records a field-level H4 outcome availability audit in `results/production/models/feature_importance.tsv`: `spot_result` has 10,006 observed initial-interaction outcomes, while `plaque_result`, `productive_infection_result`, `growth_inhibition_result`, and numeric `eop` each have 0 observed productive-outcome values. These evidence tables support coverage auditing and future H4 tests only; they do not demonstrate defense escape or improved prediction. The H3 rows are phage-level spot-test breadth associations only; they do not establish productive-infection breadth, causal breadth mechanisms, or general host-range strategy.
 
+Latest assay-feature coverage audit correction: `results/production/qc/assay_feature_coverage.tsv` now counts accepted sequence-backed normalized phage annotation for 105/105 assay phages and 10,006/10,006 tested pairs. Domain evidence covers 105/105 assay phages, while structural/remote-homology hit evidence covers 12/105 assay phages and 1,048/10,006 tested pairs. Structural non-hit phages are not interpreted as assessed-zero structural evidence; the audit only marks the hit-bearing structural evidence as assessed-positive. Productive-infection outcome coverage remains 0/10,006.
+
 ## Hypothesis Status
 
 | Hypothesis | Current status | Reason |
