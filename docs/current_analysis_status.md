@@ -167,7 +167,7 @@ H3 spot-breadth association rows are now generated from the same evidence layer:
 | Total domain + structural module count | 105 / 105 | 0.106 | Exploratory analysis-ready row, claim remains data-dependent |
 | Explicit anti-defense candidate count | 7 / 105 | NA | Blocked by insufficient coverage and one observed feature value |
 
-Claim boundary: H4 remains `blocked_no_productive_infection_labels`. These evidence tables support coverage auditing and future H4 tests only; they do not demonstrate defense escape or improved prediction. The H3 rows are phage-level spot-test breadth associations only; they do not establish productive-infection breadth, causal breadth mechanisms, or general host-range strategy.
+Claim boundary: H4 remains `blocked_no_productive_infection_labels`. Stage 7 now records a field-level H4 outcome availability audit in `results/production/models/feature_importance.tsv`: `spot_result` has 10,006 observed initial-interaction outcomes, while `plaque_result`, `productive_infection_result`, `growth_inhibition_result`, and numeric `eop` each have 0 observed productive-outcome values. These evidence tables support coverage auditing and future H4 tests only; they do not demonstrate defense escape or improved prediction. The H3 rows are phage-level spot-test breadth associations only; they do not establish productive-infection breadth, causal breadth mechanisms, or general host-range strategy.
 
 ## Hypothesis Status
 

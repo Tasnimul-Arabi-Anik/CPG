@@ -790,6 +790,70 @@ def add_blocked_test(
     )
 
 
+def observed_categorical_outcome_count(rows: list[dict[str, str]], column: str, observed_values: set[str]) -> tuple[int, int, str]:
+    observed: list[str] = []
+    raw_values: Counter[str] = Counter()
+    for row in rows:
+        value = row.get(column, "").strip().lower()
+        if is_missing(value):
+            continue
+        raw_values[value] += 1
+        if value in observed_values:
+            observed.append(value)
+    raw_summary = ";".join(f"{value}:{count}" for value, count in sorted(raw_values.items()))
+    return len(observed), len(set(observed)), raw_summary
+
+
+def observed_eop_count(rows: list[dict[str, str]]) -> tuple[int, int, str]:
+    observed: list[str] = []
+    raw_values: Counter[str] = Counter()
+    for row in rows:
+        raw_value = row.get("eop", "").strip()
+        if is_missing(raw_value):
+            continue
+        raw_values[raw_value] += 1
+        value = parse_float_or_none(raw_value)
+        if value is not None and math.isfinite(value) and value >= 0:
+            observed.append(raw_value)
+    raw_summary = ";".join(f"{value}:{count}" for value, count in sorted(raw_values.items()))
+    return len(observed), len(set(observed)), raw_summary
+
+
+def add_h4_outcome_availability(feature_rows: list[dict[str, str]], assay_rows: list[dict[str, str]]) -> None:
+    total_rows = len(assay_rows)
+    categorical_metrics = [
+        ("spot_result", {"positive", "negative", "equivocal", "inconclusive"}, "Spot-test outcomes support initial-interaction analyses but are not productive-infection evidence."),
+        ("plaque_result", PRODUCTIVE_INFECTION_OBSERVED_VALUES, "Plaque outcomes are acceptable H4 productive-infection evidence when observed."),
+        ("productive_infection_result", PRODUCTIVE_INFECTION_OBSERVED_VALUES, "Productive-infection outcomes are the primary H4 endpoint when observed."),
+        ("growth_inhibition_result", PRODUCTIVE_INFECTION_OBSERVED_VALUES, "Growth inhibition is reported separately and is not automatically equivalent to productive infection."),
+    ]
+    metric_rows: list[tuple[str, int, int, str, str]] = []
+    for column, observed_values, note in categorical_metrics:
+        observed_count, unique_count, raw_summary = observed_categorical_outcome_count(assay_rows, column, observed_values)
+        metric_rows.append((column, observed_count, unique_count, raw_summary, note))
+    eop_count, eop_unique, eop_raw = observed_eop_count(assay_rows)
+    metric_rows.append(("eop", eop_count, eop_unique, eop_raw, "Numeric non-negative EOP values are acceptable H4 productive-infection evidence when present."))
+
+    for column, observed_count, unique_count, raw_summary, note in metric_rows:
+        feature_rows.append(
+            {
+                "analysis_id": "productive_infection_receptor_defense_blocker",
+                "hypothesis": "H4",
+                "task": "productive_outcome_availability_audit",
+                "feature_set": "assay_outcome_field",
+                "feature": column,
+                "non_missing_count": str(observed_count),
+                "unique_value_count": str(unique_count),
+                "full_accuracy": "",
+                "accuracy_without_feature": "",
+                "delta_accuracy": "",
+                "association_metric": "observed_outcome_count",
+                "association_value": str(observed_count),
+                "notes": f"total_assay_rows={total_rows}; raw_values={raw_summary or 'none'}; {note}",
+            }
+        )
+
+
 def add_rate_test(
     rows: list[dict[str, str]],
     feature_rows: list[dict[str, str]],
@@ -1848,7 +1912,7 @@ def build_hypothesis_summary(
 def run_models(
     samples: list[dict[str, str]],
     assay_breadth_samples: list[dict[str, str]],
-    assay_row_count: int,
+    assay_rows: list[dict[str, str]],
     h3_min_assessed_phages: int,
     h3_min_feature_groups: int,
     h3_min_group_size: int,
@@ -1884,10 +1948,11 @@ def run_models(
         "productive_infection_result",
         "receptor_plus_defense_counterdefense",
         "blocked_assay_outcome_required",
-        assay_row_count if assay_row_count else len(samples),
+        len(assay_rows) if assay_rows else len(samples),
         "blocked_no_productive_infection_labels",
         "H4 requires tested productive-infection, plaque, or EOP outcomes. compatibility_feature_status and matched_counterdefense_status are feature-derived labels and are not valid biological targets.",
     )
+    add_h4_outcome_availability(feature_rows, assay_rows)
 
     add_h2_prophage_annotation_coverage(model_rows, feature_rows, annotation_rows, rbp_rows)
     add_rate_test(
@@ -2056,7 +2121,7 @@ def main() -> int:
     model_rows, feature_rows, error_rows = run_models(
         samples,
         assay_breadth_samples,
-        len(assay_rows),
+        assay_rows,
         args.h3_min_assessed_phages,
         args.h3_min_feature_groups,
         args.h3_min_group_size,
