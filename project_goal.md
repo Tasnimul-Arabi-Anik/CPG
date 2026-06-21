@@ -6,7 +6,13 @@ A comparative-genomics framework for receptor-binding and counter-defense module
 
 ## Study Motivation
 
-Klebsiella phage host range is often discussed through capsule recognition, but receptor binding alone may not explain infection success. This study tests whether host-range prediction improves when receptor-binding/depolymerase modules are analyzed together with bacterial defense systems and phage counter-defense genes. Pairwise host-range and productive-infection claims require explicit tested phage-host assay outcomes, including tested negatives; metadata host links alone are not response variables.
+Klebsiella phage host range is often discussed through capsule recognition, but receptor binding alone may not explain infection success. The broader biological program asks whether host-range prediction improves when receptor-binding/depolymerase modules are analyzed together with bacterial defense systems and phage counter-defense genes. Pairwise host-range and productive-infection claims require explicit tested phage-host assay outcomes, including tested negatives; metadata host links alone are not response variables.
+
+## Scope and Completion Endpoint
+
+Current completion endpoint: a reproducible dry-lab benchmark and evidence resource for receptor-layer spot-test interaction analysis, with exploratory secondary analyses for prophage coverage, spot-breadth associations, host-defense burden, and source/cluster novelty. This endpoint is complete when the workflow runs from config, writes outputs under `results/`, preserves claim boundaries, and explicitly records unsupported endpoints.
+
+Extended biological endpoint: testing whether defense/counter-defense improves productive-infection prediction among receptor-compatible pairs. This remains future work because the current PhageHostLearn benchmark contains spot-test outcomes but no plaque, EOP, propagation, or productive-infection labels. H4 is therefore a non-blocking limitation for the current dry-lab endpoint and remains blocked for any productive-infection claim.
 
 ## Central Hypothesis
 
@@ -32,7 +38,7 @@ Use host genomic features to test whether receptor-binding modules associate wit
 
 ### Aim 4: Add Defense/Counter-Defense Compatibility
 
-Test whether host defense systems and phage anti-defense genes explain host-range patterns beyond receptor-binding modules.
+For the current dry-lab endpoint, provide host-defense and phage anti-defense candidate evidence as a coverage/resource layer and keep productive-infection interpretation blocked. The extended biological test is whether host defense systems and phage anti-defense genes explain productive-infection outcomes beyond receptor-binding modules once plaque, EOP, propagation, or productive-infection labels are curated.
 
 ## Primary Hypotheses
 
@@ -59,6 +65,6 @@ The computational study is ready for manuscript drafting when:
 - assay feature coverage is audited so missing biological evidence is not treated as feature absence;
 - all major figures have source data;
 - docs/methods.md describes the pipeline;
-- docs/hypotheses.md maps each hypothesis to a specific test and marks assay-dependent hypotheses blocked until valid outcomes exist;
+- docs/hypotheses.md maps each hypothesis to a specific test and marks productive-infection H4 claims blocked until valid outcomes exist, while treating the H4 endpoint gap as a documented non-blocking limitation for the current dry-lab benchmark/resource endpoint;
 - docs/limitations.md separates computational predictions from experimentally validated conclusions.
 - docs/claim_ledger.md records supported claims, data-dependent claims, and remaining speculative claims.

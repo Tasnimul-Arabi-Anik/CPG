@@ -2,7 +2,7 @@
 
 ## Scope
 
-This branch is PR C for the defense/counter-defense evidence layer. It is stacked on PR B (`prB-h1-receptor-benchmark`). It wires accepted host defense and explicit phage anti-defense candidate evidence into the production profile while keeping H4 blocked because productive-infection, plaque, propagation, and EOP outcomes are absent.
+This branch is PR C for the defense/counter-defense evidence layer. It is stacked on PR B (`prB-h1-receptor-benchmark`). It wires accepted host defense and explicit phage anti-defense candidate evidence into the production profile while keeping H4 blocked for productive-infection claims because productive-infection, plaque, propagation, and EOP outcomes are absent. For the current dry-lab benchmark/resource endpoint, that H4 endpoint gap is an explicit non-blocking limitation rather than a failed analysis.
 
 This PR adds evidence tables and conservative integration behavior only. It does not add a defense/counter-defense predictive model.
 
@@ -60,9 +60,9 @@ After rerunning Stage 6 and Stage 7 locally on the production profile:
 | Assay phages with explicit phage anti-defense candidates | 7 / 105 | Explicit Phold ACR candidates only; keyword-only hits remain screening-only. |
 | Tested spot pairs with host-defense evidence | 10,006 / 10,006 | Coverage does not imply productive infection evidence. |
 | Tested spot pairs with both host-defense and phage anti-defense candidate evidence | 814 / 10,006 | Candidate overlap for future analysis only. |
-| Productive-infection outcomes | 0 / 10,006 | H4 remains blocked. |
+| Productive-infection outcomes | 0 / 10,006 | H4 remains blocked for productive-infection claims and future-work scoped for the dry-lab endpoint. |
 
-`results/production/models/model_comparison.tsv` still reports H4 as `blocked_no_productive_infection_labels`.
+`results/production/models/model_comparison.tsv` still reports H4 as `blocked_no_productive_infection_labels`; the goal/readiness audits treat this as non-blocking only for the current dry-lab benchmark/resource endpoint.
 
 ## Claim boundary
 
@@ -78,4 +78,4 @@ Not allowed from this branch:
 - spot-test positives are productive infection;
 - H4 is supported.
 
-H4 remains blocked until observed productive-infection, plaque, propagation, or EOP outcomes are curated and a leakage-safe paired analysis is defined.
+H4 remains blocked for any productive-infection claim until observed productive-infection, plaque, propagation, or EOP outcomes are curated and a leakage-safe paired analysis is defined.
