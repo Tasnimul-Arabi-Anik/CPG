@@ -100,7 +100,7 @@ Primary test:
 Current readiness:
 - panel-based spot-test breadth values are available from the reviewed PhageHostLearn subset in the seed profile; these represent initial-interaction breadth only.
 - Stage 7 reports `descriptive_breadth_available` and keeps feature associations claim-blocked unless the relevant assay-phage features have actually been assessed.
-- biological H3 claims remain blocked until production RBP/depolymerase modularity, domain/structural support where needed, explicit phage counter-defense evidence, and panel-aware association tests are available for the assay phages.
+- biological H3 claims remain blocked until production RBP/depolymerase modularity, domain/structural support where needed, broader explicit phage counter-defense evidence, and panel-aware association tests are available for the assay phages. Current Phold ACR anti-CRISPR evidence covers only 7/105 assay phages.
 
 Alternative explanation:
 - broad host range may reflect laboratory testing depth rather than biology.
@@ -128,7 +128,7 @@ Primary test:
 - compare receptor-only, defense-only, counter-defense-only, receptor-plus-defense, and receptor-plus-defense/counter-defense models against observed assay outcomes.
 
 Current readiness:
-- host DefenseFinder evidence is available for 200/200 assay hosts, but H4 remains blocked until productive-infection labels and accepted phage counter-defense evidence exist. `compatibility_feature_status` and `matched_counterdefense_status` are not biological outcomes because they are constructed from the same features being modeled.
+- host DefenseFinder evidence is available for 200/200 assay hosts, and sparse Phold ACR anti-CRISPR evidence is available for 7/105 assay phages. H4 remains blocked until productive-infection labels exist and counter-defense coverage is sufficient for the tested pairs. `compatibility_feature_status` and `matched_counterdefense_status` are not biological outcomes because they are constructed from the same features being modeled.
 
 Expected result:
 - defense/counter-defense features may explain some receptor-compatible failures, but a robust null result is allowed.

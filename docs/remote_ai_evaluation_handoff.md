@@ -9,7 +9,7 @@ The broader long-term hypothesis has two filters:
 1. Receptor compatibility: phage RBP/depolymerase features versus host capsule/LPS K/O features.
 2. Intracellular compatibility: bacterial defense systems versus phage counter-defense genes.
 
-Current real quantitative work is focused on the first filter. The second-filter H4 defense/counter-defense analysis remains blocked because productive-infection/plaque/EOP outcomes and accepted phage counter-defense evidence are not yet available, even though host-defense evidence is now available for the assay hosts.
+Current real quantitative work is focused on the first filter. The second-filter H4 defense/counter-defense analysis remains blocked because productive-infection/plaque/EOP outcomes are not available. Host-defense evidence is available for the assay hosts, and sparse accepted Phold ACR anti-CRISPR evidence is now available for 7/105 assay phages, but this does not demonstrate productive infection or defense escape.
 
 
 ## Current Work Summary for Remote Reviewers
@@ -26,14 +26,14 @@ What we have so far:
 - Host K/O typing coverage for the assay hosts and phage receptor-feature evidence from RBPbase, Pharokka, and mapped Phold/Foldseek outputs.
 - BLASTN, Mash, fastANI, and skani nearest-phage baselines for receptor-layer H1 comparisons.
 - Current exploratory result: receptor-feature unions do not robustly outperform nearest-phage genome-similarity plus host K/O baselines under grouped evaluation.
-- Accepted DefenseFinder host-defense evidence is available for 200/200 assay hosts. No accepted phage anti-defense evidence is available; keyword anti-defense hits are screening-only and are excluded from compatibility matching.
+- Accepted DefenseFinder host-defense evidence is available for 200/200 assay hosts. Accepted Phold ACR anti-CRISPR evidence is available for 7/105 assay phages and 814/10,006 tested pairs; keyword anti-defense hits remain screening-only and are excluded from compatibility matching.
 
 What should be done next:
 
-- Keep H4 blocked until productive-infection/plaque/EOP outcomes and accepted phage-counter-defense evidence exist.
+- Keep H4 blocked until productive-infection/plaque/EOP outcomes exist; current anti-CRISPR evidence is computational and sparse.
 - Review the mapped Phold/Foldseek receptor candidates and the new PHROGs/MMseqs domain-profile candidates for structural/domain quality, coverage, synteny, and product specificity.
 - Add a public-scale phage intergenomic similarity/taxonomy baseline such as VIRIDIC before final taxonomy claims; skani is now available as an assay-benchmark robustness baseline.
-- Add curated phage anti-defense evidence next; host-defense evidence is now available from DefenseFinder for the benchmark hosts, but it does not by itself make H4 testable.
+- Expand and manually review phage counter-defense evidence; host-defense evidence and sparse Phold ACR anti-CRISPR evidence are now available, but neither makes H4 testable without productive-infection endpoints.
 - Do not claim receptor superiority, capsule specificity, productive infection, or therapeutic utility from the current outputs.
 
 ## Current Data Layer
@@ -78,7 +78,7 @@ Phage receptor-side evidence:
 - Stage 4 final RBP/depolymerase candidates with structural support: 17 rows across 12 phages.
 - PHROGs/MMseqs receptor-domain evidence: 495 normalized rows across 242 proteins and 93 PHROGs, generated from 11,725 MMseqs profile hits after receptor-relevance filtering and a minimum query coverage of 0.10.
 - Stage 4 after adding PHROGs domain evidence: 331 RBP/depolymerase candidates, 74 module clusters, 242 candidates with domain evidence, 17 candidates with structural evidence, and 167 computational high-priority novel candidates.
-- Accepted DefenseFinder host-defense evidence is available for 200/200 assay hosts: 2,758 normalized system-level rows from DefenseFinder 3.0.0 with defense-finder-models 3.1.0 and CasFinder 3.1.0. Accepted phage anti-defense evidence remains absent. Annotation-keyword anti-defense screening is not accepted counter-defense evidence.
+- Accepted DefenseFinder host-defense evidence is available for 200/200 assay hosts: 2,758 normalized system-level rows from DefenseFinder 3.0.0 with defense-finder-models 3.1.0 and CasFinder 3.1.0. Accepted Phold ACR anti-CRISPR evidence is available for 7/105 assay phages: 7 normalized coordinate-mapped candidates from 105 Phold ACR output files, after excluding one unmapped raw ACR row. Annotation-keyword anti-defense screening is not accepted counter-defense evidence.
 
 Important interpretation boundary: RBPbase, Pharokka, PHROGs/MMseqs, and Phold/Foldseek rows are candidate-prioritization evidence. They do not prove capsule specificity, depolymerase activity, or infection success. The PHROGs expansion is useful for candidate discovery but is still computational domain-profile evidence that needs manual review before biological interpretation.
 
@@ -196,11 +196,12 @@ Stage 6 treats annotation-keyword anti-defense hits as screening-only candidates
 
 A local Phold sub-database screen was inspected across the 105 assay phages:
 
+- ACR CDS prediction files: 105 files, 8 raw data rows; 7 coordinate-mapped rows are normalized as explicit anti-CRISPR candidates in `data/metadata/production_evidence/phage_antidefense_candidates.tsv`.
 - DefenseFinder CDS prediction files: 105 files, 0 data rows.
 - CARD CDS prediction files: 105 files, 0 data rows.
 - VFDB CDS prediction files: one data row in `phagehostlearn_2024_phage_K15PH90`, labelled capsule/immune modulation/hypothetical protein.
 
-These Phold sub-database outputs are not accepted phage anti-defense evidence. They do not change H4 readiness.
+The Phold ACR rows are accepted computational anti-CRISPR candidate evidence for feature coverage, not experimental proof of counter-defense function. They do not change H4 readiness because productive infection is not measured.
 
 ## Locally Generated Outputs
 
@@ -272,8 +273,8 @@ python scripts/run_receptor_layer_model_comparison.py --genome-similarity data/m
 2. Add a public-scale phage taxonomy/similarity baseline such as VIRIDIC before final taxonomy claims. Mash, fastANI, and skani are now available as assay-benchmark robustness baselines, but they are not a replacement for VIRIDIC-style public-scale phage intergenomic similarity.
 3. Review the 23 accepted mapped Phold/Foldseek structural-evidence rows, prioritizing the 8 high-priority non-Pharokka candidates, for confidence, coverage, synteny, product specificity, and overlap with RBPbase/Pharokka evidence.
 4. Review the 495 PHROGs/MMseqs domain rows, especially the 167 high-priority novel Stage 4 candidates, before treating them as publishable receptor-module discoveries.
-5. Keep H4 blocked until productive-infection outcomes and accepted phage counter-defense evidence exist.
-6. Add accepted phage-counter-defense evidence only after the receptor-layer benchmark is stable and the endpoint question is explicit; host-defense evidence is already available for the benchmark hosts.
+5. Keep H4 blocked until productive-infection outcomes exist; current host-defense and sparse anti-CRISPR candidate evidence are not enough.
+6. Expand and review phage-counter-defense evidence after the receptor-layer benchmark remains stable and the endpoint question is explicit; host-defense evidence is already available for the benchmark hosts.
 
 ## Unsupported Claims
 

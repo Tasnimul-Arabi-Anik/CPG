@@ -413,14 +413,26 @@ def phage_counterdefense_by_phage(rows: list[dict[str, str]]) -> dict[str, dict[
             grouped[phage_id].append(row)
     features: dict[str, dict[str, str]] = {}
     for phage_id, phage_rows in grouped.items():
-        anti_count = max([parse_int(row.get("phage_antidefense_count", "0")) for row in phage_rows] + [0])
-        assessed = any(row.get("counterdefense_metadata_available", "").lower() == "true" for row in phage_rows)
+        aggregate_count = max([parse_int(row.get("phage_antidefense_count", "0")) for row in phage_rows] + [0])
+        explicit_rows = [
+            row for row in phage_rows
+            if is_informative_feature_value(row.get("antidefense_class", ""))
+            or is_informative_feature_value(row.get("target_defense_system", ""))
+        ]
+        anti_count = aggregate_count if aggregate_count > 0 else len(explicit_rows)
+        assessed = any(row.get("counterdefense_metadata_available", "").lower() == "true" for row in phage_rows) or bool(explicit_rows)
         state = "assessed_positive" if anti_count > 0 else ("assessed_zero_detected" if assessed else "not_assessed")
         features[phage_id] = {
             "phage_antidefense_count_bin": count_bin(anti_count) if state != "not_assessed" else "not_assessed",
             "phage_antidefense_evidence_state": state,
-            "phage_antidefense_targets": joined(row.get("phage_antidefense_targets", "") for row in phage_rows),
-            "phage_antidefense_classes": joined(row.get("phage_antidefense_classes", "") for row in phage_rows),
+            "phage_antidefense_targets": joined(
+                list(row.get("phage_antidefense_targets", "") for row in phage_rows)
+                + list(row.get("target_defense_system", "") for row in phage_rows)
+            ),
+            "phage_antidefense_classes": joined(
+                list(row.get("phage_antidefense_classes", "") for row in phage_rows)
+                + list(row.get("antidefense_class", "") for row in phage_rows)
+            ),
         }
     return features
 
@@ -1104,6 +1116,8 @@ def build_assay_feature_coverage(
             parse_int(row.get("phage_antidefense_count", "0")) > 0
             or is_informative_feature_value(row.get("phage_antidefense_targets", ""))
             or is_informative_feature_value(row.get("phage_antidefense_classes", ""))
+            or is_informative_feature_value(row.get("target_defense_system", ""))
+            or is_informative_feature_value(row.get("antidefense_class", ""))
         )
     }
     phage_receptor_phages = row_id_set(phage_receptor_rows, "phage_genome_id")
@@ -1182,7 +1196,7 @@ def build_assay_feature_coverage(
         ("domain_evidence", "unique_phage", domain_entity_count, len(set(assay_phages) & domain_assessed_phages), phage_count, "H1b;H3", domain_entity_action),
         ("structural_evidence", "unique_phage", structural_entity_count, len(set(assay_phages) & structural_assessed_phages), phage_count, "H1b;H3", structural_entity_action),
         ("host_defense_evidence", "unique_host", len(set(assay_hosts) & host_defense_detected_hosts), len(set(assay_hosts) & host_defense_assessed_hosts), host_count, "H4;H5", "Reviewed host-defense evidence is available for all assay hosts; H4 still needs phage counter-defense evidence and productive-infection labels." if host_count and len(set(assay_hosts) & host_defense_detected_hosts) == host_count else "Run PADLOC/DefenseFinder or reviewed host-defense evidence for assay hosts."),
-        ("phage_counterdefense_evidence", "unique_phage", len(set(assay_phages) & antidefense_detected_phages), len(set(assay_phages) & antidefense_assessed_phages), phage_count, "H3;H4", "Run reviewed phage anti-defense/counter-defense screening for assay phages."),
+        ("phage_counterdefense_evidence", "unique_phage", len(set(assay_phages) & antidefense_detected_phages), len(set(assay_phages) & antidefense_assessed_phages), phage_count, "H3;H4", "Expand reviewed phage anti-defense/counter-defense screening beyond the current sparse Phold ACR anti-CRISPR candidates."),
     ]
     for metric, level, detected, assessed, denominator, blockers, action in entity_metrics:
         add_coverage_row(rows, metric, level, detected, denominator, coverage_state(detected, assessed, denominator), blockers, action)
@@ -1198,7 +1212,7 @@ def build_assay_feature_coverage(
         ("domain_evidence", "pair", domain_pair_count, sum(1 for phage, _host in assay_pairs if phage in domain_assessed_phages), pair_count, "H1b;H3", domain_pair_action),
         ("structural_evidence", "pair", structural_pair_count, sum(1 for phage, _host in assay_pairs if phage in structural_assessed_phages), pair_count, "H1b;H3", structural_pair_action),
         ("host_defense_evidence", "pair", sum(1 for _phage, host in assay_pairs if host in host_defense_detected_hosts), sum(1 for _phage, host in assay_pairs if host in host_defense_assessed_hosts), pair_count, "H4;H5", "Reviewed host-defense evidence covers all tested pairs; H4 still needs phage counter-defense evidence and productive-infection labels." if pair_count and sum(1 for _phage, host in assay_pairs if host in host_defense_detected_hosts) == pair_count else "Annotate host defense systems for assay hosts."),
-        ("phage_counterdefense_evidence", "pair", sum(1 for phage, _host in assay_pairs if phage in antidefense_detected_phages), sum(1 for phage, _host in assay_pairs if phage in antidefense_assessed_phages), pair_count, "H3;H4", "Annotate phage counter-defense features for assay phages."),
+        ("phage_counterdefense_evidence", "pair", sum(1 for phage, _host in assay_pairs if phage in antidefense_detected_phages), sum(1 for phage, _host in assay_pairs if phage in antidefense_assessed_phages), pair_count, "H3;H4", "Expand phage counter-defense evidence for assay phages beyond the current sparse Phold ACR anti-CRISPR candidates."),
     ]
     for metric, level, detected, assessed, denominator, blockers, action in pair_metrics:
         add_coverage_row(rows, metric, level, detected, denominator, coverage_state(detected, assessed, denominator), blockers, action)
@@ -1223,7 +1237,7 @@ def build_assay_feature_coverage(
     productive_measured = sum(1 for row in tested_spot_rows if row.get("productive_infection_result", "").strip().lower() in PRODUCTIVE_INFECTION_OBSERVED_VALUES)
     add_coverage_row(rows, "receptor_layer_feature_completeness", "pair", receptor_complete, pair_count, coverage_state(receptor_complete, receptor_assessed, pair_count), "H1b", "Production receptor-layer features cover all tested pairs; keep H1 interpretation tied to grouped model evaluation and confidence intervals." if pair_count and receptor_complete == pair_count else "Acquire missing production receptor-layer features; when host K/O is already assessed, the remaining blocker is assay-phage RBP/depolymerase evidence. Seed bridge support is reported separately.")
     add_coverage_row(rows, "seed_bridge_metadata_coverage", "pair", seed_bridge_metadata_coverage, pair_count, coverage_state(seed_bridge_metadata_coverage, seed_bridge_metadata_coverage, pair_count), "H1b", "RBPbase/Locibase seed bridge metadata can exercise the path, but it is not production K/O or RBP/domain evidence.")
-    add_coverage_row(rows, "defense_counterdefense_feature_completeness", "pair", defense_complete, pair_count, coverage_state(defense_complete, defense_assessed, pair_count), "H4", "Acquire host-defense and phage counter-defense evidence for the same tested pairs.")
+    add_coverage_row(rows, "defense_counterdefense_feature_completeness", "pair", defense_complete, pair_count, coverage_state(defense_complete, defense_assessed, pair_count), "H4", "Expand phage counter-defense evidence across the tested pairs; host-defense evidence is already available for the assay hosts.")
     add_coverage_row(rows, "productive_infection_outcomes", "pair", productive_measured, pair_count, coverage_state(productive_measured, productive_measured, pair_count), "H4", "Curate plaque, EOP, propagation, or productive-infection labels; spot tests alone do not satisfy H4.")
 
     for sample in assay_breadth_samples:
@@ -1650,7 +1664,7 @@ def main() -> int:
         manifest,
         clusters,
         rbp_features,
-        phage_counterdefense_by_phage(compatibility_rows),
+        phage_counterdefense_by_phage(compatibility_rows + phage_antidefense_rows),
     )
     model_rows, feature_rows, error_rows = run_models(
         samples,
