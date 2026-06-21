@@ -1078,7 +1078,7 @@ def build_assay_feature_coverage(
     domain_phages = {row.get("genome_id", "") for row in rbp_rows + domain_rows if not is_missing(row.get("genome_id", "")) and has_domain_evidence(row)}
     structural_phages = {row.get("genome_id", "") for row in rbp_rows + domain_rows if not is_missing(row.get("genome_id", "")) and has_structural_evidence(row)}
     domain_assessed_phages = {row.get("genome_id", "") for row in domain_rows if not is_missing(row.get("genome_id", "")) and is_domain_assessed(row)}
-    structural_assessed_phages = {row.get("genome_id", "") for row in domain_rows if not is_missing(row.get("genome_id", "")) and is_structural_assessed(row)}
+    structural_assessed_phages = {row.get("genome_id", "") for row in rbp_rows + domain_rows if not is_missing(row.get("genome_id", "")) and is_structural_assessed(row)}
 
     host_defense_assessed_hosts = row_id_set(host_defense_rows, "host_genome_id")
     host_defense_detected_hosts = {

@@ -48,6 +48,10 @@ Phage receptor-side evidence:
 - Phold/Foldseek receptor-like feature rows: 236.
 - Non-Pharokka Phold/Foldseek receptor-like rows: 23.
 - High-priority non-Pharokka Phold/Foldseek manual-review candidates: 8.
+- Accepted mapped Phold/Foldseek structural evidence: 23 normalized rows.
+- Structural evidence coverage after production refresh: 12/105 assay phages and 1,048/10,006 tested pairs.
+- Stage 4 final RBP/depolymerase candidates with structural support: 17 rows across 12 phages.
+- Domain evidence remains not assessed; host-defense and phage anti-defense evidence remain absent.
 
 Important interpretation boundary: RBPbase, Pharokka, and Phold/Foldseek rows are candidate-prioritization evidence. They do not prove capsule specificity, depolymerase activity, or infection success.
 
@@ -138,6 +142,8 @@ Generated outputs are under `results/`, which is ignored by Git. Key local outpu
 - `results/production/receptor_features/receptor_source_reconciliation_summary.tsv`
 - `results/production/receptor_features/phold_non_pharokka_receptor_review.tsv`
 - `results/production/receptor_features/phold_non_pharokka_receptor_review_summary.tsv`
+- `data/metadata/production_evidence/phold_foldseek_receptor_structural_input.tsv`
+- `data/metadata/production_evidence/rbp_structural_evidence.tsv`
 - `results/production/receptor_features/missing_rbpbase_review/missing_rbpbase_boundary_review.tsv`
 - `results/production/receptor_features/missing_rbpbase_review/missing_rbpbase_boundary_review_summary.tsv`
 - `results/production/receptor_features/missing_rbpbase_review/missing_rbpbase_vs_prodigal_blastp.tsv`
@@ -148,6 +154,7 @@ Because `results/` is ignored, remote reviewers should reproduce outputs from sc
 
 ```bash
 python scripts/build_phold_non_pharokka_receptor_review.py
+python scripts/build_phold_foldseek_structural_evidence.py
 python scripts/reconcile_receptor_feature_sources.py
 python scripts/review_missing_rbpbase_exact_matches.py --threads 16
 python scripts/build_mash_pairwise_similarity.py --threads 16
@@ -167,7 +174,7 @@ python scripts/run_receptor_layer_model_comparison.py --genome-similarity result
 
 1. Review whether boundary-reviewed RBPbase candidate counts should become the default RBPbase feature for H1, while preserving exact-match columns for auditability.
 2. Add a more publication-standard phage taxonomy/similarity baseline such as VIRIDIC or skani/ANI. Mash has now been added as a k-mer robustness baseline, but it is not VIRIDIC.
-3. Review the 8 high-priority non-Pharokka Phold/Foldseek receptor-like candidates manually for confidence, coverage, synteny, product specificity, and overlap with RBPbase/Pharokka evidence.
+3. Review the 23 accepted mapped Phold/Foldseek structural-evidence rows, prioritizing the 8 high-priority non-Pharokka candidates, for confidence, coverage, synteny, product specificity, and overlap with RBPbase/Pharokka evidence.
 4. Keep H4 blocked until productive-infection outcomes and accepted defense/counter-defense evidence exist.
 5. Add accepted host-defense and phage-counter-defense evidence only after the receptor-layer benchmark is stable and the endpoint question is explicit.
 

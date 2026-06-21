@@ -14,6 +14,7 @@ This pilot audits the current repository data and summarizes real outputs alread
 - Productive-infection/plaque/EOP outcomes: 0.
 - Assay phages summarized for RBP candidates: 105.
 - Assay phages with current candidate RBP/depolymerase rows: 103/105.
+- Assay phages with accepted mapped Phold/Foldseek structural evidence: 12/105.
 - Sequence-backed host records: 201.
 - Sequence-backed PhageHostLearn assay hosts: 200/200.
 
@@ -33,7 +34,7 @@ Prodigal and BLASTN are available and have been used for current production evid
 
 The repository now has a real response-variable layer for initial interaction: PhageHostLearn spot tests provide explicit positives and tested negatives. This supports descriptive spot-range and future receptor-layer modeling. It does not support productive-infection prediction because spot clearing is not plaque/EOP/propagation evidence.
 
-Host receptor/background evidence is now strong enough for a pilot: Kaptive K/O rows cover the assay hosts, and Kleborate rows cover most assay hosts. Phage-side evidence is improved but still incomplete: Prodigal CDS calls, exact RBPbase matches, 30-phage Pharokka annotations, and 30-phage Phold/Foldseek outputs can prioritize candidates, but they are not yet a full 105-phage production annotation layer, domain evidence layer, or functional depolymerase validation.
+Host receptor/background evidence is now strong enough for a pilot: Kaptive K/O rows cover the assay hosts, and Kleborate rows cover most assay hosts. Phage-side evidence is improved but still incomplete: Prodigal CDS calls, exact RBPbase matches, full 105-phage Pharokka/Phold outputs, and partial accepted Phold/Foldseek structural evidence can prioritize candidates, but they are not a domain evidence layer or functional depolymerase validation.
 
 Defense/counter-defense analysis is not currently testable. There are no host-defense calls, no accepted phage anti-defense calls, and no productive-infection outcomes.
 
@@ -98,6 +99,14 @@ Claim boundary: these structural annotations are prioritization evidence only. T
 A focused full-set review table was built for Phold/Foldseek receptor-like CDSs that were not already annotated by Pharokka: `results/production/receptor_features/phold_non_pharokka_receptor_review.tsv`. It contains 23 CDS rows across 12 assay phages. Feature counts are tail fiber 12, tailspike 5, baseplate 6, receptor-binding 0, and depolymerase 0. Confidence counts are high 14, medium 5, and low 4. High-priority manual-review candidates: 8.
 
 Claim boundary: these rows are structural remote-homology review targets only. They do not demonstrate capsule specificity, depolymerase activity, productive infection, or receptor-feature superiority over genome-similarity baselines.
+
+## Mapped Phold/Foldseek Structural Evidence
+
+The non-Pharokka Phold/Foldseek receptor-like rows were mapped to production Prodigal annotation IDs using same-phage coordinate overlap. Mapping report: `data/metadata/production_evidence/phold_foldseek_receptor_structural_report.tsv`. Normalized evidence: `data/metadata/production_evidence/rbp_structural_evidence.tsv`. Input Phold rows reviewed: 2,416; receptor-like rows: 236; Pharokka-carried rows excluded from structural evidence: 213; Foldseek receptor-like rows eligible for structural mapping: 23; mapped rows: 23; unmapped rows: 0.
+
+After Stage 4 and Stage 7 refresh, accepted structural evidence covers 12/105 assay phages and 1,048/10,006 tested pairs. It contributes structural support to 17 final RBP/depolymerase candidate rows across 12 phages. Domain evidence remains `not_assessed`, and defense/counter-defense feature completeness remains `not_assessed`.
+
+Claim boundary: these are computational structural/remote-homology candidate rows only. They do not demonstrate capsule specificity, depolymerase activity, productive infection, or H1 superiority over genome-similarity baselines.
 
 ## Assay-Phage Receptor Feature Coverage
 

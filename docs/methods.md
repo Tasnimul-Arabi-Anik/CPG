@@ -534,7 +534,7 @@ python scripts/03_predict_rbps_depolymerases.py \
   --report-output results/rbp_depolymerase/rbp_depolymerase_report.tsv
 ```
 
-Optional domain and structural evidence schemas are documented in `docs/rbp_depolymerase_schema.md`.
+Optional domain and structural evidence schemas are documented in `docs/rbp_depolymerase_schema.md`. For the PhageHostLearn production profile, `scripts/build_phold_foldseek_structural_evidence.py` maps reviewed Phold/Foldseek receptor-like CDS rows to production Prodigal annotation IDs by same-phage coordinate overlap. The current run maps 23 Foldseek receptor-like rows, excludes 213 Pharokka-carried rows from structural evidence, and reports 0 unmapped rows. The normalized structural evidence is configured as `inputs.structural_evidence` in `config/workflow.production.yaml`; it is computational structural/remote-homology candidate evidence only.
 
 ## Stage 5: Host Feature Integration
 
@@ -554,7 +554,7 @@ python scripts/04_integrate_host_features.py \
   --report-output results/host_features/host_feature_report.tsv
 ```
 
-Optional Kleborate and Kaptive input schemas are documented in `docs/host_feature_schema.md`. The production profile now points `inputs.pairwise_similarity` to the reviewed BLASTN baseline, `inputs.kleborate_input` and `inputs.kaptive_input` to reviewed PhageHostLearn host-typing evidence, and `inputs.annotation_input` to reviewed PhageHostLearn Prodigal baseline CDS plus exact RBPbase candidate evidence. Full production readiness remains fail-closed until the other production evidence inputs, especially domain/structural evidence and defense/counter-defense evidence, are populated.
+Optional Kleborate and Kaptive input schemas are documented in `docs/host_feature_schema.md`. The production profile now points `inputs.pairwise_similarity` to the reviewed BLASTN baseline, `inputs.kleborate_input` and `inputs.kaptive_input` to reviewed PhageHostLearn host-typing evidence, `inputs.annotation_input` to reviewed PhageHostLearn Prodigal baseline CDS plus exact RBPbase candidate evidence, and `inputs.structural_evidence` to mapped Phold/Foldseek receptor-like structural evidence. Full production readiness remains fail-closed until the other production evidence inputs, especially domain evidence and defense/counter-defense evidence, are populated.
 
 ## Phage-Host Assay Contract and Validation
 
@@ -829,6 +829,8 @@ python scripts/normalize_rbp_external_evidence.py \
 ```
 
 Output schemas are documented in `docs/rbp_external_evidence_normalization_schema.md`.
+
+Project-specific Phold/Foldseek production evidence is prepared in two steps. First, `scripts/build_phold_foldseek_structural_evidence.py` maps non-Pharokka Foldseek receptor-like Phold rows to production Prodigal `annotation_gene_id` values by coordinate overlap and writes `data/metadata/production_evidence/phold_foldseek_receptor_structural_input.tsv`. Second, `scripts/normalize_rbp_external_evidence.py` validates and normalizes those rows into `data/metadata/production_evidence/rbp_structural_evidence.tsv`. The current production evidence has 23 normalized rows, 0 unmapped rows, and coverage for 12/105 assay phages. This step standardizes evidence only; it does not infer receptor specificity.
 
 The normalization logic is regression-tested with fixture-only scenarios by `scripts/self_test_rbp_external_evidence_normalization.py`. The self-test covers generic domain TSVs, both HMMER `domtblout` orientations, headerless Foldseek parsing, Phold-style parsing, annotation-manifest failures, canonical protein-ID translation, ambiguous alias failures, numeric validation including non-finite values, duplicate handling, no-input preservation, explicit empty overwrite, path-collision rejection, distinct domain/structural provenance, transactional no-partial-write behavior, and full success/failure command paths.
 

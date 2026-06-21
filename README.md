@@ -34,9 +34,11 @@ The seed profile imports 10,006 reviewed PhageHostLearn spot-test phage-host out
 
 The Stage 7 output `results/<profile>/qc/assay_feature_coverage.tsv` measures how much of that assay matrix has sequence, K/O/ST, RBP, domain, structural, defense, and counter-defense evidence. Missing analysis is reported as `not_assessed`, never as biological zero.
 
-## Current Production Host Typing
+## Current Production Evidence
 
-The PhageHostLearn benchmark has reviewed production evidence under `data/metadata/production_evidence/`: Kaptive K/O result rows cover 200/200 assay hosts, with Typeable K calls for 196/200 and Typeable O calls for 191/200; 12 hosts have at least one untypeable K/O result. Kleborate KpSC rows provide ST/AMR/virulence context for 188/200 assay hosts. A Prodigal 2.6.3 baseline CDS table covers 105/105 assay phages with 8,393 predicted CDS rows, including 247 exact protein-sequence matches to PhageHostLearn RBPbase ML candidates across 103/105 assay phages. A BLASTN pairwise similarity baseline covers 107 sequence-QC-passing phage-like records. These improve host receptor-feature, phage candidate-feature, and genome-similarity readiness only. Domain evidence, structural evidence, defense/counter-defense evidence, and productive-infection/plaque/EOP outcomes remain unavailable for claim use.
+The PhageHostLearn benchmark has reviewed production evidence under `data/metadata/production_evidence/`: Kaptive K/O result rows cover 200/200 assay hosts, with Typeable K calls for 196/200 and Typeable O calls for 191/200; 12 hosts have at least one untypeable K/O result. Kleborate KpSC rows provide ST/AMR/virulence context for 188/200 assay hosts. A Prodigal 2.6.3 baseline CDS table covers 105/105 assay phages with 8,393 predicted CDS rows, including 247 exact protein-sequence matches to PhageHostLearn RBPbase ML candidates across 103/105 assay phages. A BLASTN pairwise similarity baseline covers 107 sequence-QC-passing phage-like records.
+
+Partial accepted structural evidence is now configured for the production profile: 23 Phold/Foldseek receptor-like rows were mapped by coordinate overlap to production Prodigal annotation IDs with 0 unmapped rows, yielding structural evidence coverage for 12/105 assay phages and 1,048/10,006 tested pairs. These rows are computational structural/remote-homology candidate evidence only. They do not prove capsule specificity, depolymerase activity, productive infection, or model superiority. Domain evidence, host-defense evidence, phage anti-defense evidence, and productive-infection/plaque/EOP outcomes remain unavailable for claim use.
 
 ## Quick Start
 
@@ -78,7 +80,7 @@ python scripts/self_test_source_work_order_acceptance.py   --output results/vali
 python scripts/run_workflow.py --config config/workflow.mock.yaml
 ```
 
-This CI proves that the pipeline scaffold, reviewed-export and source-intake regression tests, and mock H1-H6 workflow run from config. The seed profile contains reviewed PhageHostLearn spot-test outcomes, and the production profile contains reviewed benchmark host K/O/ST evidence, baseline assay-phage CDS annotation/RBPbase candidate evidence, and BLASTN pairwise similarity evidence; manuscript claims still require production domain/structural evidence, defense/counter-defense evidence, and productive-infection evidence where relevant.
+This CI proves that the pipeline scaffold, reviewed-export and source-intake regression tests, and mock H1-H6 workflow run from config. The seed profile contains reviewed PhageHostLearn spot-test outcomes, and the production profile contains reviewed benchmark host K/O/ST evidence, baseline assay-phage CDS annotation/RBPbase candidate evidence, partial Phold/Foldseek structural receptor-candidate evidence, and BLASTN pairwise similarity evidence; manuscript claims still require domain evidence, defense/counter-defense evidence, and productive-infection evidence where relevant.
 
 Audit workflow-core and planned external tool availability:
 
