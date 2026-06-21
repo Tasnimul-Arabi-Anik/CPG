@@ -1,0 +1,5 @@
+severity	item	message
+info	annotation_manifest	loaded_annotation_gene_ids=23; translated_aliases=0; path=data/metadata/production_evidence/phold_foldseek_receptor_structural_input.tsv
+info	domain_evidence	no input supplied; preserved existing output because --overwrite-empty was not set: results/production/receptor_features/rbp_domain_evidence.normalizer_unused.tsv
+info	structural_annotation_ids	direct_matches=23; translated_aliases=0
+info	structural_evidence	normalized_rows=23; input=data/metadata/production_evidence/phold_foldseek_receptor_structural_input.tsv; format=generic_tsv

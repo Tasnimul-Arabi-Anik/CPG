@@ -1,0 +1,7 @@
+metric	value	status	notes
+input_rows	2416	info	results/production/phold_assay_phage_relevant_hits.tsv
+receptor_like_rows	236	info	Phold rows with receptor-like feature labels.
+carried_pharokka_rows	213	info	Excluded because they are Pharokka-carried annotations, not Foldseek structural evidence.
+foldseek_receptor_like_rows	23	info	Rows eligible for structural evidence mapping.
+mapped_rows	23	pass	Rows mapped to exactly one production annotation ID.
+unmapped_rows	0	pass	Unmapped rows are excluded from accepted structural evidence.
