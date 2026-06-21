@@ -489,6 +489,7 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
     prediction_errors = out("models", "prediction_errors", "results/models/prediction_errors.tsv")
     hypothesis_summary = out("models", "hypothesis_summary", "results/models/hypothesis_summary.tsv")
     assay_feature_coverage = out("qc", "assay_feature_coverage", "results/qc/assay_feature_coverage.tsv")
+    phage_module_identities = out("receptor_features", "module_identity_signatures", "results/receptor_features/assay_phage_module_identity_signatures.tsv")
     model_report = out("models", "report", "results/models/model_report.tsv")
 
     figure_dir = out("figures", "directory", "results/figures")
@@ -1873,6 +1874,8 @@ def build_stages(config: dict, root: Path) -> tuple[list[Stage], Path]:
                 annotations.as_posix(),
                 "--domain-architectures",
                 domain_architectures.as_posix(),
+                "--phage-module-identities",
+                phage_module_identities.as_posix(),
                 "--host-metadata",
                 host_metadata.as_posix(),
                 "--host-defense",

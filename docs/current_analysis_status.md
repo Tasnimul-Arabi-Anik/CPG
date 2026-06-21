@@ -154,7 +154,16 @@ Evidence included:
 
 Annotation-keyword phage anti-defense hits are screening-only. They are excluded from compatibility matching unless supplied through an explicit reviewed evidence table.
 
-Claim boundary: H4 remains `blocked_no_productive_infection_labels`. These evidence tables support coverage auditing and future H4 tests only; they do not demonstrate defense escape or improved prediction.
+H3 spot-breadth association rows are now generated from the same evidence layer:
+
+| H3 feature | Assessed phages | Spearman rho versus tested-panel spot-positive fraction | Status |
+| --- | ---: | ---: | --- |
+| Domain module count | 105 / 105 | 0.110 | Exploratory analysis-ready row, claim remains data-dependent |
+| Structural module count | 105 / 105 | 0.010 | Exploratory analysis-ready row, claim remains data-dependent |
+| Total domain + structural module count | 105 / 105 | 0.106 | Exploratory analysis-ready row, claim remains data-dependent |
+| Explicit anti-defense candidate count | 7 / 105 | NA | Blocked by insufficient coverage and one observed feature value |
+
+Claim boundary: H4 remains `blocked_no_productive_infection_labels`. These evidence tables support coverage auditing and future H4 tests only; they do not demonstrate defense escape or improved prediction. The H3 rows are phage-level spot-test breadth associations only; they do not establish productive-infection breadth, causal breadth mechanisms, or general host-range strategy.
 
 ## Hypothesis Status
 
@@ -162,7 +171,7 @@ Claim boundary: H4 remains `blocked_no_productive_infection_labels`. These evide
 | --- | --- | --- |
 | H1 receptor compatibility | Exploratory, module-identity signal available but not claim-ready | Exact domain+structural module identity signatures beat RBPbase + K/O but do not robustly beat genome-similarity + K/O baselines; full domain-order architecture and novel-K generalization remain untested. |
 | H2 prophage receptor reservoir | Not the focus of the current PR stack | Requires larger prophage/host cohort and structural/synteny association analysis. |
-| H3 breadth versus modularity/counter-defense | Descriptive breadth available only | Spot-test breadth exists, but feature association is not claim-ready. |
+| H3 breadth versus modularity/counter-defense | Exploratory module-count association rows available, claim remains data-dependent | Domain and total module counts show weak positive phage-level correlations with tested-panel spot-positive fraction (rho 0.110 and 0.106); structural count is near zero (rho 0.010); explicit anti-defense candidate coverage is insufficient at 7/105 phages. |
 | H4 defense/counter-defense improves productive-infection prediction | Blocked | No productive-infection, plaque, propagation, or EOP labels exist. |
 | H5 host lineage/prophage/defense landscape | Data-dependent association summary available | The workflow now summarizes ST versus DefenseFinder burden for 188/200 benchmark hosts across 120 ST groups, but this is association-only and not phage susceptibility or infectivity evidence. |
 | H6 source/ecology novelty | Data-dependent | Requires broader source-balanced atlas and ecological source labels, not database provenance alone. |
@@ -176,6 +185,10 @@ Allowed now:
 Allowed now:
 
 > In the current exploratory H1 benchmark, exact receptor module identity signatures improve over RBPbase and are competitive with genome-similarity baselines under cold-phage-cluster evaluation, but do not yet robustly outperform genome similarity.
+
+Allowed now:
+
+> In the current exploratory H3 phage-level summary, receptor module counts show only weak association with tested-panel spot-positive breadth, while explicit anti-defense candidate coverage remains insufficient for a counter-defense breadth test.
 
 Not allowed now:
 

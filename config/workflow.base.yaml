@@ -213,6 +213,8 @@ outputs:
     phage_antidefense: '{results_dir}/defense_systems/phage_antidefense_candidates.tsv'
     compatibility: '{results_dir}/defense_systems/compatibility_features.tsv'
     report: '{results_dir}/defense_systems/defense_counterdefense_report.tsv'
+  receptor_features:
+    module_identity_signatures: '{results_dir}/receptor_features/assay_phage_module_identity_signatures.tsv'
   models:
     model_comparison: '{results_dir}/models/model_comparison.tsv'
     feature_importance: '{results_dir}/models/feature_importance.tsv'
