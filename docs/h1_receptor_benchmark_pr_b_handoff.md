@@ -78,6 +78,7 @@ Tracked compact review outputs:
 - `results/production/receptor_features/assay_phage_receptor_feature_coverage.tsv`: 105 rows
 - `results/production/receptor_features/assay_phage_cluster_assignments.tsv`: 105 rows
 - `results/production/models/receptor_layer_model_pooled_summary.tsv`: 76 rows
+- `results/production/models/receptor_layer_support_diagnostics.tsv`: 380 rows
 - `results/production/models/receptor_layer_feature_source_ablation.tsv`: 44 rows
 - `results/production/models/receptor_layer_group_bootstrap_delta.tsv`: 44 rows
 - `results/production/models/benchmark_run_manifest.tsv`: checksum manifest for the compact review artifacts
@@ -90,7 +91,7 @@ Primary cold-phage-cluster contrast, `receptor_plus_host_KO_rate - genome_simila
 | fastANI | 0.118254 | 0.188858 | -0.070604 | [-0.158084, 0.010668] |
 | skani | 0.118254 | 0.199395 | -0.081141 | [-0.169619, -0.002116] |
 
-Cold-K-locus receptor holdout is more strongly negative across these same baselines. Because the current receptor-plus-K/O model uses exact categorical K/O composite keys, many cold-K-locus predictions collapse to broad fallback rates by construction. The current benchmark therefore supports only this narrow statement: coarse receptor-source/count summaries did not outperform genome-similarity baselines. It does not falsify the stronger module-architecture hypothesis.
+Cold-K-locus receptor holdout is more strongly negative across these same baselines. Because the current receptor-plus-K/O model uses exact categorical K/O composite keys, all cold-K-locus receptor-plus-K/O predictions in this run collapse to global prevalence by construction. The support diagnostics show that the genome-similarity plus K/O model also lacks direct same-K/O support in cold-K-locus folds, but it uses an intermediate nearest-phage marginal-rate fallback rather than global prevalence. The current benchmark therefore supports only this narrow statement: coarse receptor-source/count summaries did not outperform genome-similarity baselines. It does not falsify the stronger module-architecture hypothesis.
 
 ## Claim boundary
 
